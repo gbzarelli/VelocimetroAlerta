@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/grupo_informacoes">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_informar_tempo"
+            android:title="@string/tempo" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_informar_distancia"
+            android:title="@string/distancia" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_informar_vatual"
+            android:title="@string/atual" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/pref_informar_vmedia"
+            android:title="@string/media" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_informar_vmax"
+            android:title="@string/maxima" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/grupo_intervalo">
+        <ListPreference
+            android:defaultValue="@string/intervalo_value_default"
+            android:entries="@array/intervalo"
+            android:entryValues="@array/intervalo_values"
+            android:key="@string/pref_intervalo"
+            android:title="@string/lista_intervalo" />
+        <EditTextPreference
+            android:defaultValue="@string/valor_default"
+            android:inputType="numberDecimal"
+            android:key="@string/pref_intervalo_valor"
+            android:singleLine="true"
+            android:title="@string/valor" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
