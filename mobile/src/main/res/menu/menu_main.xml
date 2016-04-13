@@ -4,7 +4,7 @@
     tools:context="br.com.helpdev.velocimetroalerta.MainActivity">
     <item
         android:id="@+id/action_settings"
-        android:icon="@android:drawable/ic_menu_manage"
+        android:icon="@drawable/ic_volume_high"
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="ifRoom" />

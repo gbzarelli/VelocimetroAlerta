@@ -126,6 +126,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     private void clear() {
+        btStartStop.setEnabled(true);
         rodandoAtividade = false;
         btRefresh.setVisibility(View.GONE);
         if (processoGPS != null) {
@@ -146,7 +147,6 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     private void playPause() {
         if (!rodandoAtividade) {
-            rodandoAtividade = true;
             processoGPS = new GPSVelocimetro(getMyActivity().getGps(), this);
             processoGPS.start();
         }
@@ -168,6 +168,12 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             processoGPS.pausar(false);
             chronometer.start();
             btRefresh.setVisibility(View.GONE);
+        }
+
+        if (rodandoAtividade) {
+            btStartStop.setEnabled(false);
+        } else {
+            rodandoAtividade = true;
         }
 
         btStartStop.setImageResource(contandoTempo ? R.drawable.pause : R.drawable.play);
@@ -207,15 +213,18 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void setGpsStatus(final int status) {
-        System.out.println("setGpsStatus: " + status);
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                if ((status == GPS_RETOMADO || status == GPS_PAUSADO) && !btStartStop.isEnabled()) {
+                    btStartStop.setEnabled(true);
+                }
                 if (status == GPS_ATUALIZADO && gpsDesatualizado.getVisibility() == View.VISIBLE) {
                     gpsDesatualizado.setVisibility(View.GONE);
                 } else if (status == GPS_DESATUALIZADO && gpsDesatualizado.getVisibility() == View.GONE) {
                     gpsDesatualizado.setVisibility(View.VISIBLE);
                 }
+                updateValuesText();
             }
         });
     }
@@ -228,7 +237,6 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void setPauseAutomatic(final boolean pause) {
-        System.out.println("setPauseAutomatic: " + pause);
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -239,6 +247,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                     pausadoAutomaticamente.setVisibility(View.GONE);
                     chronometer.start();
                 }
+                updateValuesText();
             }
         });
     }

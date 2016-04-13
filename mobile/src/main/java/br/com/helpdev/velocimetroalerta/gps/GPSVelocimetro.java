@@ -33,6 +33,8 @@ public class GPSVelocimetro extends Thread {
 
         public static final int GPS_ATUALIZADO = 1;
         public static final int GPS_DESATUALIZADO = 2;
+        public static final int GPS_PAUSADO = 3;
+        public static final int GPS_RETOMADO = 4;
 
         void updateLocation(Location location);
 
@@ -94,6 +96,9 @@ public class GPSVelocimetro extends Thread {
     private void verificarBtPausa() {
         boolean pause = false;
         while (status == STATUS_PAUSADO) {
+            if (!pause) {
+                callbackGpsThread.setGpsStatus(CallbackGpsThread.GPS_PAUSADO);
+            }
             pause = true;
             if (!pauseAutomatico) {
                 startPause();
@@ -105,6 +110,8 @@ public class GPSVelocimetro extends Thread {
         }
         if (pause && status != STATUS_FINALIZADO) {
             if (pauseAutomatico) {
+                callbackGpsThread.setGpsStatus(CallbackGpsThread.GPS_RETOMADO);
+                System.out.println("-btPause-resumePause");
                 resumePause();
             }
         }
@@ -142,15 +149,15 @@ public class GPSVelocimetro extends Thread {
         if (callbackGpsThread.isPauseAutomatic()) {
             if (velocidadeAtual <= 0) {
                 if (!pauseAutomatico) {
+                    System.out.println("startPause");
                     startPause();
                     callbackGpsThread.setPauseAutomatic(true);
                 }
                 return;
-            } else {
-                if (pauseAutomatico) {
-                    resumePause();
-                    callbackGpsThread.setPauseAutomatic(false);
-                }
+            } else if (pauseAutomatico) {
+                System.out.println("resumePause");
+                resumePause();
+                callbackGpsThread.setPauseAutomatic(false);
             }
         }
 

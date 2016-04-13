@@ -33,7 +33,7 @@
             android:title="@string/lista_intervalo" />
         <EditTextPreference
             android:defaultValue="@string/valor_default"
-            android:inputType="numberDecimal"
+            android:inputType="number"
             android:key="@string/pref_intervalo_valor"
             android:singleLine="true"
             android:title="@string/valor" />
