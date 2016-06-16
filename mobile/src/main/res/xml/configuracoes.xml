@@ -22,6 +22,10 @@
             android:defaultValue="false"
             android:key="@string/pref_informar_vmax"
             android:title="@string/maxima" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="@string/pref_vibrar"
+            android:title="@string/vibrar" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/grupo_intervalo">

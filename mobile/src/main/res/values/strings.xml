@@ -18,6 +18,7 @@
     <string name="atual">Velocidade atual</string>
     <string name="media">Velocidade média</string>
     <string name="maxima">Velocidade máxima</string>
+    <string name="vibrar">Vibrar</string>
 
     <string name="grupo_intervalo">Intervalo de reproduçao:</string>
     <string name="lista_intervalo">Distância / Tempo</string>
@@ -41,6 +42,7 @@
     <string name="pref_informar_vatual">key_informar_vatual</string>
     <string name="pref_informar_vmedia">key_informar_vmedia</string>
     <string name="pref_informar_vmax">key_informar_vmax</string>
+    <string name="pref_vibrar">pref_vibrar</string>
     <string name="pref_intervalo">key_intervalo</string>
     <string name="pref_intervalo_valor">key_intervalo_valor</string>
 </resources>

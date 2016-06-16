@@ -2,6 +2,7 @@ package br.com.helpdev.velocimetroalerta;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 
@@ -24,6 +25,8 @@ public class MySpeechSpeed {
     private boolean repMax;
     private boolean repDistancia;
     private boolean repTempo;
+    private boolean vibrar;
+    private Context context;
 
     public MySpeechSpeed(Context context) {
         speech = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
@@ -36,6 +39,7 @@ public class MySpeechSpeed {
     }
 
     public void recarregarConfiguracoes(Context context) {
+        this.context = context;
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
         String inter = sp.getString(context.getString(R.string.pref_intervalo), "minutos");
         if (inter.equals("minutos")) {
@@ -49,6 +53,7 @@ public class MySpeechSpeed {
         repMax = sp.getBoolean(context.getString(R.string.pref_informar_vmax), false);
         repDistancia = sp.getBoolean(context.getString(R.string.pref_informar_distancia), false);
         repTempo = sp.getBoolean(context.getString(R.string.pref_informar_tempo), false);
+        vibrar = sp.getBoolean(context.getString(R.string.pref_vibrar), false);
     }
 
     private double tmpDistancia;
@@ -83,6 +88,18 @@ public class MySpeechSpeed {
                 reproduzindo = false;
             }
         }).start();
+
+        if (vibrar) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+                        vibrator.vibrate(3000);
+                    }catch (Exception e){}
+                }
+            }).start();
+        }
 
         if (distanciaPercorrida <= 0.1d) {
             return;
