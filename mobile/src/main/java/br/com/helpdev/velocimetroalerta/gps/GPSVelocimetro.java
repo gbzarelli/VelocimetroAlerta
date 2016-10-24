@@ -1,9 +1,16 @@
 package br.com.helpdev.velocimetroalerta.gps;
 
 import android.location.Location;
+import android.os.Environment;
 import android.os.SystemClock;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created by Guilherme Biff Zarelli on 04/04/16.
@@ -19,15 +26,17 @@ public class GPSVelocimetro extends Thread {
 
     private volatile double velocidadeMedia;
     private volatile double velocidadeMaxima;
-    private volatile double velocidadeAtual;
     private volatile double distanciaTotal;
+    private volatile double ganhoAltitude;
+    private volatile double tempMediaGanho;
 
     private long firstBase;
     private long baseTempo;
     private long tmpMillisPausa;
     private long tempoPausado;
 
-    private Location tempLocation;
+    private List<Location> tempLocation;
+    private ObVelocimentroAlerta obVelocimentroAlerta;
 
     public interface CallbackGpsThread {
 
@@ -35,10 +44,12 @@ public class GPSVelocimetro extends Thread {
         public static final int GPS_DESATUALIZADO = 2;
         public static final int GPS_PAUSADO = 3;
         public static final int GPS_RETOMADO = 4;
+        public static final int GPS_SEM_PRECISAO = 5;
+        public static final int GPS_PRECISAO_OK = 6;
 
         void updateLocation(Location location);
 
-        void updateValues(long tempo, double vMedia, double vAtual, double vMaxima, double distanciaTotal);
+        void updateValues(ObVelocimentroAlerta obVelocimentroAlerta);
 
         void setGpsStatus(int status);
 
@@ -78,6 +89,21 @@ public class GPSVelocimetro extends Thread {
 
     public void finalizar() {
         this.status = STATUS_FINALIZADO;
+        if (tempLocation != null && !tempLocation.isEmpty()) {
+            File file = new File(Environment.getExternalStorageDirectory(), "VEL_ALERTA_" + new Date().toString());
+            try {
+                if (file.createNewFile()) {
+                    FileWriter fileWriter = new FileWriter(file, true);
+                    for (Location loc : tempLocation) {
+                        fileWriter.write(String.valueOf(loc.getAltitude()) + "\n");
+                    }
+                    fileWriter.flush();
+                    fileWriter.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -86,7 +112,7 @@ public class GPSVelocimetro extends Thread {
         while (status != STATUS_FINALIZADO) {
             process(gps.getViews(), gps.getLocation());
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1_000);
             } catch (Exception e) {
             }
             verificarBtPausa();
@@ -104,14 +130,13 @@ public class GPSVelocimetro extends Thread {
                 startPause();
             }
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1_000);
             } catch (Exception e) {
             }
         }
         if (pause && status != STATUS_FINALIZADO) {
             if (pauseAutomatico) {
                 callbackGpsThread.setGpsStatus(CallbackGpsThread.GPS_RETOMADO);
-                System.out.println("-btPause-resumePause");
                 resumePause();
             }
         }
@@ -131,7 +156,8 @@ public class GPSVelocimetro extends Thread {
 
 
     private void process(int views, Location location) {
-        this.velocidadeAtual = 0;
+        double velocidadeAtual = 0;
+        double altitude = 0;
         if (views > 2 || location == null) {
             if (statusGps != CallbackGpsThread.GPS_DESATUALIZADO) {
                 statusGps = CallbackGpsThread.GPS_DESATUALIZADO;
@@ -144,43 +170,84 @@ public class GPSVelocimetro extends Thread {
             }
             callbackGpsThread.updateLocation(location);
             velocidadeAtual = location.getSpeed() * 3.6f;
+            altitude = location.getAltitude();
         }
 
         if (callbackGpsThread.isPauseAutomatic()) {
             if (velocidadeAtual <= 0) {
                 if (!pauseAutomatico) {
-                    System.out.println("startPause");
                     startPause();
                     callbackGpsThread.setPauseAutomatic(true);
                 }
                 return;
             } else if (pauseAutomatico) {
-                System.out.println("resumePause");
                 resumePause();
                 callbackGpsThread.setPauseAutomatic(false);
             }
         }
 
-        if (tempLocation != null) {
-            distanciaTotal += calculaDistancia(tempLocation.getLatitude(), tempLocation.getLongitude(), location.getLatitude(), location.getLongitude());
+        if (location == null) {
+            return;
+        }
+
+        if (tempLocation != null && tempLocation.size() > 0) {
             try {
-                double hours = new BigDecimal(getTempoAtividade())
-                        .divide(BigDecimal.valueOf(3_600_000), 10, BigDecimal.ROUND_HALF_UP)
-                        .doubleValue();
-                velocidadeMedia = distanciaTotal / hours;
-            } catch (Exception e) {
+                calcularDistancia(location);
+                calcularVelocidadeMedia();
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
+        } else {
+            tempLocation = new ArrayList<>();
         }
-        tempLocation = location;
+
+        if (location.getAccuracy() < 10) {
+            callbackGpsThread.setGpsStatus(CallbackGpsThread.GPS_PRECISAO_OK);
+            tempLocation.add(location);
+        } else {
+            callbackGpsThread.setGpsStatus(CallbackGpsThread.GPS_SEM_PRECISAO);
+        }
 
         if (velocidadeAtual > velocidadeMaxima) {
             velocidadeMaxima = velocidadeAtual;
         }
 
-        callbackGpsThread.updateValues(getTempoAtividade(), velocidadeMedia, velocidadeAtual, velocidadeMaxima, distanciaTotal);
+        obVelocimentroAlerta = new ObVelocimentroAlerta(getTempoAtividade(), velocidadeMedia, velocidadeAtual, velocidadeMaxima, distanciaTotal, altitude, ganhoAltitude, location.getAccuracy());
+        callbackGpsThread.updateValues(obVelocimentroAlerta);
     }
 
+    private int lastIndexCalc;
+
+
+    private void calcularGanhoAltitude() {
+        Location startClimb = tempLocation.get(lastIndexCalc);
+        Location endClimb = null;
+
+        int count = 0;
+        if ((lastIndexCalc + 1) < tempLocation.size()) {
+            for (int i = (lastIndexCalc + 1); i < tempLocation.size(); i++) {
+                Location atualLoc = tempLocation.get(i);
+                if (atualLoc.getAltitude() < startClimb.getAltitude()) {
+                    count += 1;
+                } else {
+                    endClimb = atualLoc;
+                    count = 0;
+                }
+            }
+        }
+    }
+
+    private void calcularDistancia(Location location) {
+        distanciaTotal += calculaDistancia(tempLocation.get(tempLocation.size() - 1).getLatitude(),
+                tempLocation.get(tempLocation.size() - 1).getLongitude(), location.getLatitude(), location.getLongitude());
+    }
+
+    private void calcularVelocidadeMedia() throws Throwable {
+        double hours = new BigDecimal(getTempoAtividade())
+                .divide(BigDecimal.valueOf(3_600_000), 10, BigDecimal.ROUND_HALF_UP)
+                .doubleValue();
+        velocidadeMedia = distanciaTotal / hours;
+    }
 
     public static double calculaDistancia(double lat1, double lng1, double lat2, double lng2) {
         //double earthRadius = 3958.75;//miles
@@ -202,23 +269,14 @@ public class GPSVelocimetro extends Thread {
         this.callbackGpsThread = callbackGpsThread;
     }
 
-    public long getTempoAtividade() {
+    private long getTempoAtividade() {
         return SystemClock.elapsedRealtime() - baseTempo;
     }
 
-    public double getVelocidadeMedia() {
-        return velocidadeMedia;
-    }
-
-    public double getVelocidadeMaxima() {
-        return velocidadeMaxima;
-    }
-
-    public double getVelocidadeAtual() {
-        return velocidadeAtual;
-    }
-
-    public double getDistanciaTotal() {
-        return distanciaTotal;
+    public ObVelocimentroAlerta getObVelocimentroAlerta() {
+        if (obVelocimentroAlerta == null) {
+            obVelocimentroAlerta = new ObVelocimentroAlerta();
+        }
+        return obVelocimentroAlerta;
     }
 }

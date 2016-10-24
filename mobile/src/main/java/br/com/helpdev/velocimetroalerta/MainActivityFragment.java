@@ -1,6 +1,7 @@
 package br.com.helpdev.velocimetroalerta;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.SystemClock;
 import android.support.v4.app.Fragment;
@@ -17,6 +18,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import br.com.helpdev.velocimetroalerta.gps.GPSVelocimetro;
+import br.com.helpdev.velocimetroalerta.gps.ObVelocimentroAlerta;
+
+import static java.lang.String.format;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -33,7 +37,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     private MySpeechSpeed mySpeechSpeed;
     private ImageButton btStartStop, btRefresh;
     private Chronometer chronometer;
-    private TextView pausadoAutomaticamente, gpsDesatualizado, distancia;
+    private TextView pausadoAutomaticamente, gpsDesatualizado, distancia, altitude, ganhoAltitude, precisao;
     private GPSVelocimetro processoGPS;
 
     private HashMap<Integer, TextView[]> velocidades;
@@ -64,6 +68,9 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         getView().findViewById(R.id.velocidade_2).setOnClickListener(this);
         getView().findViewById(R.id.velocidade_3).setOnClickListener(this);
         distancia = (TextView) getView().findViewById(R.id.distancia);
+        altitude = (TextView) getView().findViewById(R.id.altitude);
+        ganhoAltitude = (TextView) getView().findViewById(R.id.ganho_altitude);
+        precisao = (TextView) getView().findViewById(R.id.precisao);
 
         mySpeechSpeed = new MySpeechSpeed(getActivity());
         updateLayout(KEY_VELOCIDADE_ATUAL);
@@ -187,10 +194,14 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     private void updateValuesText() {
         if (processoGPS != null) {
-            velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText(String.valueOf((int) processoGPS.getVelocidadeAtual()));
-            velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText(String.format("%.1f", processoGPS.getVelocidadeMaxima()));
-            velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText(String.format("%.1f", processoGPS.getVelocidadeMedia()));
-            distancia.setText(String.format("%.1f", processoGPS.getDistanciaTotal()));
+            ObVelocimentroAlerta obVelocimentroAlerta = processoGPS.getObVelocimentroAlerta();
+            velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText(String.valueOf((int) obVelocimentroAlerta.getvAtual()));
+            velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMaxima()));
+            velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMedia()));
+            distancia.setText(format("%.1f", obVelocimentroAlerta.getDistanciaTotal()));
+            altitude.setText(format("%.1f", obVelocimentroAlerta.getAltitude()));
+            ganhoAltitude.setText(format("%.1f", obVelocimentroAlerta.getGanhoAltitude()));
+            precisao.setText(format("%.1f", obVelocimentroAlerta.getPrecisao()));
         }
     }
 
@@ -201,12 +212,12 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     @Override
-    public void updateValues(final long tempo, final double vMedia, final double vAtual, final double vMaxima, final double distanciaTotal) {
+    public void updateValues(final ObVelocimentroAlerta obVelocimentroAlerta) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 updateValuesText();
-                mySpeechSpeed.updateValues(tempo, vMedia, vAtual, vMaxima, distanciaTotal);
+                mySpeechSpeed.updateValues(obVelocimentroAlerta);
             }
         });
     }
@@ -223,6 +234,14 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                     gpsDesatualizado.setVisibility(View.GONE);
                 } else if (status == GPS_DESATUALIZADO && gpsDesatualizado.getVisibility() == View.GONE) {
                     gpsDesatualizado.setVisibility(View.VISIBLE);
+                }
+                if (status == GPS_SEM_PRECISAO && precisao.getTag() == null) {
+                    precisao.setTextColor(Color.RED);
+                    precisao.setTag(1);
+                } else if (status == GPS_PRECISAO_OK && precisao.getTag() != null) {
+                    precisao.setTextColor(Color.BLACK);
+                    precisao.setTag(null);
+
                 }
                 updateValuesText();
             }

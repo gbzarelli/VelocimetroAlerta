@@ -8,6 +8,8 @@ import android.speech.tts.TextToSpeech;
 
 import java.util.Locale;
 
+import br.com.helpdev.velocimetroalerta.gps.ObVelocimentroAlerta;
+
 /**
  * Created by Guilherme Biff Zarelli on 05/04/16.
  */
@@ -66,8 +68,8 @@ public class MySpeechSpeed {
         }
     }
 
-    public void updateValues(long tempo, double vMedia, double vAtual, double vMaxima, double distancia) {
-        this.distanciaPercorrida = distancia;
+    public void updateValues(ObVelocimentroAlerta obVelocimentroAlerta) {
+        this.distanciaPercorrida = obVelocimentroAlerta.getDistanciaTotal();
         if (reproduzindo) {
             return;
         }
@@ -107,19 +109,19 @@ public class MySpeechSpeed {
 
         if (!speech.isSpeaking()) {
             if (repAtual) {
-                reproduzir("Velocidade atual de " + (int) vAtual + " quilometros por hora");
+                reproduzir("Velocidade atual de " + (int) obVelocimentroAlerta.getvAtual() + " quilometros por hora");
             }
             if (repMedia) {
-                reproduzir("Média de " + String.format("%.1f", vMedia).replaceAll(",", ".") + " quilometros por hora");
+                reproduzir("Média de " + String.format("%.1f", obVelocimentroAlerta.getvMedia()).replaceAll(",", ".") + " quilometros por hora");
             }
             if (repMax) {
-                reproduzir("Máxima de " + (int) vMaxima + " quilometros por hora");
+                reproduzir("Máxima de " + (int) obVelocimentroAlerta.getvMaxima() + " quilometros por hora");
             }
             if (repDistancia) {
-                reproduzir("Distância percorrida " + String.format("%.1f", distancia).replaceAll(",", ".") + " quilometros");
+                reproduzir("Distância percorrida " + String.format("%.1f", obVelocimentroAlerta.getDistanciaTotal()).replaceAll(",", ".") + " quilometros");
             }
             if (repTempo) {
-                reproduzir("Tempo de " + tempo / 60_000 + " minutos");
+                reproduzir("Tempo de " + obVelocimentroAlerta.getTempo() / 60_000 + " minutos");
             }
         }
     }
