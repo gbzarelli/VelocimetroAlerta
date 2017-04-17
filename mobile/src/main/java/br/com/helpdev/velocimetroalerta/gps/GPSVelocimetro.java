@@ -4,13 +4,23 @@ import android.location.Location;
 import android.os.Environment;
 import android.os.SystemClock;
 
+import org.simpleframework.xml.core.Persister;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+
+import br.com.helpdev.velocimetroalerta.objetos.Gpx;
+import br.com.helpdev.velocimetroalerta.objetos.MetaData;
+import br.com.helpdev.velocimetroalerta.objetos.Trk;
+import br.com.helpdev.velocimetroalerta.objetos.TrkPt;
+import br.com.helpdev.velocimetroalerta.objetos.TrkSeg;
 
 /**
  * Created by Guilherme Biff Zarelli on 04/04/16.
@@ -89,23 +99,55 @@ public class GPSVelocimetro extends Thread {
 
     public void finalizar() {
         this.status = STATUS_FINALIZADO;
-        if (tempLocation != null && !tempLocation.isEmpty()) {
-            File file = new File(Environment.getExternalStorageDirectory(), "VEL_ALERTA_" + new Date().toString());
-            try {
-                if (file.createNewFile()) {
-                    FileWriter fileWriter = new FileWriter(file, true);
-                    for (Location loc : tempLocation) {
-                        fileWriter.write(String.valueOf(loc.getAltitude()) + "\n");
-                    }
-                    fileWriter.flush();
-                    fileWriter.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
+    public String gravarGpx(String nomeArquivo) throws Exception {
+        if (tempLocation != null && !tempLocation.isEmpty()) {
+            File base = new File(Environment.getExternalStorageDirectory(), "/velocimetro_alerta/");
+            if (!base.exists()) {
+                base.mkdir();
+            }
+            String bkpNome = nomeArquivo;
+            File file;
+            int i = 1;
+            while ((file = new File(base, nomeArquivo + ".gpx")).exists()) {
+                nomeArquivo = bkpNome + "(" + (i++) + ")";
+            }
+
+            Gpx gpx = new Gpx("Velocimetro Alerta Android");
+            MetaData metaData = new MetaData();
+            metaData.setTime(getUtcGpxTime(tempLocation.get(0).getTime()));
+            Trk trk = new Trk();
+            trk.setName(bkpNome);
+            TrkSeg trkSeg = new TrkSeg();
+            ArrayList<TrkPt> trkPtArrayList = new ArrayList<>();
+            for (Location loc : tempLocation) {
+                TrkPt trkPt = new TrkPt();
+                trkPt.setLat(String.valueOf(loc.getLatitude()));
+                trkPt.setLon(String.valueOf(loc.getLongitude()));
+                trkPt.setEle(loc.getAltitude());
+                trkPt.setTime(getUtcGpxTime(loc.getTime()));
+                trkPtArrayList.add(trkPt);
+            }
+
+            trkSeg.setTrkPts(trkPtArrayList);
+            trk.setTrkseg(trkSeg);
+            gpx.setTrk(trk);
+            gpx.setMetaData(metaData);
+
+            Persister persister = new Persister();
+            persister.write(gpx, file);
+
+            return file.getAbsolutePath();
+        }
+        return null;
+    }
+
+    private String getUtcGpxTime(long data) {//2017-04-11T09:02:40Z
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return sdf.format(new Date(data));
+    }
 
     @Override
     public void run() {
@@ -212,7 +254,17 @@ public class GPSVelocimetro extends Thread {
             velocidadeMaxima = velocidadeAtual;
         }
 
-        obVelocimentroAlerta = new ObVelocimentroAlerta(getTempoAtividade(), velocidadeMedia, velocidadeAtual, velocidadeMaxima, distanciaTotal, altitude, ganhoAltitude, location.getAccuracy());
+        obVelocimentroAlerta = new ObVelocimentroAlerta(
+                tempLocation.isEmpty() ? new Date() : new Date(tempLocation.get(0).getTime()),
+                getTempoAtividade(),
+                velocidadeMedia,
+                velocidadeAtual,
+                velocidadeMaxima,
+                distanciaTotal,
+                altitude,
+                ganhoAltitude,
+                location.getAccuracy());
+
         callbackGpsThread.updateValues(obVelocimentroAlerta);
     }
 
@@ -249,7 +301,7 @@ public class GPSVelocimetro extends Thread {
         velocidadeMedia = distanciaTotal / hours;
     }
 
-    public static double calculaDistancia(double lat1, double lng1, double lat2, double lng2) {
+    private double calculaDistancia(double lat1, double lng1, double lat2, double lng2) {
         //double earthRadius = 3958.75;//miles
         double earthRadius = 6371;//kilometers
         double dLat = Math.toRadians(lat2 - lat1);

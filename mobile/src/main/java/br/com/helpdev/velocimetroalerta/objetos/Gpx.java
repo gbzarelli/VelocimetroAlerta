@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.com.helpdev.supportlib_maps.gpx.objetos;
+package br.com.helpdev.velocimetroalerta.objetos;
 
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.Element;
@@ -16,16 +16,30 @@ import org.simpleframework.xml.Root;
 public class Gpx {
 
     @Attribute
-    private String schemaLocation;
+    private String schemaLocation = "http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd";
+
+    @Attribute
+    private String xmlns = "http://www.topografix.com/GPX/1/1";
 
     @Attribute(name = "creator")
     private String creator;
+
     @Attribute(name = "version")
-    private String version;
+    private String version = "1.1";
+
     @Element(name = "metadata", type = MetaData.class)
     private MetaData metaData;
+
     @Element(name = "trk", type = Trk.class)
     private Trk trk;
+
+    public Gpx() {
+    }
+
+    public Gpx(String creator) {
+        this.creator = creator;
+    }
+
 
     public MetaData getMetaData() {
         return metaData;

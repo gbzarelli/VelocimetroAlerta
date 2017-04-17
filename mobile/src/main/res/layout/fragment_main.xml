@@ -255,7 +255,8 @@
                     android:layout_weight="1"
                     android:gravity="center_horizontal"
                     android:text="Ganho altitude"
-                    android:textAppearance="?android:attr/textAppearanceSmall" />
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:visibility="invisible" />
             </LinearLayout>
 
             <LinearLayout
@@ -292,7 +293,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center_horizontal"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:visibility="invisible">
 
                     <TextView
                         android:id="@+id/ganho_altitude"
@@ -327,10 +329,21 @@
         android:id="@+id/precisao"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/tv_precisao"
-        android:layout_toEndOf="@id/tv_precisao"
         android:layout_alignParentBottom="true"
-        android:layout_marginLeft="5dp"/>
+        android:layout_marginLeft="5dp"
+        android:layout_toEndOf="@id/tv_precisao"
+        android:layout_toRightOf="@id/tv_precisao" />
+
+    <ImageButton
+        android:id="@+id/bt_save"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignBottom="@+id/bt_play_pause"
+        android:layout_marginRight="@dimen/activity_vertical_margin"
+        android:layout_toLeftOf="@+id/bt_play_pause"
+        android:background="@drawable/button_play_pause"
+        android:src="@drawable/ic_save"
+        android:visibility="gone" />
 
 
     <ImageButton

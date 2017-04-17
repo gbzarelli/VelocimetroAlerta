@@ -1,11 +1,14 @@
 package br.com.helpdev.velocimetroalerta.gps;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * Created by guilherme on 17/07/16.
  */
 public class ObVelocimentroAlerta implements Serializable {
+
+    private Date dateInicio;
     private long tempo;
     private double vMedia;
     private double vAtual;
@@ -16,10 +19,11 @@ public class ObVelocimentroAlerta implements Serializable {
     private double precisao;
 
     public ObVelocimentroAlerta() {
-        this(0, 0, 0, 0, 0, 0, 0, 0);
+        this(new Date(), 0, 0, 0, 0, 0, 0, 0, 0);
     }
 
-    public ObVelocimentroAlerta(long tempo, double vMedia, double vAtual, double vMaxima, double distanciaTotal, double altitude, double ganhoAltitude, double precisao) {
+    public ObVelocimentroAlerta(Date dateInicio, long tempo, double vMedia, double vAtual, double vMaxima, double distanciaTotal, double altitude, double ganhoAltitude, double precisao) {
+        this.dateInicio = dateInicio;
         this.tempo = tempo;
         this.vMedia = vMedia;
         this.vAtual = vAtual;
@@ -28,6 +32,14 @@ public class ObVelocimentroAlerta implements Serializable {
         this.altitude = altitude;
         this.ganhoAltitude = ganhoAltitude;
         this.precisao = precisao;
+    }
+
+    public Date getDateInicio() {
+        return dateInicio;
+    }
+
+    public void setDateInicio(Date dateInicio) {
+        this.dateInicio = dateInicio;
     }
 
     public double getPrecisao() {
@@ -97,7 +109,8 @@ public class ObVelocimentroAlerta implements Serializable {
     @Override
     public String toString() {
         return "ObVelocimentroAlerta{" +
-                "tempo=" + tempo +
+                "dateInicio=" + dateInicio +
+                ", tempo=" + tempo +
                 ", vMedia=" + vMedia +
                 ", vAtual=" + vAtual +
                 ", vMaxima=" + vMaxima +

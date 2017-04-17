@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.com.helpdev.supportlib_maps.gpx.objetos;
+package br.com.helpdev.velocimetroalerta.objetos;
 
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.Element;
@@ -20,7 +20,7 @@ public class TrkPt {
     @Attribute(name = "lon")
     private String lon;
     @Element(name = "ele")
-    private String ele;
+    private double ele;
     @Element(name = "time")
     private String time;
     @Element(name = "extensions", type = Extensions.class, required = false)
@@ -42,11 +42,11 @@ public class TrkPt {
         this.lon = lon;
     }
 
-    public String getEle() {
+    public double getEle() {
         return ele;
     }
 
-    public void setEle(String ele) {
+    public void setEle(double ele) {
         this.ele = ele;
     }
 
