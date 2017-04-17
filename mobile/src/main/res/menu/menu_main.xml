@@ -2,6 +2,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="br.com.helpdev.velocimetroalerta.MainActivity">
+
+    <item
+        android:id="@+id/action_keep_alive"
+        android:icon="@drawable/ic_settings_brightness_black_48dp"
+        android:orderInCategory="99"
+        android:title="@string/action_settings"
+        app:showAsAction="ifRoom" />
+
     <item
         android:id="@+id/action_settings"
         android:icon="@drawable/ic_volume_high"

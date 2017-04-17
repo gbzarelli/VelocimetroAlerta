@@ -1,10 +1,15 @@
 package br.com.helpdev.velocimetroalerta;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.SystemClock;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,11 +17,16 @@ import android.widget.Chronometer;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 import br.com.helpdev.velocimetroalerta.gps.GPSVelocimetro;
+import br.com.helpdev.velocimetroalerta.gps.ObVelocimentroAlerta;
+
+import static java.lang.String.format;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -31,9 +41,9 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     private volatile static boolean contandoTempo = false;
 
     private MySpeechSpeed mySpeechSpeed;
-    private ImageButton btStartStop, btRefresh;
+    private ImageButton btStartStop, btRefresh, btSave;
     private Chronometer chronometer;
-    private TextView pausadoAutomaticamente, gpsDesatualizado, distancia;
+    private TextView pausadoAutomaticamente, gpsDesatualizado, distancia, altitude, ganhoAltitude, precisao;
     private GPSVelocimetro processoGPS;
 
     private HashMap<Integer, TextView[]> velocidades;
@@ -55,7 +65,9 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         super.onActivityCreated(savedInstanceState);
         getView().findViewById(R.id.bt_play_pause).setOnClickListener(this);
         btStartStop = (ImageButton) getView().findViewById(R.id.bt_play_pause);
+        btSave = (ImageButton) getView().findViewById(R.id.bt_save);
         btRefresh = (ImageButton) getView().findViewById(R.id.bt_refresh);
+        btSave.setOnClickListener(this);
         btRefresh.setOnClickListener(this);
         chronometer = (Chronometer) getView().findViewById(R.id.chronometer);
         pausadoAutomaticamente = (TextView) getView().findViewById(R.id.tv_pausado_automaticamete);
@@ -64,6 +76,9 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         getView().findViewById(R.id.velocidade_2).setOnClickListener(this);
         getView().findViewById(R.id.velocidade_3).setOnClickListener(this);
         distancia = (TextView) getView().findViewById(R.id.distancia);
+        altitude = (TextView) getView().findViewById(R.id.altitude);
+        ganhoAltitude = (TextView) getView().findViewById(R.id.ganho_altitude);
+        precisao = (TextView) getView().findViewById(R.id.precisao);
 
         mySpeechSpeed = new MySpeechSpeed(getActivity());
         updateLayout(KEY_VELOCIDADE_ATUAL);
@@ -107,7 +122,9 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.bt_refresh) {
+        if (v.getId() == R.id.bt_save) {
+            save();
+        } else if (v.getId() == R.id.bt_refresh) {
             clear();
         } else if (v.getId() == R.id.bt_play_pause) {
             playPause();
@@ -125,10 +142,53 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         }
     }
 
+    private boolean save() {
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(getMyActivity(), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 12);
+            return false;
+        }
+
+        boolean ret = false;
+        if (processoGPS == null || processoGPS.getObVelocimentroAlerta().getDistanciaTotal() < 0.3f) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle(R.string.app_name);
+            builder.setMessage("ATIVIDADE SEM DADOS SUFICIENTES PARA A GRAVAÇÃO.");
+            builder.setCancelable(false);
+            builder.setPositiveButton(R.string.bt_ok, null);
+            builder.create().show();
+        } else {
+            String mensagem;
+            try {
+                String file = processoGPS.gravarGpx("VEL_ALERTA_" +
+                        new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss")
+                                .format(processoGPS.getObVelocimentroAlerta().getDateInicio()));
+                if (file == null) {
+                    throw new Exception("impossível gravar em disco.");
+                } else {
+                    mensagem = "Arquivo GPX gravado com sucesso em: \n\n" + file + "\n\n";
+                    ret = true;
+                }
+            } catch (Throwable t) {
+                t.printStackTrace();
+                mensagem = "Erro ao gravar arquivo GPX. {" + t.getMessage() + "}";
+            }
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle(R.string.app_name);
+            builder.setMessage(mensagem);
+            builder.setCancelable(false);
+            builder.setPositiveButton(R.string.bt_ok, null);
+            builder.create().show();
+        }
+        return ret;
+    }
+
     private void clear() {
         btStartStop.setEnabled(true);
         rodandoAtividade = false;
+
+        btSave.setVisibility(View.GONE);
         btRefresh.setVisibility(View.GONE);
+
         if (processoGPS != null) {
             processoGPS.finalizar();
             processoGPS = null;
@@ -176,6 +236,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             rodandoAtividade = true;
         }
 
+        btSave.setVisibility(contandoTempo ? View.GONE : View.VISIBLE);
         btStartStop.setImageResource(contandoTempo ? R.drawable.pause : R.drawable.play);
     }
 
@@ -187,10 +248,14 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     private void updateValuesText() {
         if (processoGPS != null) {
-            velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText(String.valueOf((int) processoGPS.getVelocidadeAtual()));
-            velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText(String.format("%.1f", processoGPS.getVelocidadeMaxima()));
-            velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText(String.format("%.1f", processoGPS.getVelocidadeMedia()));
-            distancia.setText(String.format("%.1f", processoGPS.getDistanciaTotal()));
+            ObVelocimentroAlerta obVelocimentroAlerta = processoGPS.getObVelocimentroAlerta();
+            velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText(String.valueOf((int) obVelocimentroAlerta.getvAtual()));
+            velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMaxima()));
+            velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMedia()));
+            distancia.setText(format("%.1f", obVelocimentroAlerta.getDistanciaTotal()));
+            altitude.setText(format("%.1f", obVelocimentroAlerta.getAltitude()));
+            ganhoAltitude.setText(format("%.1f", obVelocimentroAlerta.getGanhoAltitude()));
+            precisao.setText(format("%.1f", obVelocimentroAlerta.getPrecisao()));
         }
     }
 
@@ -201,12 +266,12 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     @Override
-    public void updateValues(final long tempo, final double vMedia, final double vAtual, final double vMaxima, final double distanciaTotal) {
+    public void updateValues(final ObVelocimentroAlerta obVelocimentroAlerta) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 updateValuesText();
-                mySpeechSpeed.updateValues(tempo, vMedia, vAtual, vMaxima, distanciaTotal);
+                mySpeechSpeed.updateValues(obVelocimentroAlerta);
             }
         });
     }
@@ -223,6 +288,14 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                     gpsDesatualizado.setVisibility(View.GONE);
                 } else if (status == GPS_DESATUALIZADO && gpsDesatualizado.getVisibility() == View.GONE) {
                     gpsDesatualizado.setVisibility(View.VISIBLE);
+                }
+                if (status == GPS_SEM_PRECISAO && precisao.getTag() == null) {
+                    precisao.setTextColor(Color.RED);
+                    precisao.setTag(1);
+                } else if (status == GPS_PRECISAO_OK && precisao.getTag() != null) {
+                    precisao.setTextColor(Color.BLACK);
+                    precisao.setTag(null);
+
                 }
                 updateValuesText();
             }
