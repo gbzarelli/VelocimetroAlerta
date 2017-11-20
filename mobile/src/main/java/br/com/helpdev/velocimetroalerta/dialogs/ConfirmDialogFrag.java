@@ -23,7 +23,6 @@ public class ConfirmDialogFrag extends android.support.v4.app.DialogFragment {
     }
 
     private DialogInterface.OnClickListener onClickListener;
-    private String msg;
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {

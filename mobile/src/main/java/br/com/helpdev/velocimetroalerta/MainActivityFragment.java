@@ -1,14 +1,19 @@
 package br.com.helpdev.velocimetroalerta;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.location.Location;
+import android.os.Bundle;
 import android.os.SystemClock;
+import android.os.Vibrator;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,14 +21,15 @@ import android.view.ViewGroup;
 import android.widget.Chronometer;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 import br.com.helpdev.velocimetroalerta.gps.GPSVelocimetro;
+import br.com.helpdev.velocimetroalerta.gps.GpxUtils;
 import br.com.helpdev.velocimetroalerta.gps.ObVelocimentroAlerta;
 
 import static java.lang.String.format;
@@ -37,14 +43,15 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     private static final Integer KEY_VELOCIDADE_MEDIA = 2;
     private static final Integer KEY_VELOCIDADE_MAXIMA = 3;
 
-    private volatile static boolean rodandoAtividade = false;
-    private volatile static boolean contandoTempo = false;
+    private static GPSVelocimetro processoGPS;
+    private static boolean rodandoAtividade = false;
+    private static boolean contandoTempo = false;
 
+    private boolean pauseAutomatic;
     private MySpeechSpeed mySpeechSpeed;
     private ImageButton btStartStop, btRefresh, btSave;
     private Chronometer chronometer;
-    private TextView pausadoAutomaticamente, gpsDesatualizado, distancia, altitude, ganhoAltitude, precisao;
-    private GPSVelocimetro processoGPS;
+    private TextView pausadoAutomaticamente, gpsDesatualizado, distancia, altitude, ganhoAltitude, precisao, tvPrecisao, tvAvisoPrecisao;
 
     private HashMap<Integer, TextView[]> velocidades;
 
@@ -52,6 +59,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+        loadConfigs();
     }
 
     @Override
@@ -79,6 +87,21 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         altitude = (TextView) getView().findViewById(R.id.altitude);
         ganhoAltitude = (TextView) getView().findViewById(R.id.ganho_altitude);
         precisao = (TextView) getView().findViewById(R.id.precisao);
+        tvPrecisao = (TextView) getView().findViewById(R.id.tv_precisao);
+        tvAvisoPrecisao = (TextView) getView().findViewById(R.id.tv_gps_impreciso);
+
+        View.OnClickListener onClickGanho = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AlertDialog.Builder dialog = new AlertDialog.Builder(getActivity());
+                dialog.setTitle(R.string.app_name);
+                dialog.setMessage(R.string.info_ganho);
+                dialog.setPositiveButton(R.string.bt_ok, null);
+                dialog.create().show();
+            }
+        };
+        getView().findViewById(R.id.layout_ganho_vl).setOnClickListener(onClickGanho);
+        getView().findViewById(R.id.layout_ganho_tx).setOnClickListener(onClickGanho);
 
         mySpeechSpeed = new MySpeechSpeed(getActivity());
         updateLayout(KEY_VELOCIDADE_ATUAL);
@@ -92,6 +115,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         }
         if (processoGPS != null) {
             processoGPS.finalizar();
+            processoGPS = null;
         }
         super.onDestroy();
     }
@@ -142,44 +166,63 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         }
     }
 
-    private boolean save() {
+    private ProgressDialog progressDialog;
+
+    private void save() {
         if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(getMyActivity(), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 12);
-            return false;
+            return;
         }
 
-        boolean ret = false;
         if (processoGPS == null || processoGPS.getObVelocimentroAlerta().getDistanciaTotal() < 0.3f) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
             builder.setTitle(R.string.app_name);
-            builder.setMessage("ATIVIDADE SEM DADOS SUFICIENTES PARA A GRAVAÇÃO.");
+            builder.setMessage(R.string.atividades_sem_dados);
             builder.setCancelable(false);
             builder.setPositiveButton(R.string.bt_ok, null);
             builder.create().show();
         } else {
-            String mensagem;
-            try {
-                String file = processoGPS.gravarGpx("VEL_ALERTA_" +
-                        new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss")
-                                .format(processoGPS.getObVelocimentroAlerta().getDateInicio()));
-                if (file == null) {
-                    throw new Exception("impossível gravar em disco.");
-                } else {
-                    mensagem = "Arquivo GPX gravado com sucesso em: \n\n" + file + "\n\n";
-                    ret = true;
+            progressDialog = new ProgressDialog(getContext());
+            progressDialog.setMessage(getString(R.string.aguarde_salvando));
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+
+            new Thread() {
+                @Override
+                public void run() {
+                    String mensagem;
+                    try {
+                        GpxUtils gpxUtils = new GpxUtils(processoGPS.getLocations());
+                        String file = gpxUtils.gravarGpx("VEL_ALERTA_" + new SimpleDateFormat("yyyyMMdd_HHmm").format(processoGPS.getObVelocimentroAlerta().getDateInicio()));
+                        if (file == null) {
+                            throw new Exception(getString(R.string.impossivel_gravar_disco));
+                        } else {
+                            mensagem = getString(R.string.arquivo_gravado_sucesso, file);
+                        }
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                        mensagem = getString(R.string.erro_gravar_gpx, t.getMessage());
+                    }
+                    final String finalMensagem = mensagem;
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                if (progressDialog != null) progressDialog.dismiss();
+                            } catch (Throwable t) {
+                                t.printStackTrace();
+                            }
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                            builder.setTitle(R.string.app_name);
+                            builder.setMessage(finalMensagem);
+                            builder.setCancelable(false);
+                            builder.setPositiveButton(R.string.bt_ok, null);
+                            builder.create().show();
+                        }
+                    });
                 }
-            } catch (Throwable t) {
-                t.printStackTrace();
-                mensagem = "Erro ao gravar arquivo GPX. {" + t.getMessage() + "}";
-            }
-            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-            builder.setTitle(R.string.app_name);
-            builder.setMessage(mensagem);
-            builder.setCancelable(false);
-            builder.setPositiveButton(R.string.bt_ok, null);
-            builder.create().show();
+            }.start();
         }
-        return ret;
     }
 
     private void clear() {
@@ -200,12 +243,27 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText("- -");
         velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText("- -");
         distancia.setText("- -");
+        altitude.setText("- -");
+        ganhoAltitude.setText("- -");
 
         chronometer.setBase(SystemClock.elapsedRealtime());
         chronometer.stop();
     }
 
+    private void vibrar() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Vibrator vibrator = (Vibrator) getActivity().getSystemService(Context.VIBRATOR_SERVICE);
+                if (vibrator != null) {
+                    vibrator.vibrate(300);
+                }
+            }
+        }).start();
+    }
+
     private void playPause() {
+
         if (!rodandoAtividade) {
             processoGPS = new GPSVelocimetro(getMyActivity().getGps(), this);
             processoGPS.start();
@@ -218,6 +276,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             gpsDesatualizado.setVisibility(View.GONE);
         }
 
+        vibrar();
         if (contandoTempo) {
             contandoTempo = false;
             processoGPS.pausar(true);
@@ -255,7 +314,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             distancia.setText(format("%.1f", obVelocimentroAlerta.getDistanciaTotal()));
             altitude.setText(format("%.1f", obVelocimentroAlerta.getAltitude()));
             ganhoAltitude.setText(format("%.1f", obVelocimentroAlerta.getGanhoAltitude()));
-            precisao.setText(format("%.1f", obVelocimentroAlerta.getPrecisao()));
+            precisao.setText(format("%.1f", obVelocimentroAlerta.getPrecisao()) + "m");
         }
     }
 
@@ -277,7 +336,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     @Override
-    public void setGpsStatus(final int status) {
+    public synchronized void setGpsStatus(final int status) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -290,14 +349,32 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                     gpsDesatualizado.setVisibility(View.VISIBLE);
                 }
                 if (status == GPS_SEM_PRECISAO && precisao.getTag() == null) {
+                    tvPrecisao.setTypeface(precisao.getTypeface(), Typeface.BOLD);
+                    tvPrecisao.setTextColor(Color.RED);
                     precisao.setTextColor(Color.RED);
+                    precisao.setTypeface(precisao.getTypeface(), Typeface.BOLD);
                     precisao.setTag(1);
+                    tvAvisoPrecisao.setVisibility(View.VISIBLE);
                 } else if (status == GPS_PRECISAO_OK && precisao.getTag() != null) {
+                    tvPrecisao.setTypeface(precisao.getTypeface(), Typeface.NORMAL);
+                    tvPrecisao.setTextColor(Color.BLACK);
                     precisao.setTextColor(Color.BLACK);
+                    precisao.setTypeface(precisao.getTypeface(), Typeface.NORMAL);
+                    tvAvisoPrecisao.setVisibility(View.GONE);
                     precisao.setTag(null);
 
                 }
                 updateValuesText();
+            }
+        });
+    }
+
+    @Override
+    public void debug(final String s) {
+        getActivity().runOnUiThread(new Thread() {
+            @Override
+            public void run() {
+                Toast.makeText(getContext(), s, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -309,7 +386,8 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     @Override
-    public void setPauseAutomatic(final boolean pause) {
+    public synchronized void setPauseAutomatic(final boolean pause) {
+        vibrar();
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -336,13 +414,19 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     @Override
-    public boolean isPauseAutomatic() {
-        return true;
+    public boolean isPauseAutomaticEneble() {
+        return pauseAutomatic;
     }
 
     @Override
     public void onChangeConfig() {
+        loadConfigs();
         mySpeechSpeed.recarregarConfiguracoes(getActivity());
+    }
+
+    private void loadConfigs() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        pauseAutomatic = sp.getBoolean(getString(R.string.pref_pause_automatico), true);
     }
 
     @Override

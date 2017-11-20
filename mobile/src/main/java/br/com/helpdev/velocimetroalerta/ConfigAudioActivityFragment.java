@@ -11,7 +11,7 @@ import android.preference.PreferenceManager;
 /**
  * Created by Guilherme Biff Zarelli on 05/04/16.
  */
-public class ConfigActivityFragment extends PreferenceFragment implements Preference.OnPreferenceChangeListener {
+public class ConfigAudioActivityFragment extends PreferenceFragment implements Preference.OnPreferenceChangeListener {
 
     private ListPreference listPreference;
     private EditTextPreference editTextPreference;
@@ -19,7 +19,7 @@ public class ConfigActivityFragment extends PreferenceFragment implements Prefer
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        addPreferencesFromResource(R.xml.configuracoes);
+        addPreferencesFromResource(R.xml.configuracoes_audio);
         listPreference = (ListPreference) findPreference(getString(R.string.pref_intervalo));
         editTextPreference = (EditTextPreference) findPreference(getString(R.string.pref_intervalo_valor));
         preencherSumario(listPreference);

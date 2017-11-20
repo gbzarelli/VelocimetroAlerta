@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Velocímetro alerta</string>
+    <string name="site_helpdev">www.helpdev.com.br</string>
+
+    <string name="action_settings">Settings</string>
+
+    <string name="bt_ok">OK</string>
+    <string name="bt_cancel">Cancelar</string>
+
+    <string name="velocidade_atual">Velocidade atual</string>
+    <string name="velocidade_media">Velocidade média</string>
+    <string name="velocidade_maxima">Velocidade máxima</string>
+    <string name="title_activity_config">Configurações</string>
+
+
+    <string name="grupo_informacoes_audio">Reproduzir as seguintes informaçoes:</string>
+    <string name="tempo">Tempo</string>
+    <string name="distancia">Distância</string>
+    <string name="atual">Velocidade atual</string>
+    <string name="media">Velocidade média</string>
+    <string name="maxima">Velocidade máxima</string>
+    <string name="vibrar">Vibrar</string>
+    <string name="precisao">Precisão: </string>
+
+
+    <string name="grupo_configuracao_velocimetro">Configurações do Velocímetro</string>
+    <string name="grupo_intervalo_audio">Intervalo de reproduçao:</string>
+    <string name="lista_intervalo">Distância / Tempo</string>
+    <string name="intervalo_value_default">minutos</string>
+
+    <string-array name="intervalo">
+        <item>Distância (quilômetro)</item>
+        <item>Tempo (minutos)</item>
+    </string-array>
+    <string-array name="intervalo_values">
+        <item>quilômetro</item>
+        <item>minutos</item>
+    </string-array>
+
+    <string name="valor">Valor de intervalo</string>
+    <string name="info_ganho">O campo GANHO mostra o valor aproximado do ganho de altimetria do percurso, quase em tempo real. O GANHO é calculado a cada quilômetro percorrido e recalculado para ter melhor precisao quando se pausa a atividade. O calculo está em uma versão beta, podendo dar diferenças do real valor. A precisão do GPS interfere muito no cálculo.</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="avaliar">Avaliar</string>
+    <string name="compartilhar">Compartilhar</string>
+    <string name="publico">Público</string>
+    <string name="minhas_atividades">Minhas atividades (em breve)</string>
+    <string name="configs">Configurações</string>
+    <string name="pause_automatico">Pause automático</string>
+    <string name="atividades_sem_dados">ATIVIDADE SEM DADOS SUFICIENTES PARA A GRAVAÇÃO.</string>
+    <string name="aguarde_salvando">AGUARDE, SALVANDO...</string>
+    <string name="arquivo_gravado_sucesso">Arquivo GPX gravado com sucesso em: \n\n%s\n\n </string>
+    <string name="erro_gravar_gpx">Erro ao gravar arquivo GPX. {%s}</string>
+
+    <string name="bloqueio_desativado">BLOQUEIO DE TELA: DESATIVADO.</string>
+    <string name="bloqueio_ativado">BLOQUEIO DE TELA: ATIVADO</string>
+    <string name="confirme_sair">Deseja realmente sair?</string>
+    <string name="speek_velocidade_atual">Velocidade atual de %d quilômetro por hora</string>
+    <string name="speek_media">Média de %s quilômetro por hora</string>
+    <string name="speek_maxima">Máxima de %d quilômetro por hora</string>
+    <string name="speek_distancia">Distância percorrida %s quilômetro</string>
+    <string name="speek_tempo">Tempo de %d minutos</string>
+    <string name="gps_impreciso">GPS IMPRECISO</string>
+    <string name="gps_desatualizado_sem_sinal">GPS DESATUALIZADO / SEM SINAL</string>
+    <string name="pausado_automaticamente">PAUSADO AUTOMATICAMENTE</string>
+    <string name="km_h">Km/h</string>
+    <string name="km">Km</string>
+
+
+    <string name="ganho">Ganho (beta)</string>
+    <string name="altitude">Altitude</string>
+
+    <!-- DEFAULT FOR ALL -->
+    <string name="pref_pause_automatico">key_pause_automatico</string>
+    <string name="pref_informar_tempo">key_informar_tempo</string>
+    <string name="pref_informar_distancia">key_informar_distancia</string>
+    <string name="pref_informar_vatual">key_informar_vatual</string>
+    <string name="pref_informar_vmedia">key_informar_vmedia</string>
+    <string name="pref_informar_vmax">key_informar_vmax</string>
+    <string name="pref_vibrar">pref_vibrar</string>
+    <string name="pref_intervalo">key_intervalo</string>
+    <string name="pref_intervalo_valor">key_intervalo_valor</string>
+    <string name="valor_default">1</string>
+    <string name="impossivel_gravar_disco">impossível gravar em disco.</string>
+</resources>
