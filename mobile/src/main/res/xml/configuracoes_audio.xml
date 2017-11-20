@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="@string/grupo_informacoes">
+    <PreferenceCategory android:title="@string/grupo_informacoes_audio">
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="@string/pref_informar_tempo"
@@ -28,7 +28,7 @@
             android:title="@string/vibrar" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/grupo_intervalo">
+    <PreferenceCategory android:title="@string/grupo_intervalo_audio">
         <ListPreference
             android:defaultValue="@string/intervalo_value_default"
             android:entries="@array/intervalo"
@@ -41,6 +41,13 @@
             android:key="@string/pref_intervalo_valor"
             android:singleLine="true"
             android:title="@string/valor" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/grupo_configuracao_velocimetro">
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="@string/pref_pause_automatico"
+            android:title="@string/pause_automatico" />
     </PreferenceCategory>
 
 </PreferenceScreen>

@@ -16,13 +16,14 @@ public class ObVelocimentroAlerta implements Serializable {
     private double distanciaTotal;
     private double altitude;
     private double ganhoAltitude;
+    private double ganhoAltitudeNegativa;
     private double precisao;
 
     public ObVelocimentroAlerta() {
-        this(new Date(), 0, 0, 0, 0, 0, 0, 0, 0);
+        this(new Date(), 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 
-    public ObVelocimentroAlerta(Date dateInicio, long tempo, double vMedia, double vAtual, double vMaxima, double distanciaTotal, double altitude, double ganhoAltitude, double precisao) {
+    public ObVelocimentroAlerta(Date dateInicio, long tempo, double vMedia, double vAtual, double vMaxima, double distanciaTotal, double altitude, double ganhoAltitude, double ganhoAltitudeNegativa, double precisao) {
         this.dateInicio = dateInicio;
         this.tempo = tempo;
         this.vMedia = vMedia;
@@ -31,7 +32,16 @@ public class ObVelocimentroAlerta implements Serializable {
         this.distanciaTotal = distanciaTotal;
         this.altitude = altitude;
         this.ganhoAltitude = ganhoAltitude;
+        this.ganhoAltitudeNegativa = ganhoAltitudeNegativa;
         this.precisao = precisao;
+    }
+
+    public double getGanhoAltitudeNegativa() {
+        return ganhoAltitudeNegativa;
+    }
+
+    public void setGanhoAltitudeNegativa(double ganhoAltitudeNegativa) {
+        this.ganhoAltitudeNegativa = ganhoAltitudeNegativa;
     }
 
     public Date getDateInicio() {
@@ -117,6 +127,7 @@ public class ObVelocimentroAlerta implements Serializable {
                 ", distanciaTotal=" + distanciaTotal +
                 ", altitude=" + altitude +
                 ", ganhoAltitude=" + ganhoAltitude +
+                ", ganhoAltitudeNegativa=" + ganhoAltitudeNegativa +
                 ", precisao=" + precisao +
                 '}';
     }

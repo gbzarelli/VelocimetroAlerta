@@ -98,7 +98,8 @@ public class MySpeechSpeed {
                     try {
                         Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
                         vibrator.vibrate(3000);
-                    }catch (Exception e){}
+                    } catch (Exception e) {
+                    }
                 }
             }).start();
         }
@@ -109,19 +110,19 @@ public class MySpeechSpeed {
 
         if (!speech.isSpeaking()) {
             if (repAtual) {
-                reproduzir("Velocidade atual de " + (int) obVelocimentroAlerta.getvAtual() + " quilometros por hora");
+                reproduzir(context.getString(R.string.speek_velocidade_atual, (int) obVelocimentroAlerta.getvAtual()));
             }
             if (repMedia) {
-                reproduzir("Média de " + String.format("%.1f", obVelocimentroAlerta.getvMedia()).replaceAll(",", ".") + " quilometros por hora");
+                reproduzir(context.getString(R.string.speek_media, String.format("%.1f", obVelocimentroAlerta.getvMedia()).replaceAll(",", ".")));
             }
             if (repMax) {
-                reproduzir("Máxima de " + (int) obVelocimentroAlerta.getvMaxima() + " quilometros por hora");
+                reproduzir(context.getString(R.string.speek_maxima, (int) obVelocimentroAlerta.getvMaxima()));
             }
             if (repDistancia) {
-                reproduzir("Distância percorrida " + String.format("%.1f", obVelocimentroAlerta.getDistanciaTotal()).replaceAll(",", ".") + " quilometros");
+                reproduzir(context.getString(R.string.speek_distancia, String.format("%.1f", obVelocimentroAlerta.getDistanciaTotal()).replaceAll(",", ".")));
             }
             if (repTempo) {
-                reproduzir("Tempo de " + obVelocimentroAlerta.getTempo() / 60_000 + " minutos");
+                reproduzir(context.getString(R.string.speek_tempo, (obVelocimentroAlerta.getTempo() / 60_000)));
             }
         }
     }

@@ -5,8 +5,14 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -17,8 +23,9 @@ import android.widget.Toast;
 import br.com.helpdev.velocimetroalerta.dialogs.ConfirmDialogFrag;
 import br.com.helpdev.velocimetroalerta.gps.Gps;
 
-public class MainActivity extends AppCompatActivity {
-    private static final int REQUEST_CONFIG = 1;
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+
+    private static final int REQUEST_CONFIG_AUDIO = 2;
 
     public interface CallbackNotify {
         void onChangeConfig();
@@ -28,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Gps mGps;
     private CallbackNotify callbackNotify;
+    private NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,11 +45,67 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         if (savedInstanceState == null) {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 12);
-            }
+            load();
+        }
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    private void load() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION}, 12);
+        } else {
             getGps();
         }
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+
+        switch (id) {
+            case R.id.nav_star:
+                openAppInGooglePlay();
+                break;
+            case R.id.nav_atividades:
+
+                break;
+            case R.id.nav_config:
+                startActivityForResult(new Intent(this, ConfigAudioActivity.class), REQUEST_CONFIG_AUDIO);
+                break;
+            case R.id.nav_share:
+                shareApp();
+                break;
+        }
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return false;
+    }
+
+    private void openAppInGooglePlay() {
+        final String appPackageName = getPackageName();
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
+        } catch (android.content.ActivityNotFoundException e) { // if there is no Google Play on device
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + appPackageName)));
+        }
+    }
+
+    private void shareApp() {
+        Intent sendIntent = new Intent();
+        sendIntent.setAction(Intent.ACTION_SEND);
+        sendIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.app_name) + " https://play.google.com/store/apps/details?id=" + getPackageName());
+        sendIntent.setType("text/plain");
+        startActivity(sendIntent);
     }
 
     public void setCallbackNotify(CallbackNotify callbackNotify) {
@@ -62,10 +126,16 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+            return;
+        }
+
         if (callbackNotify != null) {
             if (callbackNotify.isRunning()) {
                 if (getSupportFragmentManager().findFragmentByTag("DIALOG") == null) {
-                    ConfirmDialogFrag.getInstance("Deseja realmente sair?", true, new DialogInterface.OnClickListener() {
+                    ConfirmDialogFrag.getInstance(getString(R.string.confirme_sair), true, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             if (which == DialogInterface.BUTTON_POSITIVE) {
@@ -83,7 +153,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        getGps().onRequestPermissionsResult(requestCode, permissions, grantResults);
+        for (int i : grantResults) {
+            if (i != PackageManager.PERMISSION_GRANTED) {
+                load();
+                break;
+            }
+        }
     }
 
     @Override
@@ -107,15 +182,15 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_settings) {
-            startActivityForResult(new Intent(this, ConfigActivity.class), REQUEST_CONFIG);
+            startActivityForResult(new Intent(this, ConfigAudioActivity.class), REQUEST_CONFIG_AUDIO);
         } else if (id == R.id.action_keep_alive) {
             String msg;
             if (getSharePref().getBoolean("keep_alive", false)) {
                 getSharePref().edit().putBoolean("keep_alive", false).apply();
-                msg = "DESATIVADA TELA SEMPRE LIGADA";
+                msg = getString(R.string.bloqueio_ativado);
             } else {
                 getSharePref().edit().putBoolean("keep_alive", true).apply();
-                msg = "ATIVADA TELA SEMPRE LIGADA";
+                msg = getString(R.string.bloqueio_desativado);
             }
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
             loadIconKeepAlive(item);
@@ -127,10 +202,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CONFIG) {
+        if (requestCode == REQUEST_CONFIG_AUDIO) {
             if (callbackNotify != null) {
                 callbackNotify.onChangeConfig();
-
             }
         }
     }
