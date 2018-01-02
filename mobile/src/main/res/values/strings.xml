@@ -67,7 +67,8 @@
     <string name="km_h">Km/h</string>
     <string name="km">Km</string>
 
-    <string name="ganho">Gain (beta)</string>
+    <string name="ganho">Gain positive</string>
+    <string name="ganho_neg">Gain negative</string>
     <string name="altitude">Altitude</string>
 
     <!-- DEFAULT FOR ALL -->
@@ -84,4 +85,6 @@
 
 
     <string name="impossivel_gravar_disco">impossible to write to disk.</string>
+    <string name="share">Share</string>
+    <string name="title_share">Share file with</string>
 </resources>

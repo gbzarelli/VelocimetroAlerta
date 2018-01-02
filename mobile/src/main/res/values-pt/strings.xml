@@ -39,7 +39,12 @@
     </string-array>
 
     <string name="valor">Valor de intervalo</string>
-    <string name="info_ganho">O campo GANHO mostra o valor aproximado do ganho de altimetria do percurso, quase em tempo real. O GANHO é calculado a cada quilômetro percorrido e recalculado para ter melhor precisao quando se pausa a atividade. O calculo está em uma versão beta, podendo dar diferenças do real valor. A precisão do GPS interfere muito no cálculo.</string>
+    <string name="info_ganho">
+        O campo GANHO mostra o valor aproximado do ganho de altimetria do percurso, quase em tempo real.
+        O GANHO é calculado a cada quilômetro percorrido e recalculado para ter melhor precisão quando se pausa a atividade.
+        O calculo está em uma versão beta, podendo dar diferenças do real valor.
+        A precisão do GPS interfere muito no cálculo.
+    </string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="avaliar">Avaliar</string>
@@ -68,7 +73,8 @@
     <string name="km">Km</string>
 
 
-    <string name="ganho">Ganho (beta)</string>
+    <string name="ganho">Ganho positivo</string>
+    <string name="ganho_neg">Ganho negativo</string>
     <string name="altitude">Altitude</string>
 
     <!-- DEFAULT FOR ALL -->
@@ -83,4 +89,6 @@
     <string name="pref_intervalo_valor">key_intervalo_valor</string>
     <string name="valor_default">1</string>
     <string name="impossivel_gravar_disco">impossível gravar em disco.</string>
+    <string name="share">Compartilhar</string>
+    <string name="title_share">Compartilhar arquivo com</string>
 </resources>

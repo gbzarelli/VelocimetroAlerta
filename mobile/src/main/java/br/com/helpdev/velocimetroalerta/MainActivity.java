@@ -26,6 +26,7 @@ import br.com.helpdev.velocimetroalerta.gps.Gps;
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final int REQUEST_CONFIG_AUDIO = 2;
+    private static final String SP_KEEP_ALIVE = "keep_alive";
 
     public interface CallbackNotify {
         void onChangeConfig();
@@ -35,7 +36,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private Gps mGps;
     private CallbackNotify callbackNotify;
-    private NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        navigationView = (NavigationView) findViewById(R.id.nav_view);
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
     }
 
@@ -169,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void loadIconKeepAlive(MenuItem item) {
-        if (getSharePref().getBoolean("keep_alive", false)) {
+        if (getSharePref().getBoolean(SP_KEEP_ALIVE, false)) {
             item.setIcon(R.drawable.ic_settings_brightness_black_48dp);
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } else {
@@ -185,11 +185,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             startActivityForResult(new Intent(this, ConfigAudioActivity.class), REQUEST_CONFIG_AUDIO);
         } else if (id == R.id.action_keep_alive) {
             String msg;
-            if (getSharePref().getBoolean("keep_alive", false)) {
-                getSharePref().edit().putBoolean("keep_alive", false).apply();
+            if (getSharePref().getBoolean(SP_KEEP_ALIVE, false)) {
+                getSharePref().edit().putBoolean(SP_KEEP_ALIVE, false).apply();
                 msg = getString(R.string.bloqueio_ativado);
             } else {
-                getSharePref().edit().putBoolean("keep_alive", true).apply();
+                getSharePref().edit().putBoolean(SP_KEEP_ALIVE, true).apply();
                 msg = getString(R.string.bloqueio_desativado);
             }
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show();

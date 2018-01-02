@@ -122,7 +122,7 @@ public class MySpeechSpeed {
                 reproduzir(context.getString(R.string.speek_distancia, String.format("%.1f", obVelocimentroAlerta.getDistanciaTotal()).replaceAll(",", ".")));
             }
             if (repTempo) {
-                reproduzir(context.getString(R.string.speek_tempo, (obVelocimentroAlerta.getTempo() / 60_000)));
+                reproduzir(context.getString(R.string.speek_tempo, (obVelocimentroAlerta.getTempoAtividade() / 60_000)));
             }
         }
     }

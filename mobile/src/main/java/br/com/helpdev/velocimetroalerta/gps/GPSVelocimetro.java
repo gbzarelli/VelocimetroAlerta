@@ -3,7 +3,6 @@ package br.com.helpdev.velocimetroalerta.gps;
 import android.location.Location;
 import android.os.SystemClock;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -43,31 +42,20 @@ public class GPSVelocimetro extends Thread {
 
     private static final double CONST_VELOCIDADE_PAUSA_AUTOMATICA = 1;//km/h
     private static final int CONST_PRECISAO_MINIMA = 15;
-    private static final int CONST_INTERVALO_DISTANCIA_CALCULO_GANHO = 1_000;//em metros
+    private static final double CONST_INTERVALO_DISTANCIA_CALCULO_GANHO = 1;//em km
 
     private volatile boolean atividadePausada = false;
     private volatile int statusGps = -1;
 
-    private volatile double velocidadeMedia;
-    private volatile double velocidadeMaxima;
-    private volatile double distanciaTotal;
-    private volatile double ganhoAltitude;
-    private volatile double ganhoAltitudeNegativa;
-
     private volatile double tmpDistanciaGanhoAlt;
     private volatile int indexCurso;
-
-    private long firstBase;
-    private long baseTempo;
     private long tmpMillisPausa;
-    private long tempoPausado;
-
+    private Long tmpCurrentTimeMillis = null;
     //VARIAVAEL RECEBE DISTANCIA TOTAL QUANDO A ATIVIDADE É PAUSADA.
     private double tmpDistanciaPause = -1;
-    private double distanciaPausada;
 
     private List<Location> locationsHistory;
-    private ObVelocimentroAlerta obVelocimentroAlerta;
+    private final ObVelocimentroAlerta obVelocimentroAlerta = new ObVelocimentroAlerta();
 
     private volatile int status;
     private CallbackGpsThread callbackGpsThread;
@@ -82,9 +70,10 @@ public class GPSVelocimetro extends Thread {
     @Override
     public synchronized void start() {
         super.start();
-        firstBase = SystemClock.elapsedRealtime();
-        baseTempo = SystemClock.elapsedRealtime();
-        callbackGpsThread.setBase(baseTempo);
+        long base = SystemClock.elapsedRealtime();
+        getObVelocimentroAlerta().setFirstBase(base);
+        getObVelocimentroAlerta().setBaseTime(base);
+        callbackGpsThread.setBase(base);
         status = STATUS_RODANDO;
     }
 
@@ -113,11 +102,11 @@ public class GPSVelocimetro extends Thread {
                 Thread.sleep(1_000);
             } catch (Exception e) {
             }
-            verificarBtPausa();
+            verificarStatusPausado();
         }
     }
 
-    private void verificarBtPausa() {
+    private void verificarStatusPausado() {
         boolean pause = false;
         while (status == STATUS_PAUSADO) {
             if (!pause) {
@@ -143,21 +132,19 @@ public class GPSVelocimetro extends Thread {
     private synchronized void resumePause() {
         if (!atividadePausada) return;
         atividadePausada = false;
-        tempoPausado += SystemClock.elapsedRealtime() - tmpMillisPausa;
-        baseTempo = firstBase + tempoPausado;
-        callbackGpsThread.setBase(baseTempo);
+        getObVelocimentroAlerta().setTimePaused(getObVelocimentroAlerta().getTempoAtividade() + (SystemClock.elapsedRealtime() - tmpMillisPausa));
+        getObVelocimentroAlerta().setBaseTime(getObVelocimentroAlerta().getFirstBase() + getObVelocimentroAlerta().getTimePaused());
+        callbackGpsThread.setBase(getObVelocimentroAlerta().getBaseTime());
     }
 
     private synchronized void startPause() {
         if (atividadePausada) return;
         atividadePausada = true;
-        tmpDistanciaPause = distanciaTotal;
+        tmpDistanciaPause = getObVelocimentroAlerta().getDistanciaTotal();
         tmpMillisPausa = SystemClock.elapsedRealtime();
         calculaGanhoAltitudeAsync(true);
     }
 
-
-    private Long tmpCurrentTimeMillis = null;
 
     private synchronized void process(int views, Location location) {
         double velocidadeAtual = 0;
@@ -176,6 +163,8 @@ public class GPSVelocimetro extends Thread {
                 callbackGpsThread.updateLocation(location);
                 velocidadeAtual = location.getSpeed() * 3.6f;
                 accuracy = location.getAccuracy();
+                getObVelocimentroAlerta().setAltitude(location.getAltitude());
+                getObVelocimentroAlerta().setPrecisao(accuracy);
             }
 
             if (callbackGpsThread.isPauseAutomaticEneble()) {
@@ -205,39 +194,30 @@ public class GPSVelocimetro extends Thread {
 
                 try {
                     calcularDistancias(location);
-                    calcularVelocidadeMedia();
                     calculaGanhoAltitudeAsync(false);
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
 
+                if (locationsHistory.isEmpty()) {
+                    getObVelocimentroAlerta().setDateInicio(new Date(location.getTime()));
+                }
                 locationsHistory.add(location);
 
-                if (velocidadeAtual > velocidadeMaxima) {
-                    velocidadeMaxima = velocidadeAtual;
+                if (velocidadeAtual > getObVelocimentroAlerta().getvMaxima()) {
+                    getObVelocimentroAlerta().setvMaxima(velocidadeAtual);
                 }
             } else {
                 callbackGpsThread.setGpsStatus(CallbackGpsThread.GPS_SEM_PRECISAO);
             }
         } finally {
-            notifyUpdate(location, velocidadeAtual);
+            getObVelocimentroAlerta().setvAtual(velocidadeAtual);
+            notifyUpdate();
         }
     }
 
-    private void notifyUpdate(Location location, double velocidadeAtual) {
-        obVelocimentroAlerta = new ObVelocimentroAlerta(
-                locationsHistory.isEmpty() ? new Date() : new Date(locationsHistory.get(0).getTime()),
-                getTempoAtividade(),
-                velocidadeMedia,
-                velocidadeAtual,
-                velocidadeMaxima,
-                distanciaTotal,
-                location == null ? 0 : location.getAltitude(),
-                ganhoAltitude,
-                ganhoAltitudeNegativa,
-                location == null ? 0 : location.getAccuracy());
-
-        callbackGpsThread.updateValues(obVelocimentroAlerta);
+    private void notifyUpdate() {
+        callbackGpsThread.updateValues(getObVelocimentroAlerta());
     }
 
     private volatile boolean calculandoAltitude = false;
@@ -258,7 +238,7 @@ public class GPSVelocimetro extends Thread {
     }
 
     private void calculaGanhoAltitude(boolean forcar) {
-        if (locationsHistory == null || locationsHistory.isEmpty() || (!forcar && distanciaTotal <= (tmpDistanciaGanhoAlt + CONST_INTERVALO_DISTANCIA_CALCULO_GANHO))) {
+        if (locationsHistory == null || locationsHistory.isEmpty() || (!forcar && getObVelocimentroAlerta().getDistanciaTotal() <= (tmpDistanciaGanhoAlt + CONST_INTERVALO_DISTANCIA_CALCULO_GANHO))) {
             return;
         }
 
@@ -270,10 +250,10 @@ public class GPSVelocimetro extends Thread {
 
         if (forcar) {
             indexCurso = 0;
-            ganhoAltitude = 0;
-            ganhoAltitudeNegativa = 0;
+            getObVelocimentroAlerta().setGanhoAltitude(0);
+            getObVelocimentroAlerta().setGanhoAltitudeNegativa(0);
         }
-        tmpDistanciaGanhoAlt = distanciaTotal;
+        tmpDistanciaGanhoAlt = getObVelocimentroAlerta().getDistanciaTotal();
 
         double altA, altB;
         int indexA, indexB;
@@ -288,15 +268,15 @@ public class GPSVelocimetro extends Thread {
 
             if (difAlt > 0 && difAlt >= constMediaAccuracy) {//GANHANDO ALTITUDE
                 if (!climb) {//IF PARA ACHAR PICO NEGATIVO, QUANDO SAI DE UMA DESCIDA E INICIA UMA SUBIDA
-                    ganhoAltitudeNegativa += getGanhoPico(false, indexA, indexB, altA);
+                    getObVelocimentroAlerta().addGanhoAltitudeNegativa(getGanhoPico(false, indexA, indexB, altA));
                 }
-                ganhoAltitude += difAlt;
+                getObVelocimentroAlerta().addGanhoAltitude(difAlt);
                 climb = true;
             } else if (difAlt < 0 && ((difAlt * -1) >= constMediaAccuracy)) {//PERDENDO ALTITUDE
                 if (climb) {//IF PARA ACHAR PICO POSITIVO, QUANDO SAI DE UMA SUBIDA E INICIA UMA DESCIDA
-                    ganhoAltitude += getGanhoPico(true, indexA, indexB, altA);
+                    getObVelocimentroAlerta().addGanhoAltitude(getGanhoPico(true, indexA, indexB, altA));
                 }
-                ganhoAltitudeNegativa += (difAlt * -1);
+                getObVelocimentroAlerta().addGanhoAltitudeNegativa((difAlt * -1));
                 climb = false;
             } else {
                 continue;
@@ -308,7 +288,7 @@ public class GPSVelocimetro extends Thread {
         indexCurso = locationsHistory.size() - 1;
 
         if (forcar) {
-            notifyUpdate(locationsHistory.get(locationsHistory.size() - 1), 0);
+            notifyUpdate();
         }
     }
 
@@ -330,23 +310,23 @@ public class GPSVelocimetro extends Thread {
 
     private void calcularDistancias(Location location) {
         if (locationsHistory.isEmpty()) return;
-        distanciaTotal += calculaDistancia(locationsHistory.get(locationsHistory.size() - 1).getLatitude(),
-                locationsHistory.get(locationsHistory.size() - 1).getLongitude(), location.getLatitude(), location.getLongitude());
-
+        getObVelocimentroAlerta().addDistancia(
+                calculaDistancia(
+                        locationsHistory.get(locationsHistory.size() - 1).getLatitude(),
+                        locationsHistory.get(locationsHistory.size() - 1).getLongitude(),
+                        location.getLatitude(),
+                        location.getLongitude()
+                )
+        );
         //** CASO A DISTANCIA ESTEJA PAUSADA, AO FAZER O CALCULO DA NOVA DISTANCIA, ADICIONA NA VARIAVEL QUE CONSTROLA
         //A DISTANCIA QUE FICOU PAUSADA, PARA NAO LEVAR EM CONSIDERAÇÃO NO CALCULO DE MEDIA.;
         if (tmpDistanciaPause > 0) {
-            distanciaPausada += distanciaTotal - tmpDistanciaPause;
+            getObVelocimentroAlerta().addDistanciaPausada(
+                    getObVelocimentroAlerta().getDistanciaTotal() - tmpDistanciaPause
+            );
             tmpDistanciaPause = -1;
         }
 
-    }
-
-    private void calcularVelocidadeMedia() throws Throwable {
-        double hours = new BigDecimal(getTempoAtividade())
-                .divide(BigDecimal.valueOf(3_600_000), 10, BigDecimal.ROUND_HALF_UP)
-                .doubleValue();
-        velocidadeMedia = (distanciaTotal - distanciaPausada) / hours;
     }
 
     private double calculaDistancia(double lat1, double lng1, double lat2, double lng2) {
@@ -367,17 +347,7 @@ public class GPSVelocimetro extends Thread {
         this.callbackGpsThread = callbackGpsThread;
     }
 
-    /**
-     * @return Dureção em millis
-     */
-    private long getTempoAtividade() {
-        return SystemClock.elapsedRealtime() - baseTempo;
-    }
-
     public ObVelocimentroAlerta getObVelocimentroAlerta() {
-        if (obVelocimentroAlerta == null) {
-            obVelocimentroAlerta = new ObVelocimentroAlerta();
-        }
         return obVelocimentroAlerta;
     }
 }

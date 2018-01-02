@@ -3,11 +3,14 @@ package br.com.helpdev.velocimetroalerta;
 import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.os.Vibrator;
@@ -23,10 +26,12 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import br.com.helpdev.velocimetroalerta.gps.GPSVelocimetro;
 import br.com.helpdev.velocimetroalerta.gps.GpxUtils;
@@ -81,8 +86,14 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         pausadoAutomaticamente = (TextView) getView().findViewById(R.id.tv_pausado_automaticamete);
         gpsDesatualizado = (TextView) getView().findViewById(R.id.tv_gps_desatualizado);
         getView().findViewById(R.id.velocidade_1).setOnClickListener(this);
+        getView().findViewById(R.id.layout_velocidade_1).setOnClickListener(this);
+        getView().findViewById(R.id.texto_velocidade_1).setOnClickListener(this);
         getView().findViewById(R.id.velocidade_2).setOnClickListener(this);
+        getView().findViewById(R.id.layout_velocidade_2).setOnClickListener(this);
+        getView().findViewById(R.id.texto_velocidade_2).setOnClickListener(this);
         getView().findViewById(R.id.velocidade_3).setOnClickListener(this);
+        getView().findViewById(R.id.layout_velocidade_3).setOnClickListener(this);
+        getView().findViewById(R.id.texto_velocidade_3).setOnClickListener(this);
         distancia = (TextView) getView().findViewById(R.id.distancia);
         altitude = (TextView) getView().findViewById(R.id.altitude);
         ganhoAltitude = (TextView) getView().findViewById(R.id.ganho_altitude);
@@ -152,13 +163,19 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             clear();
         } else if (v.getId() == R.id.bt_play_pause) {
             playPause();
-        } else if (v.getId() == R.id.velocidade_1) {
-//            List<Integer> lista = new ArrayList(velocidades.keySet());
-//            Integer key = lista.get(new Random().nextInt(2));
-//            updateLayout(key);
+        } else if (v.getId() == R.id.velocidade_1 || v.getId() == R.id.layout_velocidade_1 || v.getId() == R.id.texto_velocidade_1) {
+            List<Integer> lista = new ArrayList(velocidades.keySet());
+            Integer key = lista.get(new Random().nextInt(2));
+            updateLayout(key);
         } else {
+            int id = v.getId();
+            if (id == R.id.layout_velocidade_2 || id == R.id.texto_velocidade_2) {
+                id = R.id.velocidade_2;
+            } else if (id == R.id.layout_velocidade_3 || id == R.id.texto_velocidade_3) {
+                id = R.id.velocidade_3;
+            }
             for (Integer key : velocidades.keySet()) {
-                if (velocidades.get(key)[0].getId() == v.getId()) {
+                if (velocidades.get(key)[0].getId() == id) {
                     updateLayout(key);
                     return;
                 }
@@ -191,13 +208,23 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                 @Override
                 public void run() {
                     String mensagem;
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                     try {
                         GpxUtils gpxUtils = new GpxUtils(processoGPS.getLocations());
-                        String file = gpxUtils.gravarGpx("VEL_ALERTA_" + new SimpleDateFormat("yyyyMMdd_HHmm").format(processoGPS.getObVelocimentroAlerta().getDateInicio()));
+                        final File file = gpxUtils.gravarGpx("VEL_ALERTA_" + new SimpleDateFormat("yyyyMMdd_HHmm").format(processoGPS.getObVelocimentroAlerta().getDateInicio()));
                         if (file == null) {
                             throw new Exception(getString(R.string.impossivel_gravar_disco));
                         } else {
-                            mensagem = getString(R.string.arquivo_gravado_sucesso, file);
+                            mensagem = getString(R.string.arquivo_gravado_sucesso, file.getAbsolutePath());
+                            builder.setNeutralButton(R.string.share, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    Intent intent = new Intent(Intent.ACTION_SEND);
+                                    intent.setType("text/*");
+                                    intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file.getAbsolutePath()));
+                                    startActivity(Intent.createChooser(intent, getString(R.string.title_share)));
+                                }
+                            });
                         }
                     } catch (Throwable t) {
                         t.printStackTrace();
@@ -212,7 +239,6 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                             } catch (Throwable t) {
                                 t.printStackTrace();
                             }
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                             builder.setTitle(R.string.app_name);
                             builder.setMessage(finalMensagem);
                             builder.setCancelable(false);

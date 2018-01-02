@@ -30,19 +30,12 @@ public class GpxUtils {
         this.tempLocation = tempLocation;
     }
 
-    public String gravarGpx(String nomeArquivo) throws Exception {
+    public File gravarGpx(String nomeArquivo) throws Exception {
         File base = new File(Environment.getExternalStorageDirectory(), "/velocimetro_alerta/");
         if (!base.exists()) {
             base.mkdir();
         }
         if (tempLocation != null && !tempLocation.isEmpty()) {
-
-//            try {
-//                gravaArquivoAltitude(nomeArquivo, base);
-//            } catch (Throwable t) {
-//                t.printStackTrace();
-//            }
-
 
             String bkpNome = nomeArquivo;
             File file;
@@ -76,7 +69,7 @@ public class GpxUtils {
             Persister persister = new Persister();
             persister.write(gpx, file);
 
-            return file.getAbsolutePath();
+            return file;
         }
         return null;
     }
