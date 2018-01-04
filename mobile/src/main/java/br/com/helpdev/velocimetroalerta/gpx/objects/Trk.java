@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.com.helpdev.velocimetroalerta.objetos;
+package br.com.helpdev.velocimetroalerta.gpx;
 
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.Root;
@@ -14,6 +14,10 @@ import org.simpleframework.xml.Root;
  */
 @Root(name = "trk")
 public class Trk {
+
+    public Trk() {
+        trkseg = new TrkSeg();
+    }
 
     @Element(name = "name")
     private String name;
