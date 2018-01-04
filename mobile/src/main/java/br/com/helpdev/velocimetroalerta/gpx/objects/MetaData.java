@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.com.helpdev.velocimetroalerta.gpx;
+package br.com.helpdev.velocimetroalerta.gpx.objects;
 
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.Root;

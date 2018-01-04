@@ -1,14 +1,12 @@
 package br.com.helpdev.velocimetroalerta.gps;
 
-import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 
 /**
  * Permissions <uses-permission
@@ -22,43 +20,47 @@ public class Gps implements LocationListener {
 
     private int views;
     private Location location;
-    private Activity activity;
+    private Context context;
     private LocationManager locationManager;
     private boolean permissao = false;
 
     /**
-     * Método chama loadGPS();
+     * Método chama init();
      * <p/>
-     * Implementar na activity chamada no método onRequestPermissionsResult()
+     * Implementar na context chamada no método onRequestPermissionsResult()
      *
      * @param context
      * @throws RuntimeException
      */
-    public Gps(Activity context) throws RuntimeException {
-        this.activity = context;
-        views = -1;
-        location = null;
-        loadGPS();
+    public Gps(Context context) throws RuntimeException {
+        this();
+        init(context);
     }
 
-    public void loadGPS() {
-        locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSION);
-            return;
-        }
+    public Gps() {
+        views = -1;
+        location = null;
+    }
+
+    @SuppressLint("MissingPermission")
+    public void init(Context context) {
+        this.context = context;
+        locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         permissao = true;
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
     }
 
     public void close() {
-        if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
+        if (locationManager == null) {
+            throw new RuntimeException("No init Gps");
         }
         locationManager.removeUpdates(this);
     }
 
     public boolean isGpsEnable() {
+        if (locationManager == null) {
+            throw new RuntimeException("No init Gps");
+        }
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
     }
 
@@ -87,8 +89,8 @@ public class Gps implements LocationListener {
 
     }
 
-    public void setActivity(Activity activity) {
-        this.activity = activity;
+    public void setContext(Activity context) {
+        this.context = context;
     }
 
     public int getViews() {
@@ -96,6 +98,9 @@ public class Gps implements LocationListener {
     }
 
     public Location getLocation() {
+        if (locationManager == null) {
+            throw new RuntimeException("No init Gps");
+        }
         views++;
         return location;
     }

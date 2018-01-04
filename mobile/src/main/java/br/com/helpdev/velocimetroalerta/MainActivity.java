@@ -1,12 +1,16 @@
 package br.com.helpdev.velocimetroalerta;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -21,20 +25,20 @@ import android.view.WindowManager;
 import android.widget.Toast;
 
 import br.com.helpdev.velocimetroalerta.dialogs.ConfirmDialogFrag;
-import br.com.helpdev.velocimetroalerta.gps.Gps;
+import br.com.helpdev.velocimetroalerta.gps.ServiceVelocimetro;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, ServiceConnection {
 
     private static final int REQUEST_CONFIG_AUDIO = 2;
+    private static final int REQUEST_MY_ACTIVIES = 29;
     private static final String SP_KEEP_ALIVE = "keep_alive";
 
     public interface CallbackNotify {
-        void onChangeConfig();
+        void onServiceConnected(ServiceVelocimetro serviceVelocimetro);
 
-        boolean isRunning();
+        void onBeforeDisconnect(ServiceVelocimetro serviceVelocimetro);
     }
 
-    private Gps mGps;
     private CallbackNotify callbackNotify;
 
     @Override
@@ -45,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setSupportActionBar(toolbar);
 
         if (savedInstanceState == null) {
-            load();
+            loadPermissions();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -58,11 +62,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    private void load() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+    private void loadPermissions() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION}, 12);
         } else {
-            getGps();
+            startService(new Intent(this, ServiceVelocimetro.class));
         }
     }
 
@@ -76,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 openAppInGooglePlay();
                 break;
             case R.id.nav_atividades:
-
+                startActivityForResult(new Intent(this, MyActivities.class), REQUEST_MY_ACTIVIES);
                 break;
             case R.id.nav_config:
                 startActivityForResult(new Intent(this, ConfigAudioActivity.class), REQUEST_CONFIG_AUDIO);
@@ -108,18 +113,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         startActivity(sendIntent);
     }
 
-    public void setCallbackNotify(CallbackNotify callbackNotify) {
-        this.callbackNotify = callbackNotify;
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (mGps != null) {
-            mGps.setActivity(this);
-        }
-    }
-
     private SharedPreferences getSharePref() {
         return getSharedPreferences("sp_main_activity", MODE_PRIVATE);
     }
@@ -132,22 +125,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return;
         }
 
-        if (callbackNotify != null) {
-            if (callbackNotify.isRunning()) {
-                if (getSupportFragmentManager().findFragmentByTag("DIALOG") == null) {
-                    ConfirmDialogFrag.getInstance(getString(R.string.confirme_sair), true, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            if (which == DialogInterface.BUTTON_POSITIVE) {
-                                MainActivity.this.finish();
-                            }
+        if (serviceVelocimetro != null && serviceVelocimetro.isRunning()) {
+            if (getSupportFragmentManager().findFragmentByTag("DIALOG") == null) {
+                ConfirmDialogFrag.getInstance(getString(R.string.confirme_sair), true, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (which == DialogInterface.BUTTON_POSITIVE) {
+                            stopService();
+                            MainActivity.this.finish();
                         }
-                    }).show(getSupportFragmentManager(), "DIALOG");
-                }
-                return;
+                    }
+                }).show(getSupportFragmentManager(), "DIALOG");
             }
+            return;
+        } else {
+            stopService();
         }
+
         super.onBackPressed();
+    }
+
+    private void stopService() {
+        if (serviceVelocimetro != null) {
+            serviceVelocimetro.finalizar();
+        }
+        stopService(new Intent(this, ServiceVelocimetro.class));
     }
 
     @Override
@@ -155,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         for (int i : grantResults) {
             if (i != PackageManager.PERMISSION_GRANTED) {
-                load();
+                loadPermissions();
                 break;
             }
         }
@@ -200,27 +202,54 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CONFIG_AUDIO) {
-            if (callbackNotify != null) {
-                callbackNotify.onChangeConfig();
-            }
-        }
-    }
-
-    public Gps getGps() {
-        if (mGps == null) {
-            mGps = new Gps(this);
-        }
-        return mGps;
+    protected void onResume() {
+        super.onResume();
+        bindService(new Intent(this, ServiceVelocimetro.class), this, BIND_AUTO_CREATE);
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mGps != null) {
-            mGps.close();
+    protected void onPause() {
+        super.onPause();
+        if (callbackNotify != null) callbackNotify.onBeforeDisconnect(serviceVelocimetro);
+        unbindService(this);
+    }
+
+    public ServiceVelocimetro getServiceVelocimetro() {
+        return serviceVelocimetro;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CONFIG_AUDIO) {
+            configureGpsVelocimetro();
         }
+    }
+
+    public void configureGpsVelocimetro() {
+        if (serviceVelocimetro != null) {
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+            serviceVelocimetro.configure(sp.getBoolean(getString(R.string.pref_pause_automatico), true));
+        }
+    }
+
+    private ServiceVelocimetro serviceVelocimetro;
+
+    public void setCallbackNotify(CallbackNotify callbackNotify) {
+        this.callbackNotify = callbackNotify;
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+        if (iBinder instanceof ServiceVelocimetro.MyBinder) {
+            serviceVelocimetro = ((ServiceVelocimetro.MyBinder) iBinder).getServiceVelocimetro();
+            configureGpsVelocimetro();
+            if (callbackNotify != null) callbackNotify.onServiceConnected(serviceVelocimetro);
+        }
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+        serviceVelocimetro = null;
     }
 }

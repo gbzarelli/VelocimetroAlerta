@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.com.helpdev.velocimetroalerta.gpx;
+package br.com.helpdev.velocimetroalerta.gpx.objects;
 
 import android.location.Location;
 
@@ -54,11 +54,11 @@ public class TrkSeg {
 
     public void addTrkPt(Location loc) {
         TrkPt trkPt = new TrkPt();
-        trkPt.setLat(String.valueOf(loc.getLatitude()));
-        trkPt.setLon(String.valueOf(loc.getLongitude()));
+        trkPt.setLat(loc.getLatitude());
+        trkPt.setLon(loc.getLongitude());
         trkPt.setEle(loc.getAltitude());
         trkPt.setAccuracy(loc.getAccuracy());
-        trkPt.setTime(GpxUtils.getUtcGpxTime(loc.getTime()));
+        trkPt.setTime(Gpx.getUtcGpxTime(loc.getTime()));
         addTrkPt(trkPt);
     }
 }

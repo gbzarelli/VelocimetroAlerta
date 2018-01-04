@@ -33,8 +33,23 @@
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="br.com.helpdev.velocimetroalerta.MainActivity" />
+                android:value=".MainActivity" />
         </activity>
+        <activity
+            android:name=".MyActivities"
+            android:label="@string/title_activity_my_activitys"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <!-- Parcontextvity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+
+        </activity>
+
+        <service
+            android:name=".gps.ServiceVelocimetro"
+            android:stopWithTask="false" />
     </application>
 
 </manifest>

@@ -3,17 +3,22 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package br.com.helpdev.velocimetroalerta.gpx;
+package br.com.helpdev.velocimetroalerta.gpx.objects;
 
 import org.simpleframework.xml.Attribute;
 import org.simpleframework.xml.Element;
 import org.simpleframework.xml.Root;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+
 /**
  * @author Guilherme
  */
-@Root(name = "gpx")
+@Root(name = "gpx", strict = false)
 public class Gpx {
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     @Attribute
     private String schemaLocation = "http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd";
@@ -38,6 +43,7 @@ public class Gpx {
     }
 
     public Gpx(String creator) {
+        this();
         this.creator = creator;
     }
 
@@ -77,6 +83,11 @@ public class Gpx {
     @Override
     public String toString() {
         return "Gpx{" + "creator=" + creator + ", version=" + version + ", metaData=" + metaData + ", trk=" + trk + '}';
+    }
+
+    public static String getUtcGpxTime(long data) {//2017-04-11T09:02:40Z
+        SIMPLE_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return SIMPLE_DATE_FORMAT.format(new Date(data));
     }
 
 }

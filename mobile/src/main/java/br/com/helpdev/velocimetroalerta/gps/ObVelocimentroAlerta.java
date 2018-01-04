@@ -1,9 +1,6 @@
 package br.com.helpdev.velocimetroalerta.gps;
 
-import android.os.SystemClock;
-
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -15,30 +12,37 @@ public class ObVelocimentroAlerta implements Serializable {
     private double vMedia;
     private double vAtual;
     private double vMaxima;
-    private double distanciaTotal;
-    private double altitude;
-    private double ganhoAltitude;
-    private double ganhoAltitudeNegativa;
-    private double precisao;
-    private long firstBase;
-    private long baseTime;
-    private long timePaused;
+    private double distancia;
     private double distanciaPausada;
+    private double altitudeAtual;
+    private double precisaoAtual;
+    private double ganhoAltitude;
+    private double perdaAltitude;
+    private double duracao;
+    private long duracaoPausado;
 
     public ObVelocimentroAlerta() {
-        this(new Date(), 0, 0, 0, 0, 0, 0, 0, 0);
+        this.dateInicio = new Date();
     }
 
-    public ObVelocimentroAlerta(Date dateInicio, double vMedia, double vAtual, double vMaxima, double distanciaTotal, double altitude, double ganhoAltitude, double ganhoAltitudeNegativa, double precisao) {
-        this.dateInicio = dateInicio;
-        this.vMedia = vMedia;
-        this.vAtual = vAtual;
-        this.vMaxima = vMaxima;
-        this.distanciaTotal = distanciaTotal;
-        this.altitude = altitude;
-        this.ganhoAltitude = ganhoAltitude;
-        this.ganhoAltitudeNegativa = ganhoAltitudeNegativa;
-        this.precisao = precisao;
+    public long getDuracaoPausado() {
+        return duracaoPausado;
+    }
+
+    public void setDuracaoPausado(long duracaoPausado) {
+        this.duracaoPausado = duracaoPausado;
+    }
+
+    public void addDuracaoPausado(double duracaoPausado) {
+        this.duracaoPausado += duracaoPausado;
+    }
+
+    public double getDuracao() {
+        return duracao;
+    }
+
+    public void setDuracao(double duracao) {
+        this.duracao = duracao;
     }
 
     public double getDistanciaPausada() {
@@ -53,40 +57,16 @@ public class ObVelocimentroAlerta implements Serializable {
         this.distanciaPausada += distanciaPausada;
     }
 
-    public long getFirstBase() {
-        return firstBase;
+    public double getPerdaAltitude() {
+        return perdaAltitude;
     }
 
-    public void setFirstBase(long firstBase) {
-        this.firstBase = firstBase;
+    public void setPerdaAltitude(double perdaAltitude) {
+        this.perdaAltitude = perdaAltitude;
     }
 
-    public long getBaseTime() {
-        return baseTime;
-    }
-
-    public void setBaseTime(long baseTime) {
-        this.baseTime = baseTime;
-    }
-
-    public long getTimePaused() {
-        return timePaused;
-    }
-
-    public void setTimePaused(long timePaused) {
-        this.timePaused = timePaused;
-    }
-
-    public double getGanhoAltitudeNegativa() {
-        return ganhoAltitudeNegativa;
-    }
-
-    public void setGanhoAltitudeNegativa(double ganhoAltitudeNegativa) {
-        this.ganhoAltitudeNegativa = ganhoAltitudeNegativa;
-    }
-
-    public void addGanhoAltitudeNegativa(double ganhoAltitudeNegativa) {
-        this.ganhoAltitudeNegativa += ganhoAltitudeNegativa;
+    public void addPerdaAltitude(double perdaAltitude) {
+        this.perdaAltitude += perdaAltitude;
     }
 
     public Date getDateInicio() {
@@ -97,20 +77,20 @@ public class ObVelocimentroAlerta implements Serializable {
         this.dateInicio = dateInicio;
     }
 
-    public double getPrecisao() {
-        return precisao;
+    public double getPrecisaoAtual() {
+        return precisaoAtual;
     }
 
-    public void setPrecisao(double precisao) {
-        this.precisao = precisao;
+    public void setPrecisaoAtual(double precisaoAtual) {
+        this.precisaoAtual = precisaoAtual;
     }
 
     public double getvMedia() {
-        double hours = new BigDecimal(getTempoAtividade())
-                .divide(BigDecimal.valueOf(3_600_000), 10, BigDecimal.ROUND_HALF_UP)
-                .doubleValue();
-        vMedia = (getDistanciaTotal() - getDistanciaPausada()) / hours;
         return vMedia;
+    }
+
+    public void setvMedia(double vMedia) {
+        this.vMedia = vMedia;
     }
 
     public double getvAtual() {
@@ -129,24 +109,24 @@ public class ObVelocimentroAlerta implements Serializable {
         this.vMaxima = vMaxima;
     }
 
-    public double getDistanciaTotal() {
-        return distanciaTotal;
+    public double getDistancia() {
+        return distancia;
     }
 
-    public void setDistanciaTotal(double distanciaTotal) {
-        this.distanciaTotal = distanciaTotal;
+    public void setDistancia(double distancia) {
+        this.distancia = distancia;
     }
 
     public void addDistancia(double distancia) {
-        this.distanciaTotal += distancia;
+        this.distancia += distancia;
     }
 
-    public double getAltitude() {
-        return altitude;
+    public double getAltitudeAtual() {
+        return altitudeAtual;
     }
 
-    public void setAltitude(double altitude) {
-        this.altitude = altitude;
+    public void setAltitudeAtual(double altitudeAtual) {
+        this.altitudeAtual = altitudeAtual;
     }
 
     public double getGanhoAltitude() {
@@ -161,13 +141,6 @@ public class ObVelocimentroAlerta implements Serializable {
         this.ganhoAltitude += ganhoAltitude;
     }
 
-    /**
-     * @return Dureção em millis
-     */
-    public long getTempoAtividade() {
-        return SystemClock.elapsedRealtime() - baseTime;
-    }
-
     @Override
     public String toString() {
         return "ObVelocimentroAlerta{" +
@@ -175,14 +148,13 @@ public class ObVelocimentroAlerta implements Serializable {
                 ", vMedia=" + vMedia +
                 ", vAtual=" + vAtual +
                 ", vMaxima=" + vMaxima +
-                ", distanciaTotal=" + distanciaTotal +
-                ", altitude=" + altitude +
+                ", distancia=" + distancia +
+                ", distanciaPausada=" + distanciaPausada +
+                ", altitudeAtual=" + altitudeAtual +
+                ", precisaoAtual=" + precisaoAtual +
                 ", ganhoAltitude=" + ganhoAltitude +
-                ", ganhoAltitudeNegativa=" + ganhoAltitudeNegativa +
-                ", precisao=" + precisao +
-                ", firstBase=" + firstBase +
-                ", baseTime=" + baseTime +
-                ", timePaused=" + timePaused +
+                ", perdaAltitude=" + perdaAltitude +
+                ", duracao=" + duracao +
                 '}';
     }
 }

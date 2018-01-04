@@ -12,6 +12,7 @@
     <string name="velocidade_media">Velocidade média</string>
     <string name="velocidade_maxima">Velocidade máxima</string>
     <string name="title_activity_config">Configurações</string>
+    <string name="title_activity_my_activitys">Minhas atividades</string>
 
 
     <string name="grupo_informacoes_audio">Reproduzir as seguintes informaçoes:</string>
@@ -21,7 +22,7 @@
     <string name="media">Velocidade média</string>
     <string name="maxima">Velocidade máxima</string>
     <string name="vibrar">Vibrar</string>
-    <string name="precisao">Precisão: </string>
+    <string name="accuracy">Precisão</string>
 
 
     <string name="grupo_configuracao_velocimetro">Configurações do Velocímetro</string>
@@ -40,8 +41,8 @@
 
     <string name="valor">Valor de intervalo</string>
     <string name="info_ganho">
-        O campo GANHO mostra o valor aproximado do ganho de altimetria do percurso, quase em tempo real.
-        O GANHO é calculado a cada quilômetro percorrido e recalculado para ter melhor precisão quando se pausa a atividade.
+        O campo ELEVAÇÃO mostra o valor aproximado do ganho/perda de altimetria do percurso, quase em tempo real.
+        A ELEVAÇÃO é calculada a cada quilômetro percorrida e recalculada para ter melhor precisão quando se pausa a atividade.
         O calculo está em uma versão beta, podendo dar diferenças do real valor.
         A precisão do GPS interfere muito no cálculo.
     </string>
@@ -73,9 +74,10 @@
     <string name="km">Km</string>
 
 
-    <string name="ganho">Ganho positivo</string>
-    <string name="ganho_neg">Ganho negativo</string>
-    <string name="altitude">Altitude</string>
+    <string name="ganho">Ganho de elevação</string>
+    <string name="ganho_neg">Perda de elevação</string>
+    <string name="elevation">Elevação</string>
+    <string name="altitudeAtual">Altitude</string>
 
     <!-- DEFAULT FOR ALL -->
     <string name="pref_pause_automatico">key_pause_automatico</string>
@@ -91,4 +93,6 @@
     <string name="impossivel_gravar_disco">impossível gravar em disco.</string>
     <string name="share">Compartilhar</string>
     <string name="title_share">Compartilhar arquivo com</string>
+    <string name="em_desenvolvimento">EM DESENVOLVIMENTO</string>
+
 </resources>

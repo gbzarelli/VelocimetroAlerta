@@ -4,6 +4,7 @@
 
 
     <string name="title_activity_config">Settings</string>
+    <string name="title_activity_my_activitys">My activitys</string>
     <string name="action_settings">Settings</string>
     <string name="configs">Settings</string>
 
@@ -22,7 +23,7 @@
     <string name="media">Average speed</string>
     <string name="maxima">Maximum speed</string>
     <string name="vibrar">Vibrate</string>
-    <string name="precisao">Accuracy: </string>
+    <string name="accuracy">Accuracy</string>
 
     <string name="grupo_configuracao_velocimetro">Settings speedometer</string>
     <string name="grupo_intervalo_audio">Playback Interval:</string>
@@ -39,7 +40,12 @@
     </string-array>
 
     <string name="valor">Range value</string>
-    <string name="info_ganho">The GAIN field shows the approximate value of the altimetry gain of the route, almost in real time. The GAIN is calculated for each kilometer traveled and recalculated for better accuracy when the activity is paused. The calculation is in a beta version, being able to give differences of the real value. The accuracy of the GPS interferes a lot in the calculation.</string>
+    <string name="info_ganho">
+        The ELEVATION field shows the approximate value of the altimetry gain/loss of the route,
+        almost in real time. The ELEVATION is calculated for each kilometer traveled and recalculated for
+        better accuracy when the context is paused. The calculation is in a beta version, being able to give differences
+        of the real value. The accuracy of the GPS interferes a lot in the calculation.
+    </string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="avaliar">Rating</string>
@@ -67,9 +73,9 @@
     <string name="km_h">Km/h</string>
     <string name="km">Km</string>
 
-    <string name="ganho">Gain positive</string>
-    <string name="ganho_neg">Gain negative</string>
-    <string name="altitude">Altitude</string>
+    <string name="ganho">Elevation gain</string>
+    <string name="ganho_neg">Elevation loss</string>
+    <string name="altitudeAtual">Altitude</string>
 
     <!-- DEFAULT FOR ALL -->
     <string name="pref_pause_automatico">key_pause_automatico</string>
@@ -87,4 +93,6 @@
     <string name="impossivel_gravar_disco">impossible to write to disk.</string>
     <string name="share">Share</string>
     <string name="title_share">Share file with</string>
+    <string name="em_desenvolvimento">IN DEVELOPMENT</string>
+    <string name="elevation">Elevation</string>
 </resources>

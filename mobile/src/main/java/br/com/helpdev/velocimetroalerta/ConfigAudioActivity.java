@@ -12,7 +12,7 @@ public class ConfigAudioActivity extends AppCompatActivity {
         setContentView(R.layout.activity_config_audio);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
 }

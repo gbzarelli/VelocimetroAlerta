@@ -30,7 +30,15 @@ public class MySpeechSpeed {
     private boolean vibrar;
     private Context context;
 
+    public MySpeechSpeed() {
+
+    }
+
     public MySpeechSpeed(Context context) {
+        init(context);
+    }
+
+    public void init(Context context) {
         speech = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
@@ -69,7 +77,10 @@ public class MySpeechSpeed {
     }
 
     public void updateValues(ObVelocimentroAlerta obVelocimentroAlerta) {
-        this.distanciaPercorrida = obVelocimentroAlerta.getDistanciaTotal();
+        if (speech == null) {
+            throw new RuntimeException("Not init MySpeechSpeed!");
+        }
+        this.distanciaPercorrida = obVelocimentroAlerta.getDistancia();
         if (reproduzindo) {
             return;
         }
@@ -119,10 +130,10 @@ public class MySpeechSpeed {
                 reproduzir(context.getString(R.string.speek_maxima, (int) obVelocimentroAlerta.getvMaxima()));
             }
             if (repDistancia) {
-                reproduzir(context.getString(R.string.speek_distancia, String.format("%.1f", obVelocimentroAlerta.getDistanciaTotal()).replaceAll(",", ".")));
+                reproduzir(context.getString(R.string.speek_distancia, String.format("%.1f", obVelocimentroAlerta.getDistancia()).replaceAll(",", ".")));
             }
             if (repTempo) {
-                reproduzir(context.getString(R.string.speek_tempo, (obVelocimentroAlerta.getTempoAtividade() / 60_000)));
+                reproduzir(context.getString(R.string.speek_tempo, Double.valueOf((obVelocimentroAlerta.getDuracao() / 60_000)).intValue()));
             }
         }
     }

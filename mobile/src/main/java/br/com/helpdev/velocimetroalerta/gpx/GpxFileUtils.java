@@ -6,10 +6,7 @@ import org.simpleframework.xml.core.Persister;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 
 import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx;
 import br.com.helpdev.velocimetroalerta.gpx.objects.MetaData;
@@ -20,9 +17,9 @@ import br.com.helpdev.velocimetroalerta.gpx.objects.TrkSeg;
  * Created by gbzarelli on 11/14/17.
  */
 
-public class GpxUtils {
+public class GpxFileUtils {
 
-    public File gravarGpx(Gpx gpx, File base, String nomeArquivo) throws Exception {
+    public File writeGpx(Gpx gpx, File base, String nomeArquivo) throws Exception {
         if (!base.exists()) {
             base.mkdir();
         }
@@ -42,11 +39,11 @@ public class GpxUtils {
 
     }
 
-    public File gravarGpx(List<Location> tempLocation, File base, String nomeArquivo, String gpxCreator) throws Exception {
+    public File writeGpx(List<Location> tempLocation, File base, String nomeArquivo, String gpxCreator) throws Exception {
         if (tempLocation != null && !tempLocation.isEmpty()) {
             Gpx gpx = new Gpx(gpxCreator);
             MetaData metaData = new MetaData();
-            metaData.setTime(getUtcGpxTime(tempLocation.get(0).getTime()));
+            metaData.setTime(Gpx.getUtcGpxTime(tempLocation.get(0).getTime()));
             Trk trk = new Trk();
             trk.setName(nomeArquivo);
             TrkSeg trkSeg = new TrkSeg();
@@ -55,12 +52,12 @@ public class GpxUtils {
             gpx.setTrk(trk);
             gpx.setMetaData(metaData);
 
-            return gravarGpx(gpx, base, nomeArquivo);
+            return writeGpx(gpx, base, nomeArquivo);
         }
         return null;
     }
 
-    private void gravaArquivoAltitude(List<Location> tempLocation, String nomeArquivo, File base) {
+    private void writeAltitudeDebugFile(List<Location> tempLocation, String nomeArquivo, File base) {
         try {
             StringBuilder sb = null;
             for (Location lc : tempLocation) {
@@ -82,12 +79,5 @@ public class GpxUtils {
         } catch (Throwable t) {
         }
     }
-
-    public static String getUtcGpxTime(long data) {//2017-04-11T09:02:40Z
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return sdf.format(new Date(data));
-    }
-
 
 }
