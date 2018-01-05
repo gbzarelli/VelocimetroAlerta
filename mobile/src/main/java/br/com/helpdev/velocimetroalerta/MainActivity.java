@@ -147,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void stopService() {
         if (serviceVelocimetro != null) {
-            serviceVelocimetro.finalizar();
+            serviceVelocimetro.finalizeService();
         }
         stopService(new Intent(this, ServiceVelocimetro.class));
     }

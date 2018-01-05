@@ -2,6 +2,7 @@ package br.com.helpdev.velocimetroalerta.gps;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by guilherme on 17/07/16.
@@ -18,7 +19,7 @@ public class ObVelocimentroAlerta implements Serializable {
     private double precisaoAtual;
     private double ganhoAltitude;
     private double perdaAltitude;
-    private double duracao;
+    private long duracao;
     private long duracaoPausado;
 
     public ObVelocimentroAlerta() {
@@ -41,7 +42,7 @@ public class ObVelocimentroAlerta implements Serializable {
         return duracao;
     }
 
-    public void setDuracao(double duracao) {
+    public void setDuracao(long duracao) {
         this.duracao = duracao;
     }
 
@@ -156,5 +157,17 @@ public class ObVelocimentroAlerta implements Serializable {
                 ", perdaAltitude=" + perdaAltitude +
                 ", duracao=" + duracao +
                 '}';
+    }
+
+    public String toStringNotification() {
+        String time = String.format("%02d:%02d:%02d",
+                TimeUnit.MILLISECONDS.toHours(duracao),
+                TimeUnit.MILLISECONDS.toMinutes(duracao) -
+                        TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duracao)),
+                TimeUnit.MILLISECONDS.toSeconds(duracao) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duracao)));
+
+
+        return String.format("%s - %.1fKm", time, distancia);
     }
 }

@@ -95,4 +95,8 @@
     <string name="title_share">Compartilhar arquivo com</string>
     <string name="em_desenvolvimento">EM DESENVOLVIMENTO</string>
 
+    <string name="notification_execute">EXECUTANDO...</string>
+    <string name="notification_pause">PAUSADO</string>
+    <string name="notification_pause_automatic">PAUSADO AUTOMATICAMENTE</string>
+
 </resources>

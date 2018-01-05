@@ -95,4 +95,8 @@
     <string name="title_share">Share file with</string>
     <string name="em_desenvolvimento">IN DEVELOPMENT</string>
     <string name="elevation">Elevation</string>
+
+    <string name="notification_execute">RUNNING...</string>
+    <string name="notification_pause">PAUSED</string>
+    <string name="notification_pause_automatic">PAUSED AUTOMATICALLY</string>
 </resources>

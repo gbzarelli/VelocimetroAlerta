@@ -1,5 +1,8 @@
 package br.com.helpdev.velocimetroalerta.gps;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -15,7 +18,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import br.com.helpdev.velocimetroalerta.MainActivity;
 import br.com.helpdev.velocimetroalerta.MySpeechSpeed;
+import br.com.helpdev.velocimetroalerta.R;
 import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx;
 import br.com.helpdev.velocimetroalerta.gpx.objects.MetaData;
 import br.com.helpdev.velocimetroalerta.gpx.objects.Trk;
@@ -26,6 +31,8 @@ import br.com.helpdev.velocimetroalerta.gpx.objects.TrkPt;
  */
 public class ServiceVelocimetro extends Service implements Runnable {
 
+
+    private static final int ID_NOTIFICATION_FOREGROUND = 10;
 
     public interface CallbackGpsThread {
 
@@ -88,13 +95,26 @@ public class ServiceVelocimetro extends Service implements Runnable {
     private Vibrator vibrator;
 
     private CallbackGpsThread callbackGpsThread;
+    private Notification.Builder myNotificationBuilder;
+    private NotificationManager notificationManager;
 
     @Override
     public void onCreate() {
         super.onCreate();
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mySpeechSpeed.init(this);
         gps.init(this);
+        myNotificationBuilder = new Notification.Builder(this);
+        myNotificationBuilder
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(getString(R.string.app_name))
+                .setOngoing(true);
+
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        myNotificationBuilder.setContentIntent(pendingIntent);
         statusService = STATUS_FINALIZADO;
     }
 
@@ -133,9 +153,15 @@ public class ServiceVelocimetro extends Service implements Runnable {
         }
     }
 
-    public void finalizar() {
+    public void stop() {
         this.statusService = STATUS_FINALIZADO;
+        stopForeground(true);
+    }
+
+    public void finalizeService() {
         mySpeechSpeed.close();
+        gps.close();
+        stopSelf();
     }
 
     public void start(CallbackGpsThread callbackGpsThread) {
@@ -172,6 +198,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
     public void run() {
         reset();
         statusService = STATUS_RODANDO;
+        startForeground(ID_NOTIFICATION_FOREGROUND, myNotificationBuilder.getNotification());
 
         while (statusService != STATUS_FINALIZADO) {
             process(gps.getViews(), gps.getLocation());
@@ -197,6 +224,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
             pause = true;
             if (!atividadePausada) {
                 startPause(false);
+                notifyNotificationUpdate();
             }
             try {
                 Thread.sleep(1_000);
@@ -331,6 +359,23 @@ public class ServiceVelocimetro extends Service implements Runnable {
     private void notifyUpdate() {
         mySpeechSpeed.updateValues(obVelocimentroAlerta);
         if (callbackGpsThread != null) callbackGpsThread.updateValues(obVelocimentroAlerta);
+        notifyNotificationUpdate();
+    }
+
+    private void notifyNotificationUpdate() {
+        String title = getString(R.string.notification_execute);
+        if (statusService == STATUS_PAUSADO) {
+            title = getString(R.string.notification_pause);
+        } else if (inPauseAutomatic) {
+            title = getString(R.string.notification_pause_automatic);
+        }
+        myNotificationBuilder.setContentTitle(title);
+        myNotificationBuilder.setContentText(obVelocimentroAlerta.toStringNotification());
+        notificationManager.notify(ID_NOTIFICATION_FOREGROUND, myNotificationBuilder.getNotification());
+    }
+
+    private void updateNotification(String title, @Nullable String contentText) {
+
     }
 
     private volatile boolean calculandoAltitude = false;

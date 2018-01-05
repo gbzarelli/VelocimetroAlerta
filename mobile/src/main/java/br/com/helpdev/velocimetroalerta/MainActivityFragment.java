@@ -246,7 +246,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         btRefresh.setVisibility(View.GONE);
 
         if (getProcessoGPS() != null) {
-            getProcessoGPS().finalizar();
+            getProcessoGPS().stop();
         }
         gpsDesatualizado.setVisibility(View.GONE);
         pausadoAutomaticamente.setVisibility(View.GONE);
@@ -258,6 +258,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         altitude.setText("- -");
         precisao.setText("- -");
         ganhoAltitude.setText("- -");
+        perdaAltitude.setText("- -");
 
         chronometer.setBase(SystemClock.elapsedRealtime());
         chronometer.stop();
