@@ -19,6 +19,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
@@ -32,11 +33,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private static final int REQUEST_CONFIG_AUDIO = 2;
     private static final int REQUEST_MY_ACTIVIES = 29;
     private static final String SP_KEEP_ALIVE = "keep_alive";
+    private static final String LOG = "MainActivity";
 
     public interface CallbackNotify {
         void onServiceConnected(ServiceVelocimetro serviceVelocimetro);
 
         void onBeforeDisconnect(ServiceVelocimetro serviceVelocimetro);
+
+        void onCloseProgram();
     }
 
     private CallbackNotify callbackNotify;
@@ -63,12 +67,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void loadPermissions() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION}, 12);
+        if (isPermissionsGranted()) {
+            Intent service = new Intent(this, ServiceVelocimetro.class);
+            startService(service);
+            bindService(service, this, BIND_AUTO_CREATE);
         } else {
-            startService(new Intent(this, ServiceVelocimetro.class));
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION}, 12);
         }
+    }
+
+    public boolean isPermissionsGranted() {
+        return (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+                &&
+                (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
     }
 
     @Override
@@ -146,6 +157,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void stopService() {
+        if (callbackNotify != null) callbackNotify.onCloseProgram();
         if (serviceVelocimetro != null) {
             serviceVelocimetro.finalizeService();
         }
@@ -204,14 +216,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onResume() {
         super.onResume();
-        bindService(new Intent(this, ServiceVelocimetro.class), this, BIND_AUTO_CREATE);
+        if (isPermissionsGranted()) {
+            bindService(new Intent(this, ServiceVelocimetro.class), this, BIND_AUTO_CREATE);
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (callbackNotify != null) callbackNotify.onBeforeDisconnect(serviceVelocimetro);
-        unbindService(this);
+        if (serviceVelocimetro != null) {
+            try {
+                if (callbackNotify != null) callbackNotify.onBeforeDisconnect(serviceVelocimetro);
+            } catch (Throwable t) {
+                Log.e(LOG, "onBeeforeDisconnect");
+            }
+            try {
+                unbindService(this);
+            } catch (Throwable t) {
+                Log.e(LOG, "unbindService");
+            }
+        }
     }
 
     public ServiceVelocimetro getServiceVelocimetro() {

@@ -12,6 +12,8 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.Vibrator;
 import android.support.annotation.Nullable;
+import android.util.Log;
+import android.widget.Toast;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -33,6 +35,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
 
     private static final int ID_NOTIFICATION_FOREGROUND = 10;
+    private static final String LOG = "ServiceVelocimetro";
 
     public interface CallbackGpsThread {
 
@@ -57,6 +60,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
         void setBaseChronometer(long base, boolean resume);
 
+        void onErrorProcessingData(Throwable t);
     }
 
     private static final int STATUS_RODANDO = 1;
@@ -107,7 +111,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
         gps.init(this);
         myNotificationBuilder = new Notification.Builder(this);
         myNotificationBuilder
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_notfiy)
                 .setContentTitle(getString(R.string.app_name))
                 .setOngoing(true);
 
@@ -120,6 +124,10 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
     public boolean isRunning() {
         return statusService != STATUS_FINALIZADO;
+    }
+
+    public boolean isPause() {
+        return statusService == STATUS_PAUSADO;
     }
 
     public class MyBinder extends Binder {
@@ -155,13 +163,26 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
     public void stop() {
         this.statusService = STATUS_FINALIZADO;
-        stopForeground(true);
+        try {
+            stopForeground(true);
+        } catch (Throwable t) {
+        }
     }
 
     public void finalizeService() {
-        mySpeechSpeed.close();
-        gps.close();
-        stopSelf();
+        stop();
+        try {
+            mySpeechSpeed.close();
+        } catch (Throwable t) {
+        }
+        try {
+            gps.close();
+        } catch (Throwable t) {
+        }
+        try {
+            stopSelf();
+        } catch (Throwable t) {
+        }
     }
 
     public void start(CallbackGpsThread callbackGpsThread) {
@@ -201,7 +222,12 @@ public class ServiceVelocimetro extends Service implements Runnable {
         startForeground(ID_NOTIFICATION_FOREGROUND, myNotificationBuilder.getNotification());
 
         while (statusService != STATUS_FINALIZADO) {
-            process(gps.getViews(), gps.getLocation());
+            try {
+                process(gps.getViews(), gps.getLocation());
+            } catch (Throwable t) {
+                Log.e(LOG, "Erro no processamento", t);
+                if (callbackGpsThread != null) callbackGpsThread.onErrorProcessingData(t);
+            }
             try {
                 Thread.sleep(1_000);
             } catch (Exception e) {
@@ -220,11 +246,11 @@ public class ServiceVelocimetro extends Service implements Runnable {
             if (!pause) {
                 gpsPausa = CallbackGpsThread.GPS_PAUSADO;
                 if (callbackGpsThread != null) callbackGpsThread.setGpsPausa(gpsPausa);
+                notifyNotificationUpdate();
             }
             pause = true;
             if (!atividadePausada) {
                 startPause(false);
-                notifyNotificationUpdate();
             }
             try {
                 Thread.sleep(1_000);
@@ -388,6 +414,8 @@ public class ServiceVelocimetro extends Service implements Runnable {
                 try {
                     calculandoAltitude = true;
                     calculaGanhoAltitude(forcar);
+                } catch (Throwable t) {
+                    Log.e(LOG, "Falaha ao calcular elevação", t);
                 } finally {
                     calculandoAltitude = false;
                 }
@@ -406,10 +434,11 @@ public class ServiceVelocimetro extends Service implements Runnable {
         }
 
         double constMediaAccuracy = 0;
-        for (TrkPt loc : locationsHistory) {
-            constMediaAccuracy += loc.getAccuracy();
+        int size = locationsHistory.size();
+        for (int i = 0; i < size; i++) {
+            constMediaAccuracy += locationsHistory.get(i).getAccuracy();
         }
-        constMediaAccuracy = constMediaAccuracy / locationsHistory.size();
+        constMediaAccuracy = constMediaAccuracy / size;
 
         if (forcar) {
             indexCurso = 0;

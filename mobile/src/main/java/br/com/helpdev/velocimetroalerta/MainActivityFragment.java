@@ -15,7 +15,9 @@ import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Chronometer;
@@ -43,9 +45,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     private static final Integer KEY_VELOCIDADE_ATUAL = 1;
     private static final Integer KEY_VELOCIDADE_MEDIA = 2;
     private static final Integer KEY_VELOCIDADE_MAXIMA = 3;
-
-    private static boolean executandoAtividade = false;
-    private static boolean contandoTempo = false;
+    private static final String LOG = "MainFragment";
 
     private ImageButton btStartStop, btRefresh, btSave;
     private ProgressDialog progressDialog;
@@ -239,63 +239,56 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     private void clear() {
-        btStartStop.setEnabled(true);
-        executandoAtividade = false;
+        try {
+            btStartStop.setEnabled(true);
 
-        btSave.setVisibility(View.GONE);
-        btRefresh.setVisibility(View.GONE);
+            btSave.setVisibility(View.GONE);
+            btRefresh.setVisibility(View.GONE);
 
-        if (getProcessoGPS() != null) {
-            getProcessoGPS().stop();
+            if (getProcessoGPS() != null) {
+                getProcessoGPS().stop();
+            }
+            gpsDesatualizado.setVisibility(View.GONE);
+            pausadoAutomaticamente.setVisibility(View.GONE);
+
+            velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText("- -");
+            velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText("- -");
+            velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText("- -");
+            distancia.setText("- -");
+            altitude.setText("- -");
+            precisao.setText("- -");
+            ganhoAltitude.setText("- -");
+            perdaAltitude.setText("- -");
+
+            chronometer.setBase(SystemClock.elapsedRealtime());
+            chronometer.stop();
+        } catch (Throwable t) {
+            Log.e(LOG, "clear", t);
         }
-        gpsDesatualizado.setVisibility(View.GONE);
-        pausadoAutomaticamente.setVisibility(View.GONE);
-
-        velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText("- -");
-        velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText("- -");
-        velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText("- -");
-        distancia.setText("- -");
-        altitude.setText("- -");
-        precisao.setText("- -");
-        ganhoAltitude.setText("- -");
-        perdaAltitude.setText("- -");
-
-        chronometer.setBase(SystemClock.elapsedRealtime());
-        chronometer.stop();
     }
 
     private void playPause() {
+        if (getProcessoGPS().isRunning()) {
+            if (pausadoAutomaticamente.getVisibility() == View.VISIBLE) {
+                pausadoAutomaticamente.setVisibility(View.GONE);
+            }
 
-        if (!executandoAtividade) {
+            if (getProcessoGPS().isPause()) {
+                getProcessoGPS().pausar(false);
+                btRefresh.setVisibility(View.GONE);
+            } else {
+                getProcessoGPS().pausar(true);
+                btRefresh.setVisibility(View.VISIBLE);
+            }
+
+            if (getProcessoGPS().isRunning()) {
+                btStartStop.setEnabled(false);
+            }
+        } else {
             getProcessoGPS().start(this);
         }
-
-        if (pausadoAutomaticamente.getVisibility() == View.VISIBLE) {
-            pausadoAutomaticamente.setVisibility(View.GONE);
-        }
-
-//        if (gpsDesatualizado.getVisibility() == View.VISIBLE) {
-//            gpsDesatualizado.setVisibility(View.GONE);
-//        }
-
-        if (contandoTempo) {
-            contandoTempo = false;
-            getProcessoGPS().pausar(true);
-            btRefresh.setVisibility(View.VISIBLE);
-        } else {
-            contandoTempo = true;
-            getProcessoGPS().pausar(false);
-            btRefresh.setVisibility(View.GONE);
-        }
-
-        if (executandoAtividade) {
-            btStartStop.setEnabled(false);
-        } else {
-            executandoAtividade = true;
-        }
-
-        btSave.setVisibility(contandoTempo ? View.GONE : View.VISIBLE);
-        btStartStop.setImageResource(contandoTempo ? R.drawable.pause : R.drawable.play);
+        btSave.setVisibility(getProcessoGPS().isPause() ? View.VISIBLE : View.GONE);
+        btStartStop.setImageResource(getProcessoGPS().isPause() ? R.drawable.play : R.drawable.pause);
     }
 
 
@@ -320,7 +313,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void updateValues(final ObVelocimentroAlerta obVelocimentroAlerta) {
-        getActivity().runOnUiThread(new Runnable() {
+        if (getActivity() != null) getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 updateValuesText();
@@ -330,7 +323,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public synchronized void setGpsSituacao(final int status) {
-        getActivity().runOnUiThread(new Runnable() {
+        if (getActivity() != null) getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (status == GPS_ATUALIZADO && gpsDesatualizado.getVisibility() == View.VISIBLE) {
@@ -345,7 +338,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public synchronized void setGpsPausa(final int status) {
-        getActivity().runOnUiThread(new Runnable() {
+        if (getActivity() != null) getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (status == GPS_PAUSADO) {
@@ -361,7 +354,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public synchronized void setGpsPrecisao(final int status) {
-        getActivity().runOnUiThread(new Runnable() {
+        if (getActivity() != null) getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (status == GPS_SEM_PRECISAO && precisao.getTag() == null) {
@@ -394,13 +387,18 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             public void onBeforeDisconnect(ServiceVelocimetro serviceVelocimetro) {
                 serviceVelocimetro.setCallbackGpsThread(null);
             }
+
+            @Override
+            public void onCloseProgram() {
+                clear();
+            }
         });
     }
 
     @Override
     public synchronized void setPauseAutomatic(final boolean pause) {
-        if (contandoTempo) {
-            getActivity().runOnUiThread(new Runnable() {
+        if (!getProcessoGPS().isPause()) {
+            if (getActivity() != null) getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (pause) {
@@ -417,7 +415,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void setBaseChronometer(final long base, final boolean resume) {
-        getActivity().runOnUiThread(new Runnable() {
+        if (getActivity() != null) getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 chronometer.setBase(base);
@@ -426,6 +424,11 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                 }
             }
         });
+    }
+
+    @Override
+    public void onErrorProcessingData(Throwable t) {
+
     }
 
 }

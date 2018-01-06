@@ -1,20 +1,28 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        playStore {
+            keyPassword ''
+            keyAlias 'miibijanbgkqhkig9w0baqefaaocaq8amiibcgkcaqeasdprrf/g0qth0reliql5zkxp6durvhprwnnihfclrnd8wrqjf4kc/2ubcmdieyfkz0ob0d0iomgv4s2xstxsgax/yai3u3yoea7w5wuhyfm5z7cvtjxtmsvzpg7gj1xtjxxeoftpnqake8gvy2dfzfl8m7z4ykqkhldma50t5d4jxrlqxzdec1jrfm/c59pont/6dewwey1rkiwpx1kh3ef1yzes9ezujk6qn84mzgu3spcdlyqgksyh399cat910enz2ymzek5g1hfzosmm6mit1h7yzx6xzhzyzggdlrnkh0xhyymbfaoeuqvzv6fimts1typmzw+ebjlcefltzqidaqab'
+            storeFile file('velocimetro_alerta.jks')
+            storePassword ''
+        }
+    }
     compileSdkVersion 27
-    buildToolsVersion "27.0.1"
-
+    buildToolsVersion "27.0.3"
     defaultConfig {
         applicationId "br.com.helpdev.velocimetroalerta"
         minSdkVersion 14
         targetSdkVersion 27
-        versionCode 6
-        versionName "2.1"
+        versionCode 8
+        versionName "3.1"
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.playStore
         }
     }
 }
@@ -22,9 +30,9 @@ android {
 dependencies {
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    wearApp project(':wear')
-    compile 'com.android.support:appcompat-v7:+'
-    compile 'com.android.support:design:+'
+    //wearApp project(':wear')
+    implementation 'com.android.support:appcompat-v7:27.0.2'
+    implementation 'com.android.support:design:27.0.2'
     compile('org.simpleframework:simple-xml:2.7.1') {
         exclude group: 'stax', module: 'stax-api'
         exclude group: 'xpp3', module: 'xpp3'
