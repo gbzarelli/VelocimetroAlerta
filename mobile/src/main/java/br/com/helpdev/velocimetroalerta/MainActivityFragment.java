@@ -17,7 +17,6 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Chronometer;
@@ -113,7 +112,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     private ServiceVelocimetro getProcessoGPS() {
-        return getMyActivity().getServiceVelocimetro();
+        return getMyActivity() == null ? null : getMyActivity().getServiceVelocimetro();
     }
 
     private void updateLayout(Integer keyMaster) {
@@ -300,14 +299,20 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     private void updateValuesText() {
         if (getProcessoGPS() != null) {
             ObVelocimentroAlerta obVelocimentroAlerta = getProcessoGPS().getObVelocimentroAlerta();
-            velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText(format("%.1f", obVelocimentroAlerta.getvAtual()));
-            velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMaxima()));
-            velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMedia()));
-            distancia.setText(format("%.1f", obVelocimentroAlerta.getDistancia()));
-            altitude.setText(format("%.1f", obVelocimentroAlerta.getAltitudeAtual()));
-            ganhoAltitude.setText(format("%.1f", obVelocimentroAlerta.getGanhoAltitude()));
-            perdaAltitude.setText(format("%.1f", obVelocimentroAlerta.getPerdaAltitude()));
-            precisao.setText(format("%.1f", obVelocimentroAlerta.getPrecisaoAtual()));
+            if (obVelocimentroAlerta != null) {
+                try {
+                    velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText(format("%.1f", obVelocimentroAlerta.getvAtual()));
+                    velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMaxima()));
+                    velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMedia()));
+                    distancia.setText(format("%.1f", obVelocimentroAlerta.getDistancia()));
+                    altitude.setText(format("%.1f", obVelocimentroAlerta.getAltitudeAtual()));
+                    ganhoAltitude.setText(format("%.1f", obVelocimentroAlerta.getGanhoAltitude()));
+                    perdaAltitude.setText(format("%.1f", obVelocimentroAlerta.getPerdaAltitude()));
+                    precisao.setText(format("%.1f", obVelocimentroAlerta.getPrecisaoAtual()));
+                } catch (Throwable t) {
+                    Log.e(LOG, "updateValuesText", t);
+                }
+            }
         }
     }
 

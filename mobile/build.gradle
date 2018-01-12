@@ -3,10 +3,10 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
         playStore {
-            keyPassword ''
+            keyPassword '48j8*eurO'
             keyAlias 'miibijanbgkqhkig9w0baqefaaocaq8amiibcgkcaqeasdprrf/g0qth0reliql5zkxp6durvhprwnnihfclrnd8wrqjf4kc/2ubcmdieyfkz0ob0d0iomgv4s2xstxsgax/yai3u3yoea7w5wuhyfm5z7cvtjxtmsvzpg7gj1xtjxxeoftpnqake8gvy2dfzfl8m7z4ykqkhldma50t5d4jxrlqxzdec1jrfm/c59pont/6dewwey1rkiwpx1kh3ef1yzes9ezujk6qn84mzgu3spcdlyqgksyh399cat910enz2ymzek5g1hfzosmm6mit1h7yzx6xzhzyzggdlrnkh0xhyymbfaoeuqvzv6fimts1typmzw+ebjlcefltzqidaqab'
             storeFile file('velocimetro_alerta.jks')
-            storePassword ''
+            storePassword '48j8*eurO'
         }
     }
     compileSdkVersion 27
@@ -15,8 +15,8 @@ android {
         applicationId "br.com.helpdev.velocimetroalerta"
         minSdkVersion 14
         targetSdkVersion 27
-        versionCode 8
-        versionName "3.1"
+        versionCode 9
+        versionName "3.2"
     }
     buildTypes {
         release {
