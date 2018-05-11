@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import br.com.helpdev.velocimetroalerta.MainActivity;
 import br.com.helpdev.velocimetroalerta.MySpeechSpeed;
@@ -120,6 +121,11 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
         myNotificationBuilder.setContentIntent(pendingIntent);
         statusService = STATUS_FINALIZADO;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return Service.START_NOT_STICKY;
     }
 
     public boolean isRunning() {
@@ -362,7 +368,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
                     gpx.setMetaData(metaData);
 
                     Trk trk = new Trk();
-                    trk.setName("VEL_ALERTA_" + new SimpleDateFormat("yyyyMMdd_HHmm").format(getObVelocimentroAlerta().getDateInicio()));
+                    trk.setName("VEL_ALERTA_" + new SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(getObVelocimentroAlerta().getDateInicio()));
                     gpx.setTrk(trk);
                 }
                 gpx.getTrk().getTrkseg().addTrkPt(location);
