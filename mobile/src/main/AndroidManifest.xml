@@ -2,11 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="br.com.helpdev.velocimetroalerta">
 
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
 
     <application
         android:allowBackup="true"
@@ -27,7 +29,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ConfigAudioActivity"
+            android:name=".ConfigActivity"
             android:label="@string/title_activity_config"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar">
@@ -50,6 +52,7 @@
         <service
             android:name=".gps.ServiceVelocimetro"
             android:stopWithTask="false" />
+        <service android:name=".gps.SensorsService" />
     </application>
 
 </manifest>

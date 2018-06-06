@@ -13,7 +13,7 @@ android {
     buildToolsVersion "27.0.3"
     defaultConfig {
         applicationId "br.com.helpdev.velocimetroalerta"
-        minSdkVersion 14
+        minSdkVersion 19
         targetSdkVersion 27
         versionCode 10
         versionName "3.3"
@@ -32,6 +32,7 @@ dependencies {
     //wearApp project(':wear')
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.android.support:design:27.1.1'
+    implementation 'com.google.code.gson:gson:2.8.2'
     implementation('org.simpleframework:simple-xml:2.7.1') {
         exclude group: 'stax', module: 'stax-api'
         exclude group: 'xpp3', module: 'xpp3'

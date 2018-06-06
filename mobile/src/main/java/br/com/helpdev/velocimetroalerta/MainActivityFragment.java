@@ -2,9 +2,12 @@ package br.com.helpdev.velocimetroalerta;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -12,8 +15,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,15 +27,14 @@ import android.view.ViewGroup;
 import android.widget.Chronometer;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import java.util.Locale;
 
 import br.com.helpdev.velocimetroalerta.gps.ObVelocimentroAlerta;
+import br.com.helpdev.velocimetroalerta.gps.SensorsService;
 import br.com.helpdev.velocimetroalerta.gps.ServiceVelocimetro;
 import br.com.helpdev.velocimetroalerta.gpx.GpxFileUtils;
 
@@ -39,19 +43,30 @@ import static java.lang.String.format;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment implements View.OnClickListener, ServiceVelocimetro.CallbackGpsThread {
+public class MainActivityFragment extends Fragment
+        implements View.OnClickListener, ServiceVelocimetro.CallbackGpsThread,
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
-    private static final Integer KEY_VELOCIDADE_ATUAL = 1;
-    private static final Integer KEY_VELOCIDADE_MEDIA = 2;
-    private static final Integer KEY_VELOCIDADE_MAXIMA = 3;
     private static final String LOG = "MainFragment";
 
     private ImageButton btStartStop, btRefresh, btSave;
     private ProgressDialog progressDialog;
     private Chronometer chronometer;
-    private TextView pausadoAutomaticamente, gpsDesatualizado, distancia, altitude, ganhoAltitude, perdaAltitude, precisao, tvAvisoPrecisao;
-
-    private HashMap<Integer, TextView[]> velocidades;
+    private ObVelocimentroAlerta obVelocimentroAlerta;
+    private TextView pausadoAutomaticamente,
+            gpsDesatualizado,
+            distancia,
+            altitude,
+            ganhoAltitude,
+            perdaAltitude,
+            precision,
+            tvPrecisionInfo,
+            velocidadeAtual,
+            velocidadeMedia,
+            velocidadeMaxima,
+            temperature,
+            humidity,
+            cadence;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -68,6 +83,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        if (getView() == null) return;
         getView().findViewById(R.id.bt_play_pause).setOnClickListener(this);
         btStartStop = getView().findViewById(R.id.bt_play_pause);
         btSave = getView().findViewById(R.id.bt_save);
@@ -77,21 +93,19 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         chronometer = getView().findViewById(R.id.chronometer);
         pausadoAutomaticamente = getView().findViewById(R.id.tv_pausado_automaticamete);
         gpsDesatualizado = getView().findViewById(R.id.tv_gps_desatualizado);
-        getView().findViewById(R.id.velocidade_1).setOnClickListener(this);
-        getView().findViewById(R.id.layout_velocidade_1).setOnClickListener(this);
-        getView().findViewById(R.id.texto_velocidade_1).setOnClickListener(this);
-        getView().findViewById(R.id.velocidade_2).setOnClickListener(this);
-        getView().findViewById(R.id.layout_velocidade_2).setOnClickListener(this);
-        getView().findViewById(R.id.texto_velocidade_2).setOnClickListener(this);
-        getView().findViewById(R.id.velocidade_3).setOnClickListener(this);
-        getView().findViewById(R.id.layout_velocidade_3).setOnClickListener(this);
-        getView().findViewById(R.id.texto_velocidade_3).setOnClickListener(this);
+        velocidadeAtual = getView().findViewById(R.id.velocidade_atual);
+        velocidadeMedia = getView().findViewById(R.id.velocidade_media);
+        velocidadeMaxima = getView().findViewById(R.id.velocidade_maxima);
         distancia = getView().findViewById(R.id.distancia);
         altitude = getView().findViewById(R.id.altitude_atual);
         ganhoAltitude = getView().findViewById(R.id.ganho_altitude);
         perdaAltitude = getView().findViewById(R.id.ganho_neg_altitude);
-        precisao = getView().findViewById(R.id.precisao_atual);
-        tvAvisoPrecisao = getView().findViewById(R.id.tv_gps_impreciso);
+        precision = getView().findViewById(R.id.precisao_atual);
+        tvPrecisionInfo = getView().findViewById(R.id.tv_gps_impreciso);
+
+        temperature = getView().findViewById(R.id.temperature);
+        humidity = getView().findViewById(R.id.humidity);
+        cadence = getView().findViewById(R.id.cadence);
 
         View.OnClickListener onClickGanho = new View.OnClickListener() {
             @Override
@@ -106,37 +120,15 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         getView().findViewById(R.id.layout_ganho_vl).setOnClickListener(onClickGanho);
         getView().findViewById(R.id.layout_ganho_tx).setOnClickListener(onClickGanho);
 
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        sp.registerOnSharedPreferenceChangeListener(this);
+        onSharedPreferenceChanged(sp, getString(R.string.pref_module_vel_alert));
 
-        updateLayout(KEY_VELOCIDADE_ATUAL);
         clear();
     }
 
     private ServiceVelocimetro getProcessoGPS() {
         return getMyActivity() == null ? null : getMyActivity().getServiceVelocimetro();
-    }
-
-    private void updateLayout(Integer keyMaster) {
-        List<Integer> listaKeys = new ArrayList<>();
-        listaKeys.add(KEY_VELOCIDADE_ATUAL);
-        listaKeys.add(KEY_VELOCIDADE_MEDIA);
-        listaKeys.add(KEY_VELOCIDADE_MAXIMA);
-        listaKeys.remove(keyMaster);
-        velocidades = new HashMap<>();
-        velocidades.put(keyMaster, new TextView[]{getView().findViewById(R.id.velocidade_1), getView().findViewById(R.id.texto_velocidade_1)});
-        velocidades.put(listaKeys.get(0), new TextView[]{getView().findViewById(R.id.velocidade_2), getView().findViewById(R.id.texto_velocidade_2)});
-        velocidades.put(listaKeys.get(1), new TextView[]{getView().findViewById(R.id.velocidade_3), getView().findViewById(R.id.texto_velocidade_3)});
-        for (int key : velocidades.keySet()) {
-            int resIdTitle = 0;
-            if (key == KEY_VELOCIDADE_ATUAL) {
-                resIdTitle = R.string.velocidade_atual;
-            } else if (key == KEY_VELOCIDADE_MEDIA) {
-                resIdTitle = R.string.velocidade_media;
-            } else if (key == KEY_VELOCIDADE_MAXIMA) {
-                resIdTitle = R.string.velocidade_maxima;
-            }
-            velocidades.get(key)[1].setText(resIdTitle);
-        }
-        updateValuesText();
     }
 
     @Override
@@ -147,33 +139,18 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             clear();
         } else if (v.getId() == R.id.bt_play_pause) {
             playPause();
-        } else if (v.getId() == R.id.velocidade_1 || v.getId() == R.id.layout_velocidade_1 || v.getId() == R.id.texto_velocidade_1) {
-            List<Integer> lista = new ArrayList<>(velocidades.keySet());
-            Integer key = lista.get(new Random().nextInt(2));
-            updateLayout(key);
-        } else {
-            int id = v.getId();
-            if (id == R.id.layout_velocidade_2 || id == R.id.texto_velocidade_2) {
-                id = R.id.velocidade_2;
-            } else if (id == R.id.layout_velocidade_3 || id == R.id.texto_velocidade_3) {
-                id = R.id.velocidade_3;
-            }
-            for (Integer key : velocidades.keySet()) {
-                if (velocidades.get(key)[0].getId() == id) {
-                    updateLayout(key);
-                    return;
-                }
-            }
         }
     }
 
     private void save() {
+        if (getActivity() == null) return;
+
         if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(getMyActivity(), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 12);
             return;
         }
 
-        if (getProcessoGPS() == null || getProcessoGPS().getObVelocimentroAlerta().getDistancia() < 0.3f) {
+        if (getProcessoGPS() == null || obVelocimentroAlerta == null || obVelocimentroAlerta.getDistancia() < 0.3f) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
             builder.setTitle(R.string.app_name);
             builder.setMessage(R.string.atividades_sem_dados);
@@ -196,7 +173,9 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                         final File file = gpxFileUtils.writeGpx(
                                 getProcessoGPS().getGpx(),
                                 new File(Environment.getExternalStorageDirectory(), "/velocimetro_alerta/"),
-                                "VEL_ALERTA_" + new SimpleDateFormat("yyyyMMdd_HHmm").format(getProcessoGPS().getObVelocimentroAlerta().getDateInicio())
+                                "VEL_ALERTA_" +
+                                        new SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault())
+                                                .format(obVelocimentroAlerta.getDateInicio())
                         );
                         if (file == null) {
                             throw new Exception(getString(R.string.impossivel_gravar_disco));
@@ -247,17 +226,22 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             if (getProcessoGPS() != null) {
                 getProcessoGPS().stop();
             }
-            gpsDesatualizado.setVisibility(View.GONE);
-            pausadoAutomaticamente.setVisibility(View.GONE);
+            gpsDesatualizado.setVisibility(View.INVISIBLE);
+            pausadoAutomaticamente.setVisibility(View.INVISIBLE);
 
-            velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText("- -");
-            velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText("- -");
-            velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText("- -");
-            distancia.setText("- -");
-            altitude.setText("- -");
-            precisao.setText("- -");
-            ganhoAltitude.setText("- -");
-            perdaAltitude.setText("- -");
+            velocidadeAtual.setText(R.string.text_null_value);
+            velocidadeMedia.setText(R.string.text_null_value);
+            velocidadeMaxima.setText(R.string.text_null_value);
+
+            distancia.setText(R.string.text_null_value);
+            altitude.setText(R.string.text_null_value);
+            precision.setText(R.string.text_null_value);
+            ganhoAltitude.setText(R.string.text_null_value);
+            perdaAltitude.setText(R.string.text_null_value);
+
+            cadence.setText(R.string.text_null_value);
+            temperature.setText(R.string.text_null_value);
+            humidity.setText(R.string.text_null_value);
 
             chronometer.setBase(SystemClock.elapsedRealtime());
             chronometer.stop();
@@ -267,9 +251,11 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
     }
 
     private void playPause() {
+        if (getProcessoGPS() == null) return;
+
         if (getProcessoGPS().isRunning()) {
             if (pausadoAutomaticamente.getVisibility() == View.VISIBLE) {
-                pausadoAutomaticamente.setVisibility(View.GONE);
+                pausadoAutomaticamente.setVisibility(View.INVISIBLE);
             }
 
             if (getProcessoGPS().isPause()) {
@@ -295,20 +281,36 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         return (MainActivity) super.getActivity();
     }
 
-
     private void updateValuesText() {
         if (getProcessoGPS() != null) {
-            ObVelocimentroAlerta obVelocimentroAlerta = getProcessoGPS().getObVelocimentroAlerta();
             if (obVelocimentroAlerta != null) {
                 try {
-                    velocidades.get(KEY_VELOCIDADE_ATUAL)[0].setText(format("%.1f", obVelocimentroAlerta.getvAtual()));
-                    velocidades.get(KEY_VELOCIDADE_MAXIMA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMaxima()));
-                    velocidades.get(KEY_VELOCIDADE_MEDIA)[0].setText(format("%.1f", obVelocimentroAlerta.getvMedia()));
-                    distancia.setText(format("%.1f", obVelocimentroAlerta.getDistancia()));
-                    altitude.setText(format("%.1f", obVelocimentroAlerta.getAltitudeAtual()));
-                    ganhoAltitude.setText(format("%.1f", obVelocimentroAlerta.getGanhoAltitude()));
-                    perdaAltitude.setText(format("%.1f", obVelocimentroAlerta.getPerdaAltitude()));
-                    precisao.setText(format("%.1f", obVelocimentroAlerta.getPrecisaoAtual()));
+                    velocidadeAtual.setText(format(Locale.getDefault(), "%.1f", obVelocimentroAlerta.getvAtual()));
+                    velocidadeMaxima.setText(format(Locale.getDefault(), "%.1f", obVelocimentroAlerta.getvMaxima()));
+                    velocidadeMedia.setText(format(Locale.getDefault(), "%.1f", obVelocimentroAlerta.getvMedia()));
+
+                    distancia.setText(format(Locale.getDefault(), "%.1f", obVelocimentroAlerta.getDistancia()));
+                    altitude.setText(format(Locale.getDefault(), "%.1f", obVelocimentroAlerta.getAltitudeAtual()));
+                    ganhoAltitude.setText(format(Locale.getDefault(), "%.1f", obVelocimentroAlerta.getGanhoAltitude()));
+                    perdaAltitude.setText(format(Locale.getDefault(), "%.1f", obVelocimentroAlerta.getPerdaAltitude()));
+                    precision.setText(format(Locale.getDefault(), "%.1f", obVelocimentroAlerta.getPrecisaoAtual()));
+
+                    if (obVelocimentroAlerta.getCadence() < 0) {
+                        cadence.setText(R.string.text_null_value);
+                    } else {
+                        cadence.setText(String.valueOf(obVelocimentroAlerta.getCadence()));
+                    }
+                    if (obVelocimentroAlerta.getTemperature() < 0) {
+                        temperature.setText(R.string.text_null_value);
+                    } else {
+                        temperature.setText(String.valueOf(obVelocimentroAlerta.getTemperature()));
+                    }
+                    if (obVelocimentroAlerta.getHumidity() < 0) {
+                        humidity.setText(R.string.text_null_value);
+                    } else {
+                        humidity.setText(String.valueOf(obVelocimentroAlerta.getHumidity()));
+                    }
+
                 } catch (Throwable t) {
                     Log.e(LOG, "updateValuesText", t);
                 }
@@ -318,6 +320,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void updateValues(final ObVelocimentroAlerta obVelocimentroAlerta) {
+        this.obVelocimentroAlerta = obVelocimentroAlerta;
         if (getActivity() != null) getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -332,8 +335,8 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
             @Override
             public void run() {
                 if (status == GPS_ATUALIZADO && gpsDesatualizado.getVisibility() == View.VISIBLE) {
-                    gpsDesatualizado.setVisibility(View.GONE);
-                } else if (status == GPS_DESATUALIZADO && gpsDesatualizado.getVisibility() == View.GONE) {
+                    gpsDesatualizado.setVisibility(View.INVISIBLE);
+                } else if (status == GPS_DESATUALIZADO && gpsDesatualizado.getVisibility() == View.INVISIBLE) {
                     gpsDesatualizado.setVisibility(View.VISIBLE);
                 }
                 updateValuesText();
@@ -362,16 +365,16 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
         if (getActivity() != null) getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (status == GPS_SEM_PRECISAO && precisao.getTag() == null) {
-                    precisao.setTextColor(Color.RED);
-                    precisao.setTypeface(precisao.getTypeface(), Typeface.BOLD);
-                    precisao.setTag(1);
-                    tvAvisoPrecisao.setVisibility(View.VISIBLE);
-                } else if (status == GPS_PRECISAO_OK && precisao.getTag() != null) {
-                    precisao.setTextColor(Color.BLACK);
-                    precisao.setTypeface(precisao.getTypeface(), Typeface.NORMAL);
-                    tvAvisoPrecisao.setVisibility(View.GONE);
-                    precisao.setTag(null);
+                if (status == GPS_SEM_PRECISAO && precision.getTag() == null) {
+                    precision.setTextColor(Color.RED);
+                    precision.setTypeface(precision.getTypeface(), Typeface.BOLD);
+                    precision.setTag(1);
+                    tvPrecisionInfo.setVisibility(View.VISIBLE);
+                } else if (status == GPS_PRECISAO_OK && precision.getTag() != null) {
+                    precision.setTextColor(Color.BLACK);
+                    precision.setTypeface(precision.getTypeface(), Typeface.NORMAL);
+                    tvPrecisionInfo.setVisibility(View.GONE);
+                    precision.setTag(null);
 
                 }
                 updateValuesText();
@@ -410,7 +413,7 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
                         pausadoAutomaticamente.setVisibility(View.VISIBLE);
                         chronometer.stop();
                     } else {
-                        pausadoAutomaticamente.setVisibility(View.GONE);
+                        pausadoAutomaticamente.setVisibility(View.INVISIBLE);
                     }
                     updateValuesText();
                 }
@@ -436,4 +439,14 @@ public class MainActivityFragment extends Fragment implements View.OnClickListen
 
     }
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (getView() == null || !key.equals(getString(R.string.pref_module_vel_alert))) return;
+
+        if (sharedPreferences.getBoolean(key, false)) {
+            getView().findViewById(R.id.layout_sensors).setVisibility(View.VISIBLE);
+        } else {
+            getView().findViewById(R.id.layout_sensors).setVisibility(View.GONE);
+        }
+    }
 }

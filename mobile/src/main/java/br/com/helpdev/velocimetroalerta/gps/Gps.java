@@ -20,7 +20,6 @@ public class Gps implements LocationListener {
 
     private int views;
     private Location location;
-    private Context context;
     private LocationManager locationManager;
     private boolean permissao = false;
 
@@ -44,7 +43,6 @@ public class Gps implements LocationListener {
 
     @SuppressLint("MissingPermission")
     public void init(Context context) {
-        this.context = context;
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         permissao = true;
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
@@ -87,10 +85,6 @@ public class Gps implements LocationListener {
     @Override
     public void onProviderDisabled(String provider) {
 
-    }
-
-    public void setContext(Activity context) {
-        this.context = context;
     }
 
     public int getViews() {

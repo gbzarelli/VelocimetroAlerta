@@ -10,7 +10,6 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
@@ -44,25 +43,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private CallbackNotify callbackNotify;
+    private ServiceVelocimetro serviceVelocimetro;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         if (savedInstanceState == null) {
             loadPermissions();
         }
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
     }
 
@@ -95,14 +95,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 startActivityForResult(new Intent(this, MyActivities.class), REQUEST_MY_ACTIVIES);
                 break;
             case R.id.nav_config:
-                startActivityForResult(new Intent(this, ConfigAudioActivity.class), REQUEST_CONFIG_AUDIO);
+                startActivityForResult(new Intent(this, ConfigActivity.class), REQUEST_CONFIG_AUDIO);
                 break;
             case R.id.nav_share:
                 shareApp();
                 break;
         }
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return false;
     }
@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
             return;
@@ -158,9 +158,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void stopService() {
         if (callbackNotify != null) callbackNotify.onCloseProgram();
-        if (serviceVelocimetro != null) {
-            serviceVelocimetro.finalizeService();
-        }
         stopService(new Intent(this, ServiceVelocimetro.class));
     }
 
@@ -196,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_settings) {
-            startActivityForResult(new Intent(this, ConfigAudioActivity.class), REQUEST_CONFIG_AUDIO);
+            startActivityForResult(new Intent(this, ConfigActivity.class), REQUEST_CONFIG_AUDIO);
         } else if (id == R.id.action_keep_alive) {
             String msg;
             if (getSharePref().getBoolean(SP_KEEP_ALIVE, false)) {
@@ -252,12 +249,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void configureGpsVelocimetro() {
         if (serviceVelocimetro != null) {
-            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-            serviceVelocimetro.configure(sp.getBoolean(getString(R.string.pref_pause_automatico), true));
+            serviceVelocimetro.configure();
         }
     }
 
-    private ServiceVelocimetro serviceVelocimetro;
 
     public void setCallbackNotify(CallbackNotify callbackNotify) {
         this.callbackNotify = callbackNotify;

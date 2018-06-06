@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import br.com.helpdev.velocimetroalerta.R;
 import br.com.helpdev.velocimetroalerta.bluetooth.Bluetooth;
@@ -23,9 +24,6 @@ import br.com.helpdev.velocimetroalerta.gpx.objects.TrackPointExtension;
 
 public class SensorsService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener,
         Runnable {
-
-    public static final String ACTION_NOTIFY_SENSOR = "br.com.helpdev.velocimetroalerta.ACTION_NOTIFY_SENSOR";
-    public static final String PARAM_OBJECT_VELALERTBLMODULE = "PARAM_OBJECT_VELALERTBLMODULE";
 
     private static final int STOP = 1;
     private static final int CHANGE_MODULE = 2;
@@ -122,29 +120,38 @@ public class SensorsService extends Service implements SharedPreferences.OnShare
                         status = RUNNING;
                     }
 
-                    BluetoothSocket btSocket = bluetoothDevice
+                    try (BluetoothSocket btSocket = bluetoothDevice
                             .createInsecureRfcommSocketToServiceRecord(
                                     UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-                            );
-                    btSocket.connect();
+                            )) {
+                        btSocket.connect();
 
-                    while (RUNNING == status) {
-                        if (btSocket.getInputStream().available() > 0) {
-                            byte[] data = new byte[128];
-                            int rData = btSocket.getInputStream().read(data);
-                            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                                Gson gson = new Gson();
+                        while (RUNNING == status) {
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            int rData;
+                            byte[] data = new byte[64];
+                            String line;
+                            btSocket.getOutputStream().write("1".getBytes());
+                            do {
+                                Thread.sleep(100);
+                                rData = btSocket.getInputStream().read(data);
                                 baos.write(data, 0, rData);
-                                String value = baos.toString();
-                                lastValueModule = gson.fromJson(value, TrackPointExtension.class);
-                                Intent it = new Intent(ACTION_NOTIFY_SENSOR);
-                                it.putExtra(PARAM_OBJECT_VELALERTBLMODULE, lastValueModule);
-                                LocalBroadcastManager.getInstance(this).sendBroadcast(it);
+                                line = baos.toString();
+                            } while (!line.endsWith("\r\n"));
+
+                            String valueExtract = baos.toString();
+                            Gson gson = new Gson();
+
+                            try {
+                                lastValueModule = gson.fromJson(valueExtract, TrackPointExtension.class);
+                            } catch (Throwable t) {
+                                t.printStackTrace();
+                                lastValueModule = new TrackPointExtension();
                             }
+
+                            Thread.sleep(1000);
                         }
-                        Thread.sleep(500);
                     }
-                    btSocket.close();
                 }
             } catch (Throwable t) {
                 t.printStackTrace();

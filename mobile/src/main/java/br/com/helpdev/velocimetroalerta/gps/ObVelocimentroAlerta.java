@@ -21,6 +21,10 @@ public class ObVelocimentroAlerta implements Serializable {
     private double perdaAltitude;
     private long duracao;
     private long duracaoPausado;
+    private int cadence;
+    private int bpm;
+    private int temperature;
+    private int humidity;
 
     public ObVelocimentroAlerta() {
         this.dateInicio = new Date();
@@ -56,6 +60,38 @@ public class ObVelocimentroAlerta implements Serializable {
 
     public void addDistanciaPausada(double distanciaPausada) {
         this.distanciaPausada += distanciaPausada;
+    }
+
+    public int getCadence() {
+        return cadence;
+    }
+
+    public void setCadence(int cadence) {
+        this.cadence = cadence;
+    }
+
+    public int getBpm() {
+        return bpm;
+    }
+
+    public void setBpm(int bpm) {
+        this.bpm = bpm;
+    }
+
+    public int getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(int temperature) {
+        this.temperature = temperature;
+    }
+
+    public int getHumidity() {
+        return humidity;
+    }
+
+    public void setHumidity(int humidity) {
+        this.humidity = humidity;
     }
 
     public double getPerdaAltitude() {
@@ -156,6 +192,11 @@ public class ObVelocimentroAlerta implements Serializable {
                 ", ganhoAltitude=" + ganhoAltitude +
                 ", perdaAltitude=" + perdaAltitude +
                 ", duracao=" + duracao +
+                ", duracaoPausado=" + duracaoPausado +
+                ", cadence=" + cadence +
+                ", bpm=" + bpm +
+                ", temperature=" + temperature +
+                ", humidity=" + humidity +
                 '}';
     }
 

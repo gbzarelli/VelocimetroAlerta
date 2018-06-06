@@ -28,7 +28,7 @@
             android:title="@string/vibrar" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/grupo_intervalo_audio">
+    <PreferenceCategory android:title="@string/group_interval_audio">
         <ListPreference
             android:defaultValue="@string/intervalo_value_default"
             android:entries="@array/intervalo"
@@ -43,11 +43,18 @@
             android:title="@string/valor" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/grupo_configuracao_velocimetro">
+    <PreferenceCategory android:title="@string/group_config_velocimetro">
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="@string/pref_pause_automatico"
             android:title="@string/pause_automatico" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/group_sensors">
+        <br.com.helpdev.velocimetroalerta.dialogs.DialogPrefVelAlertBLModule
+            android:defaultValue="false"
+            android:key="@string/pref_module_vel_alert"
+            android:title="@string/title_velalert_module" />
     </PreferenceCategory>
 
 </PreferenceScreen>

@@ -4,16 +4,19 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.Vibrator;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -26,13 +29,14 @@ import br.com.helpdev.velocimetroalerta.MySpeechSpeed;
 import br.com.helpdev.velocimetroalerta.R;
 import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx;
 import br.com.helpdev.velocimetroalerta.gpx.objects.MetaData;
+import br.com.helpdev.velocimetroalerta.gpx.objects.TrackPointExtension;
 import br.com.helpdev.velocimetroalerta.gpx.objects.Trk;
 import br.com.helpdev.velocimetroalerta.gpx.objects.TrkPt;
 
 /**
  * Created by Guilherme Biff Zarelli on 04/04/16.
  */
-public class ServiceVelocimetro extends Service implements Runnable {
+public class ServiceVelocimetro extends Service implements Runnable, ServiceConnection {
 
 
     private static final int ID_NOTIFICATION_FOREGROUND = 10;
@@ -102,10 +106,12 @@ public class ServiceVelocimetro extends Service implements Runnable {
     private CallbackGpsThread callbackGpsThread;
     private Notification.Builder myNotificationBuilder;
     private NotificationManager notificationManager;
+    private SensorsService.SensorsBinder sensorsBinder;
 
     @Override
     public void onCreate() {
         super.onCreate();
+
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         mySpeechSpeed.init(this);
@@ -148,8 +154,9 @@ public class ServiceVelocimetro extends Service implements Runnable {
         }
     }
 
-    public void configure(boolean pauseAutomaticEneble) {
-        this.pauseAutomaticEneble = pauseAutomaticEneble;
+    public void configure() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        this.pauseAutomaticEneble = sp.getBoolean(getString(R.string.pref_pause_automatico), true);
         mySpeechSpeed.recarregarConfiguracoes(this);
     }
 
@@ -167,15 +174,8 @@ public class ServiceVelocimetro extends Service implements Runnable {
         }
     }
 
-    public void stop() {
-        this.statusService = STATUS_FINALIZADO;
-        try {
-            stopForeground(true);
-        } catch (Throwable t) {
-        }
-    }
-
-    public void finalizeService() {
+    @Override
+    public void onDestroy() {
         stop();
         try {
             mySpeechSpeed.close();
@@ -185,20 +185,50 @@ public class ServiceVelocimetro extends Service implements Runnable {
             gps.close();
         } catch (Throwable t) {
         }
+//        try {
+//            stopSelf();
+//        } catch (Throwable t) {
+//        }
+        super.onDestroy();
+    }
+
+    public void stop() {
+        this.statusService = STATUS_FINALIZADO;
         try {
-            stopSelf();
+            unbindService(this);
+        } catch (Throwable t) {
+        }
+        stopService(new Intent(this, SensorsService.class));
+        try {
+            stopForeground(true);
         } catch (Throwable t) {
         }
     }
 
     public void start(CallbackGpsThread callbackGpsThread) {
         this.callbackGpsThread = callbackGpsThread;
+        Intent it = new Intent(this, SensorsService.class);
+        startService(it);
+        bindService(it, this, BIND_AUTO_CREATE);
+
         if (statusService == STATUS_FINALIZADO) {
             Thread myThread = new Thread(this);
             myThread.setDaemon(true);
             myThread.setName("TH-" + ServiceVelocimetro.class.getName());
             myThread.start();
         }
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder service) {
+        if (service instanceof SensorsService.SensorsBinder) {
+            sensorsBinder = (SensorsService.SensorsBinder) service;
+        }
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+        sensorsBinder = null;
     }
 
     private void reset() {
@@ -214,7 +244,6 @@ public class ServiceVelocimetro extends Service implements Runnable {
         indexCurso = 0;
         tmpDistanciaGanhoAlt = 0;
         tmpDistanciaPause = -1;
-        pauseAutomaticEneble = true;
         tmpMillisPausa = 0;
         gpsSituacao = CallbackGpsThread.GPS_ATUALIZADO;
         gpsPausa = CallbackGpsThread.GPS_RETOMADO;
@@ -277,7 +306,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
     }
 
     private synchronized void resumePause(boolean automatic) {
-        vibrar();
+        vibrate();
         if (!atividadePausada) return;
         atividadePausada = false;
         notifyBase(true, true);
@@ -289,18 +318,18 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
     private void notifyBase(boolean atividadePausada, boolean resume) {
         if (atividadePausada) {
-            getObVelocimentroAlerta().addDuracaoPausado(SystemClock.elapsedRealtime() - tmpMillisPausa);
-            baseTime = firstBase + getObVelocimentroAlerta().getDuracaoPausado();
+            obVelocimentroAlerta.addDuracaoPausado(SystemClock.elapsedRealtime() - tmpMillisPausa);
+            baseTime = firstBase + obVelocimentroAlerta.getDuracaoPausado();
             tmpMillisPausa = SystemClock.elapsedRealtime();
         }
         if (callbackGpsThread != null) callbackGpsThread.setBaseChronometer(baseTime, resume);
     }
 
     private synchronized void startPause(boolean automatic) {
-        vibrar();
+        vibrate();
         if (atividadePausada) return;
         atividadePausada = true;
-        tmpDistanciaPause = getObVelocimentroAlerta().getDistancia();
+        tmpDistanciaPause = obVelocimentroAlerta.getDistancia();
         tmpMillisPausa = SystemClock.elapsedRealtime();
         calculaGanhoAltitudeAsync(true);
         if (automatic) {
@@ -325,8 +354,8 @@ public class ServiceVelocimetro extends Service implements Runnable {
                 }
                 velocidadeAtual = location.getSpeed() * 3.6f;
                 accuracy = location.getAccuracy();
-                getObVelocimentroAlerta().setAltitudeAtual(location.getAltitude());
-                getObVelocimentroAlerta().setPrecisaoAtual(accuracy);
+                obVelocimentroAlerta.setAltitudeAtual(location.getAltitude());
+                obVelocimentroAlerta.setPrecisaoAtual(accuracy);
             }
 
             if (pauseAutomaticEneble) {
@@ -342,6 +371,26 @@ public class ServiceVelocimetro extends Service implements Runnable {
                 } else if (atividadePausada) {
                     tmpCurrentTimeMillis = null;
                     resumePause(true);
+                }
+            }
+
+            TrackPointExtension trackPointExtension = null;
+            if (sensorsBinder != null) {
+                trackPointExtension = sensorsBinder.getTrackPointExtension();
+                if (trackPointExtension.getCad() != null && !trackPointExtension.getCad().isEmpty()) {
+                    obVelocimentroAlerta.setCadence(Integer.parseInt(trackPointExtension.getCad()));
+                } else {
+                    obVelocimentroAlerta.setCadence(-1);
+                }
+                if (trackPointExtension.getAtemp() != null && !trackPointExtension.getAtemp().isEmpty()) {
+                    obVelocimentroAlerta.setTemperature(Integer.parseInt(trackPointExtension.getAtemp()));
+                } else {
+                    obVelocimentroAlerta.setTemperature(-1);
+                }
+                if (trackPointExtension.getRhu() != null && !trackPointExtension.getRhu().isEmpty()) {
+                    obVelocimentroAlerta.setHumidity(Integer.parseInt(trackPointExtension.getRhu()));
+                } else {
+                    obVelocimentroAlerta.setHumidity(-1);
                 }
             }
 
@@ -362,28 +411,34 @@ public class ServiceVelocimetro extends Service implements Runnable {
                 }
 
                 if (gpx.getMetaData() == null) {
-                    getObVelocimentroAlerta().setDateInicio(new Date(location.getTime()));
+                    obVelocimentroAlerta.setDateInicio(new Date(location.getTime()));
                     MetaData metaData = new MetaData();
                     metaData.setTime(Gpx.getUtcGpxTime(location.getTime()));
                     gpx.setMetaData(metaData);
 
                     Trk trk = new Trk();
-                    trk.setName("VEL_ALERTA_" + new SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(getObVelocimentroAlerta().getDateInicio()));
+                    trk.setName("VEL_ALERTA_" + new SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(obVelocimentroAlerta.getDateInicio()));
                     gpx.setTrk(trk);
                 }
-                gpx.getTrk().getTrkseg().addTrkPt(location);
 
-                if (velocidadeAtual > getObVelocimentroAlerta().getvMaxima()) {
-                    getObVelocimentroAlerta().setvMaxima(velocidadeAtual);
+                if (trackPointExtension == null) {
+                    gpx.getTrk().getTrkseg().addTrkPt(location);
+                } else {
+                    gpx.getTrk().getTrkseg().addTrkPt(location, trackPointExtension);
+
+                }
+
+                if (velocidadeAtual > obVelocimentroAlerta.getvMaxima()) {
+                    obVelocimentroAlerta.setvMaxima(velocidadeAtual);
                 }
             } else {
                 gpsPrecisao = CallbackGpsThread.GPS_SEM_PRECISAO;
                 if (callbackGpsThread != null) callbackGpsThread.setGpsPrecisao(gpsPrecisao);
             }
 
-            getObVelocimentroAlerta().setDuracao(getTempoCronometro());
+            obVelocimentroAlerta.setDuracao(getTempoCronometro());
         } finally {
-            getObVelocimentroAlerta().setvAtual(velocidadeAtual);
+            obVelocimentroAlerta.setvAtual(velocidadeAtual);
             notifyUpdate();
         }
     }
@@ -404,10 +459,6 @@ public class ServiceVelocimetro extends Service implements Runnable {
         myNotificationBuilder.setContentTitle(title);
         myNotificationBuilder.setContentText(obVelocimentroAlerta.toStringNotification());
         notificationManager.notify(ID_NOTIFICATION_FOREGROUND, myNotificationBuilder.getNotification());
-    }
-
-    private void updateNotification(String title, @Nullable String contentText) {
-
     }
 
     private volatile boolean calculandoAltitude = false;
@@ -435,7 +486,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
     private void calculaGanhoAltitude(boolean forcar) {
         List<TrkPt> locationsHistory = getTrkPts();
-        if (locationsHistory == null || locationsHistory.isEmpty() || (!forcar && getObVelocimentroAlerta().getDistancia() <= (tmpDistanciaGanhoAlt + CONST_INTERVALO_DISTANCIA_CALCULO_GANHO))) {
+        if (locationsHistory == null || locationsHistory.isEmpty() || (!forcar && obVelocimentroAlerta.getDistancia() <= (tmpDistanciaGanhoAlt + CONST_INTERVALO_DISTANCIA_CALCULO_GANHO))) {
             return;
         }
 
@@ -448,10 +499,10 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
         if (forcar) {
             indexCurso = 0;
-            getObVelocimentroAlerta().setGanhoAltitude(0);
-            getObVelocimentroAlerta().setPerdaAltitude(0);
+            obVelocimentroAlerta.setGanhoAltitude(0);
+            obVelocimentroAlerta.setPerdaAltitude(0);
         }
-        tmpDistanciaGanhoAlt = getObVelocimentroAlerta().getDistancia();
+        tmpDistanciaGanhoAlt = obVelocimentroAlerta.getDistancia();
 
         double altA, altB;
         int indexA, indexB;
@@ -466,15 +517,15 @@ public class ServiceVelocimetro extends Service implements Runnable {
 
             if (difAlt > 0 && difAlt >= constMediaAccuracy) {//GANHANDO ALTITUDE
                 if (!climb) {//IF PARA ACHAR PICO NEGATIVO, QUANDO SAI DE UMA DESCIDA E INICIA UMA SUBIDA
-                    getObVelocimentroAlerta().addPerdaAltitude(getGanhoPico(false, indexA, indexB, altA));
+                    obVelocimentroAlerta.addPerdaAltitude(getGanhoPico(false, indexA, indexB, altA));
                 }
-                getObVelocimentroAlerta().addGanhoAltitude(difAlt);
+                obVelocimentroAlerta.addGanhoAltitude(difAlt);
                 climb = true;
             } else if (difAlt < 0 && ((difAlt * -1) >= constMediaAccuracy)) {//PERDENDO ALTITUDE
                 if (climb) {//IF PARA ACHAR PICO POSITIVO, QUANDO SAI DE UMA SUBIDA E INICIA UMA DESCIDA
-                    getObVelocimentroAlerta().addGanhoAltitude(getGanhoPico(true, indexA, indexB, altA));
+                    obVelocimentroAlerta.addGanhoAltitude(getGanhoPico(true, indexA, indexB, altA));
                 }
-                getObVelocimentroAlerta().addPerdaAltitude((difAlt * -1));
+                obVelocimentroAlerta.addPerdaAltitude((difAlt * -1));
                 climb = false;
             } else {
                 continue;
@@ -510,45 +561,30 @@ public class ServiceVelocimetro extends Service implements Runnable {
         double hours = new BigDecimal(getTempoCronometro())
                 .divide(BigDecimal.valueOf(3_600_000), 10, BigDecimal.ROUND_HALF_UP)
                 .doubleValue();
-        getObVelocimentroAlerta().setvMedia(
-                (getObVelocimentroAlerta().getDistancia() - getObVelocimentroAlerta().getDistanciaPausada()) / hours
+        obVelocimentroAlerta.setvMedia(
+                (obVelocimentroAlerta.getDistancia() - obVelocimentroAlerta.getDistanciaPausada()) / hours
         );
     }
 
     private void calcularDistancias(Location location) {
         List<TrkPt> trkPts = getTrkPts();
         if (trkPts.isEmpty()) return;
-        getObVelocimentroAlerta().addDistancia(
-                calculaDistancia(
-                        trkPts.get(trkPts.size() - 1).getLatitude(),
-                        trkPts.get(trkPts.size() - 1).getLongitude(),
-                        location.getLatitude(),
-                        location.getLongitude()
-                )
+        double distance = GpsUtils.distanceCalculate(
+                trkPts.get(trkPts.size() - 1).getLatitude(),
+                trkPts.get(trkPts.size() - 1).getLongitude(),
+                location.getLatitude(),
+                location.getLongitude()
         );
+        obVelocimentroAlerta.addDistancia(distance);
         //** CASO A DISTANCIA ESTEJA PAUSADA, AO FAZER O CALCULO DA NOVA DISTANCIA, ADICIONA NA VARIAVEL QUE CONSTROLA
         //A DISTANCIA QUE FICOU PAUSADA, PARA NAO LEVAR EM CONSIDERAÇÃO NO CALCULO DE MEDIA.;
         if (tmpDistanciaPause > 0) {
-            getObVelocimentroAlerta().addDistanciaPausada(
-                    getObVelocimentroAlerta().getDistancia() - tmpDistanciaPause
+            obVelocimentroAlerta.addDistanciaPausada(
+                    obVelocimentroAlerta.getDistancia() - tmpDistanciaPause
             );
             tmpDistanciaPause = -1;
         }
 
-    }
-
-    private double calculaDistancia(double lat1, double lng1, double lat2, double lng2) {
-        //double earthRadius = 3958.75;//miles
-        double earthRadius = 6371;//kilometers
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLng = Math.toRadians(lng2 - lng1);
-        double sindLat = Math.sin(dLat / 2);
-        double sindLng = Math.sin(dLng / 2);
-        double a = Math.pow(sindLat, 2) + Math.pow(sindLng, 2)
-                * Math.cos(Math.toRadians(lat1))
-                * Math.cos(Math.toRadians(lat2));
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return earthRadius * c;
     }
 
     public void setCallbackGpsThread(CallbackGpsThread callbackGpsThread) {
@@ -565,7 +601,7 @@ public class ServiceVelocimetro extends Service implements Runnable {
         }
     }
 
-    private void vibrar() {
+    private void vibrate() {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -576,7 +612,4 @@ public class ServiceVelocimetro extends Service implements Runnable {
         }).start();
     }
 
-    public ObVelocimentroAlerta getObVelocimentroAlerta() {
-        return obVelocimentroAlerta;
-    }
 }

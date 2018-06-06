@@ -23,7 +23,7 @@
                 android:title="@string/compartilhar" />
             <item
                 android:id="@+id/nav_star"
-                android:icon="@drawable/ic_star2"
+                android:icon="@drawable/star"
                 android:title="@string/avaliar" />
         </menu>
     </item>

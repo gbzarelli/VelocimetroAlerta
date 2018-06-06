@@ -39,7 +39,7 @@ public class GpxFileUtils {
 
     }
 
-    public File writeGpx(List<Location> tempLocation, File base, String nomeArquivo, String gpxCreator) throws Exception {
+    public File writeGpxOnlyLocation(List<Location> tempLocation, File base, String nomeArquivo, String gpxCreator) throws Exception {
         if (tempLocation != null && !tempLocation.isEmpty()) {
             Gpx gpx = new Gpx(gpxCreator);
             MetaData metaData = new MetaData();

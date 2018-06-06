@@ -53,12 +53,19 @@ public class TrkSeg {
     }
 
     public void addTrkPt(Location loc) {
+        addTrkPt(loc, null);
+    }
+
+    public void addTrkPt(Location loc, TrackPointExtension trackPointExtension) {
         TrkPt trkPt = new TrkPt();
         trkPt.setLat(loc.getLatitude());
         trkPt.setLon(loc.getLongitude());
         trkPt.setEle(loc.getAltitude());
         trkPt.setAccuracy(loc.getAccuracy());
         trkPt.setTime(Gpx.getUtcGpxTime(loc.getTime()));
+        if (null != trackPointExtension) {
+            trkPt.setExtensions(new Extensions(trackPointExtension));
+        }
         addTrkPt(trkPt);
     }
 }

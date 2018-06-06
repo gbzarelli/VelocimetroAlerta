@@ -2,7 +2,7 @@ package br.com.helpdev.velocimetroalerta.gps;
 
 public class GpsUtils {
 
-    public static double calculaDistancia(double lat1, double lng1, double lat2, double lng2) {
+    public static double distanceCalculate(double lat1, double lng1, double lat2, double lng2) {
         //double earthRadius = 3958.75;//miles
         double earthRadius = 6371;//kilometers
         double dLat = Math.toRadians(lat2 - lat1);

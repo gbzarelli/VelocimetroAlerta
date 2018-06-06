@@ -23,10 +23,10 @@
     <string name="media">Average speed</string>
     <string name="maxima">Maximum speed</string>
     <string name="vibrar">Vibrate</string>
-    <string name="accuracy">Accuracy</string>
+    <string name="accuracy">GPS Accuracy</string>
 
-    <string name="grupo_configuracao_velocimetro">Settings speedometer</string>
-    <string name="grupo_intervalo_audio">Playback Interval:</string>
+    <string name="group_config_velocimetro">Settings speedometer</string>
+    <string name="group_interval_audio">Playback Interval:</string>
     <string name="lista_intervalo">Distance / Time</string>
     <string name="intervalo_value_default">minutes</string>
 
@@ -99,4 +99,28 @@
     <string name="notification_execute">RUNNING...</string>
     <string name="notification_pause">PAUSED</string>
     <string name="notification_pause_automatic">PAUSED AUTOMATICALLY</string>
+    <string name="text_null_value">- -</string>
+    <string name="unit_temp">ºC</string>
+    <string name="percent_humidity">%UR</string>
+    <string name="unit_hr">bpm</string>
+    <string name="unit_rpm">rpm</string>
+    <string name="pref_module_vel_alert">key_module_vel_alerta_bl</string>
+    <string name="pref_module_vel_alert_name">pref_module_vel_alert_name</string>
+    <string name="pref_module_vel_alert_address">pref_module_vel_alert_address</string>
+
+
+    <string name="temperature">Temperature</string>
+    <string name="cadence">Cadence</string>
+    <string name="group_sensors">Sensors</string>
+
+    <string name="bt_enable">Enable</string>
+    <string name="bt_disable_module">Disable module</string>
+    <string name="disable">Disable</string>
+    <string name="disabled_bluetooth">Disabled bluetooth. Enable it</string>
+    <string name="text_module_velalert">
+         Select the OpenSource Speedometer Alert module from the list of paired devices..\n\n
+         Learn more about the sensor at:  \n\n
+        https://github.com/helpdeveloper/VelocimetroAlertaBLModule</string>
+    <string name="title_velalert_module">Speedometer Alert Bluetooth Module</string>
+    <string name="non_pairing_devices"><![CDATA[<- No paired devices ->]]></string>
 </resources>
