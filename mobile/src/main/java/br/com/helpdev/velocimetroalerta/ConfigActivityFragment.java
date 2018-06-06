@@ -19,7 +19,7 @@ public class ConfigAudioActivityFragment extends PreferenceFragment implements P
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        addPreferencesFromResource(R.xml.configuracoes_audio);
+        addPreferencesFromResource(R.xml.configs);
         listPreference = (ListPreference) findPreference(getString(R.string.pref_intervalo));
         editTextPreference = (EditTextPreference) findPreference(getString(R.string.pref_intervalo_valor));
         preencherSumario(listPreference);
