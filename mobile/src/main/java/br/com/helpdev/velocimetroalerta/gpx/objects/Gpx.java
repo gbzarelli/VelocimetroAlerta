@@ -11,20 +11,30 @@ import org.simpleframework.xml.Root;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
+
+import org.simpleframework.xml.Namespace;
+import org.simpleframework.xml.NamespaceList;
 
 /**
  * @author Guilherme
  */
 @Root(name = "gpx", strict = false)
+@Namespace(reference = "http://www.topografix.com/GPX/1/1")
+@NamespaceList(
+        value = {
+                @Namespace(prefix = "gpxtpx", reference = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1")
+                , @Namespace(prefix = "gpxx", reference = "http://www.garmin.com/xmlschemas/GpxExtensions/v3")
+                , @Namespace(prefix = "xsi", reference = "http://www.w3.org/2001/XMLSchema-instance")
+        }
+)
 public class Gpx {
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
-    @Attribute
-    private String schemaLocation = "http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd";
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
 
-    @Attribute
-    private String xmlns = "http://www.topografix.com/GPX/1/1";
+    @Attribute(name = "xsi:shemaLocation")
+    private String schemaLocation = "http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd";
 
     @Attribute(name = "creator")
     private String creator;
@@ -46,7 +56,6 @@ public class Gpx {
         this();
         this.creator = creator;
     }
-
 
     public MetaData getMetaData() {
         return metaData;
@@ -82,7 +91,7 @@ public class Gpx {
 
     @Override
     public String toString() {
-        return "Gpx{" + "creator=" + creator + ", version=" + version + ", metaData=" + metaData + ", trk=" + trk + '}';
+        return "Gpx{" + "schemaLocation=" + schemaLocation + ", creator=" + creator + ", version=" + version + ", metaData=" + metaData + ", trk=" + trk + '}';
     }
 
     public static String getUtcGpxTime(long data) {//2017-04-11T09:02:40Z

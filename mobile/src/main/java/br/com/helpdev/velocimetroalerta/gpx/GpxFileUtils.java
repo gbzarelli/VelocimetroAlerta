@@ -3,6 +3,7 @@ package br.com.helpdev.velocimetroalerta.gpx;
 import android.location.Location;
 
 import org.simpleframework.xml.core.Persister;
+import org.simpleframework.xml.stream.Format;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,7 +33,7 @@ public class GpxFileUtils {
         }
         file.createNewFile();
 
-        Persister persister = new Persister();
+        Persister persister = new Persister(new Format("<?xml version=\"1.0\" encoding= \"UTF-8\" ?>"));
         persister.write(gpx, file);
 
         return file;

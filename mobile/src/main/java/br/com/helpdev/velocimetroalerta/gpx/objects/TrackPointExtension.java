@@ -13,16 +13,16 @@ import java.io.Serializable;
 /**
  * @author Guilherme
  */
-@Root(name = "TrackPointExtension")
+@Root(name = "gpxtpx:TrackPointExtension")
 public class TrackPointExtension implements Serializable {
 
-    @Element(name = "atemp", required = false)
+    @Element(name = "gpxtpx:atemp", required = false)
     private String atemp;
-    @Element(name = "hr", required = false)
+    @Element(name = "gpxtpx:hr", required = false)
     private String hr;
-    @Element(name = "cad", required = false)
+    @Element(name = "gpxtpx:cad", required = false)
     private String cad;
-    @Element(name = "rhu", required = false)
+    @Element(name = "gpxtpx:rhu", required = false)
     private String rhu;
 
     public String getRhu() {

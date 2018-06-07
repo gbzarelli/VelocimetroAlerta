@@ -20,7 +20,7 @@ public class Extensions {
         this.trackPointExtension = trackPointExtension;
     }
 
-    @Element(name = "TrackPointExtension", type = TrackPointExtension.class)
+    @Element(name = "gpxtpx:TrackPointExtension", type = TrackPointExtension.class)
     private TrackPointExtension trackPointExtension;
 
     public TrackPointExtension getTrackPointExtension() {
