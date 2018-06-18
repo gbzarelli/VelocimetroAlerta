@@ -15,8 +15,7 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="70dp">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:id="@+id/linearLayout"
@@ -55,6 +54,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:baselineAligned="false"
                 android:orientation="horizontal">
 
                 <LinearLayout
@@ -131,10 +131,177 @@
                 android:layout_marginBottom="@dimen/activity_vertical_margin"
                 android:background="@android:color/black" />
 
+            <LinearLayout
+                android:id="@+id/layout_sensors_hm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/layout_hm"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_horizontal"
+                            android:text="@string/heart_hate"
+                            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_horizontal"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="match_parent"
+                                android:src="@drawable/heart_pulse" />
+
+                            <TextView
+                                android:id="@+id/current_hm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_marginLeft="5dp"
+                                android:layout_marginStart="5dp"
+                                android:gravity="center"
+                                android:text="@string/text_null_value"
+                                android:textAppearance="?android:attr/textAppearanceLarge"
+                                android:textSize="@dimen/text_size_default" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_marginLeft="2dp"
+                                android:layout_marginStart="2dp"
+                                android:gravity="center"
+                                android:text="@string/unit_bpm"
+                                android:textAppearance="?android:attr/textAppearanceMedium"
+                                android:textColor="@color/black" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layout_hm_zone"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_horizontal"
+                            android:text="@string/zones"
+                            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_horizontal"
+                            android:orientation="horizontal">
+
+
+                            <TextView
+                                android:id="@+id/current_zone_hm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:layout_marginLeft="5dp"
+                                android:layout_marginStart="5dp"
+                                android:gravity="center"
+                                android:text="@string/text_null_value"
+                                android:textAppearance="?android:attr/textAppearanceLarge"
+                                android:textSize="@dimen/text_size_default" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_zones"
+                    android:layout_width="match_parent"
+                    android:layout_height="25dp"
+                    android:layout_marginTop="5dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="8dp"
+                        android:layout_weight="1"
+                        android:background="@color/color_z1"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="z1 | 5%" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="4dp"
+                        android:layout_weight="1"
+                        android:background="@color/color_z2"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="z2 | 17%" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="2dp"
+                        android:layout_weight="1"
+                        android:background="@color/color_z3"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="z3 | 30%" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@color/color_z4"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="z4 | 42%" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginTop="6dp"
+                        android:layout_weight="1"
+                        android:background="@color/color_z5"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:text="z5 | 6%" />
+                </LinearLayout>
+
+                <View
+
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="@dimen/activity_vertical_margin"
+                    android:layout_marginTop="@dimen/activity_vertical_margin"
+                    android:background="@android:color/black" />
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_horizontal"
                 android:orientation="horizontal">
 
@@ -299,8 +466,9 @@
                 android:layout_marginBottom="@dimen/activity_vertical_margin"
                 android:background="@android:color/black" />
 
+
             <LinearLayout
-                android:id="@+id/layout_sensors"
+                android:id="@+id/layout_sensors_vam"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -435,21 +603,11 @@
 
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_sensors"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:text="@string/gps_impreciso"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="@color/colorAccentDark"
-                    android:textStyle="bold"
-                    android:visibility="invisible" />
-
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
+                    android:layout_marginTop="@dimen/activity_vertical_margin"
                     android:background="@android:color/black" />
 
             </LinearLayout>
@@ -670,6 +828,9 @@
 
             </LinearLayout>
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="80dp" />
 
         </LinearLayout>
     </ScrollView>

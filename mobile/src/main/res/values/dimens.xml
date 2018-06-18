@@ -7,4 +7,5 @@
     <dimen name="nav_header_height">176dp</dimen>
     <dimen name="text_size_default">23sp</dimen>
     <dimen name="text_size_velocidade">38sp</dimen>
+    <dimen name="box_heart_rate_zones">50dp</dimen>
 </resources>

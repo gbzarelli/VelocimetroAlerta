@@ -6,4 +6,9 @@
     <color name="colorAccent">#F44336</color>
     <color name="colorAccentDark">#C62828</color>
     <color name="black">#000</color>
+    <color name="color_z5">#f44</color>
+    <color name="color_z4">#f66</color>
+    <color name="color_z3">#f88</color>
+    <color name="color_z2">#faa</color>
+    <color name="color_z1">#fcc</color>
 </resources>

@@ -114,5 +114,20 @@
         https://github.com/helpdeveloper/VelocimetroAlertaBLModule</string>
     <string name="title_velalert_module">Velocimetro Alerta Bluetooth Modulo</string>
     <string name="non_pairing_devices"><![CDATA[<- Nenhum dispositivo pareado ->]]></string>
+    <string name="zones">Zonas</string>
+    <string name="heart_hate">Batimentos</string>
+    <string name="group_personal">Informações pessoais</string>
+    <string name="click_to_edit">Clique para editar</string>
 
+    <string name="max_heart_rate">FC Max</string>
+    <string name="resting_heart_rate">FC de repouso</string>
+    <string name="edit_heartrate_zones">Editar zonas de FC</string>
+
+    <string name="z1_endurance">Z1 (Muito leve)</string>
+    <string name="z2_moderate">Z2 (Leve)</string>
+    <string name="z3_time">Z3 (Moderado)</string>
+    <string name="z4_threshold">Z4 (Difícil)</string>
+    <string name="z5_anaerobic">Z5 (Máximo)</string>
+    <string name="title_hr_sensor">Sensor de frequência cardíaca</string>
+    <string name="info_config_in_running">Pause a atividade para editar as configurações.</string>
 </resources>

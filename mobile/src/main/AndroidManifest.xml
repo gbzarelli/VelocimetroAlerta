@@ -8,13 +8,12 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
             android:name=".MainActivity"
@@ -42,17 +41,28 @@
             android:label="@string/title_activity_my_activitys"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar">
-            <!-- Parcontextvity meta-data to support 4.0 and lower -->
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainActivity" />
 
         </activity>
+        <activity
+            android:name=".ConfigHRZActivity"
+            android:label="@string/heart_hate"
+            android:parentActivityName=".ConfigActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="br.com.helpdev.velocimetroalerta.CONFIG_HR_ACTIVITY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".ConfigActivity" />
+        </activity>
 
-        <service
-            android:name=".gps.ServiceVelocimetro"
-            android:stopWithTask="false" />
-        <service android:name=".gps.SensorsService" />
+        <service android:name=".gps.SpeedometerService" />
+        <service android:name=".sensors.VAMService" />
+        <service android:name=".sensors.HMService" />
     </application>
 
 </manifest>
