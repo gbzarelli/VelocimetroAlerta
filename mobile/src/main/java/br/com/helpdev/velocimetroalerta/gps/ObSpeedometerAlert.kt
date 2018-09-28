@@ -7,109 +7,123 @@ import java.util.concurrent.TimeUnit
 /**
  * Created by guilherme on 17/07/16.
  */
-class ObSpeedometerAlert : Serializable {
+class ObSpeedometerAlert(var obConfigHr: ObConfigHR = ObConfigHR()) : Serializable {
 
-    var dateInicio: Date? = null
-    private var vMedia: Double = 0.toDouble()
-    private var vAtual: Double = 0.toDouble()
-    private var vMaxima: Double = 0.toDouble()
-    var distancia: Double = 0.toDouble()
-    var distanciaPausada: Double = 0.toDouble()
-    var altitudeAtual: Double = 0.toDouble()
-    var precisaoAtual: Double = 0.toDouble()
-    var ganhoAltitude: Double = 0.toDouble()
-    var perdaAltitude: Double = 0.toDouble()
-    private var duracao: Long = 0
-    var duracaoPausado: Long = 0
-    var cadence: Int = 0
-    var bpm: Int = 0
-    var temperature: Int = 0
-    var humidity: Int = 0
+    var inPauseActivity = false
+    var inPauseAutomatic = false
+
+    var dateTimeStart: Date? = null
+    var speedAvg = 0.toDouble()
+    var speed = 0.toDouble()
+    var speedMax = 0.toDouble()
+    var distance = 0.toDouble()
+    var distancePaused = 0.toDouble()
+    var altitude = 0.toDouble()
+    var accuracyGPS = 0.toDouble()
+    var gainAlt = 0.toDouble()
+    var lostAlt = 0.toDouble()
+    var time = 0.toLong()
+    var timePaused = 0.toLong()
+
+    var temperature = 0
+    var humidity = 0
+
+    private var cadenceCountAvg = 0
+    private var cadenceSumAvg = 0
+    private var bpmCountAvg = 0
+    private var bpmSumAvg = 0
+
+    var cadenceMax = 0
+    var cadenceAvg = 0
+    var bpmMax = 0
+    var bpmAvg = 0
+
+    var cadence = 0
+        set(value) {
+            if (value > 0) {
+                if (value > cadenceMax) {
+                    cadenceMax = value
+                }
+                if (!inPauseActivity) {
+                    cadenceCountAvg++
+                    cadenceSumAvg += value
+                    cadenceAvg = cadenceSumAvg / cadenceCountAvg
+                }
+            }
+            field = value
+        }
+
+    var bpmAvgZoneString = ""
+        get() = bpmAvg.toString() + " (" + getStringBPMZone(getPercentageOfMax(bpmAvg)) + ")"
+
+    var bpmZoneString = ""
+        get() = getStringBPMZone(bpmPercentage) + " - " + bpmPercentage + "%"
+
+    var bpm = 0
+        set(value) {
+            if (value > 0) {
+                if (value > bpmMax) {
+                    bpmMax = value
+                }
+                if (!inPauseActivity) {
+                    bpmCountAvg++
+                    bpmSumAvg += value
+                    bpmAvg = bpmSumAvg / bpmCountAvg
+                }
+            }
+            field = value
+        }
 
     init {
-        this.dateInicio = Date()
+        this.dateTimeStart = Date()
     }
 
-    fun addDuracaoPausado(duracaoPausado: Double) {
-        this.duracaoPausado += duracaoPausado.toLong()
+    private fun getStringBPMZone(bpmPercentage: Int) = when {
+        bpmPercentage > obConfigHr.percentZ5 -> "Z5"
+        bpmPercentage > obConfigHr.percentZ4 -> "Z4"
+        bpmPercentage > obConfigHr.percentZ3 -> "Z3"
+        bpmPercentage > obConfigHr.percentZ2 -> "Z2"
+        bpmPercentage > obConfigHr.percentZ1 -> "Z1"
+        else -> "Z0"
     }
 
-    fun getDuracao(): Double {
-        return duracao.toDouble()
+    private fun getPercentageOfMax(bpm: Int): Int {
+        if (bpm <= 0) return 0
+        return (bpm / obConfigHr.maxHr.toFloat() * 100f).toInt()
     }
 
-    fun setDuracao(duracao: Long) {
-        this.duracao = duracao
+    private var bpmPercentage = 0
+        get() = getPercentageOfMax(bpm)
+
+    fun addTimePaused(timePaused: Double) {
+        this.timePaused += timePaused.toLong()
     }
 
-    fun addDistanciaPausada(distanciaPausada: Double) {
-        this.distanciaPausada += distanciaPausada
+    fun addDistancePaused(distancePaused: Double) {
+        this.distancePaused += distancePaused
     }
 
-    fun addPerdaAltitude(perdaAltitude: Double) {
-        this.perdaAltitude += perdaAltitude
+    fun addLostAlt(lostAlt: Double) {
+        this.lostAlt += lostAlt
     }
 
-    fun getvMedia(): Double {
-        return vMedia
+    fun addDistance(distance: Double) {
+        this.distance += distance
     }
 
-    fun setvMedia(vMedia: Double) {
-        this.vMedia = vMedia
-    }
-
-    fun getvAtual(): Double {
-        return vAtual
-    }
-
-    fun setvAtual(vAtual: Double) {
-        this.vAtual = vAtual
-    }
-
-    fun getvMaxima(): Double {
-        return vMaxima
-    }
-
-    fun setvMaxima(vMaxima: Double) {
-        this.vMaxima = vMaxima
-    }
-
-    fun addDistancia(distancia: Double) {
-        this.distancia += distancia
-    }
-
-    fun addGanhoAltitude(ganhoAltitude: Double) {
-        this.ganhoAltitude += ganhoAltitude
-    }
-
-    override fun toString(): String {
-        return "ObSpeedometerAlert{" +
-                "dateInicio=" + dateInicio +
-                ", vMedia=" + vMedia +
-                ", vAtual=" + vAtual +
-                ", vMaxima=" + vMaxima +
-                ", distancia=" + distancia +
-                ", distanciaPausada=" + distanciaPausada +
-                ", altitudeAtual=" + altitudeAtual +
-                ", precisaoAtual=" + precisaoAtual +
-                ", ganhoAltitude=" + ganhoAltitude +
-                ", perdaAltitude=" + perdaAltitude +
-                ", duracao=" + duracao +
-                ", duracaoPausado=" + duracaoPausado +
-                ", cadence=" + cadence +
-                ", bpm=" + bpm +
-                ", temperature=" + temperature +
-                ", humidity=" + humidity +
-                '}'.toString()
+    fun addGainAlt(gainAlt: Double) {
+        this.gainAlt += gainAlt
     }
 
     fun toStringNotification(): String {
         val time = String.format("%02d:%02d:%02d",
-                TimeUnit.MILLISECONDS.toHours(duracao),
-                TimeUnit.MILLISECONDS.toMinutes(duracao) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(duracao)),
-                TimeUnit.MILLISECONDS.toSeconds(duracao) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(duracao)))
+                TimeUnit.MILLISECONDS.toHours(time),
+                TimeUnit.MILLISECONDS.toMinutes(time) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(time)),
+                TimeUnit.MILLISECONDS.toSeconds(time) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(time)))
+        return String.format("%s - %.1fKm", time, distance)
+    }
 
-
-        return String.format("%s - %.1fKm", time, distancia)
+    override fun toString(): String {
+        return "ObSpeedometerAlert(dateTimeStart=$dateTimeStart, speedAvg=$speedAvg, speed=$speed, speedMax=$speedMax, distance=$distance, distancePaused=$distancePaused, altitude=$altitude, accuracyGPS=$accuracyGPS, gainAlt=$gainAlt, lostAlt=$lostAlt, time=$time, timePaused=$timePaused, cadence=$cadence, bpm=$bpm, temperature=$temperature, humidity=$humidity, cadenceMax=$cadenceMax, cadenceAvg=$cadenceAvg, bpmMax=$bpmMax, bpmAvg=$bpmAvg)"
     }
 }

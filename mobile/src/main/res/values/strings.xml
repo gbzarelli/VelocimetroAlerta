@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">Speedometer Alert</string>
 
-
     <string name="title_activity_config">Settings</string>
     <string name="title_activity_my_activitys">My activitys</string>
     <string name="action_settings">Settings</string>
@@ -12,8 +11,8 @@
     <string name="bt_cancel">Cancel</string>
 
     <string name="velocidade_atual">Current speed</string>
-    <string name="velocidade_media">Average speed</string>
-    <string name="velocidade_maxima">Maximum speed</string>
+    <string name="avg">Average</string>
+    <string name="max">Maximum</string>
 
 
     <string name="grupo_informacoes_audio">Play the following information:</string>
@@ -78,23 +77,22 @@
     <string name="altitudeAtual">Altitude</string>
 
     <!-- DEFAULT FOR ALL -->
-    <string name="pref_pause_automatico">key_pause_automatico</string>
-    <string name="pref_informar_tempo">key_informar_tempo</string>
-    <string name="pref_informar_distancia">key_informar_distancia</string>
-    <string name="pref_informar_vatual">key_informar_vatual</string>
-    <string name="pref_informar_vmedia">key_informar_vmedia</string>
-    <string name="pref_informar_vmax">key_informar_vmax</string>
-    <string name="pref_vibrar">pref_vibrar</string>
-    <string name="pref_intervalo">key_intervalo</string>
-    <string name="pref_intervalo_valor">key_intervalo_valor</string>
-    <string name="valor_default">1</string>
-    <string name="default_max_hr">200</string>
-    <string name="default_rest_hr">60</string>
-    <string name="default_z1">66</string>
-    <string name="default_z2">76</string>
-    <string name="default_z3">83</string>
-    <string name="default_z4">90</string>
-    <string name="default_z5">95</string>
+    <string name="valor_default" translatable="false">1</string>
+    <integer name="default_max_hr" translatable="false">200</integer>
+    <integer name="default_rest_hr" translatable="false">60</integer>
+    <integer name="default_z1" translatable="false">50</integer>
+    <integer name="default_z2" translatable="false">60</integer>
+    <integer name="default_z3" translatable="false">70</integer>
+    <integer name="default_z4" translatable="false">80</integer>
+    <integer name="default_z5" translatable="false">90</integer>
+
+    <string name="text_null_value" translatable="false">- -</string>
+    <string name="unit_temp" translatable="false">ºC</string>
+    <string name="percent_humidity" translatable="false">%UR</string>
+    <string name="unit_hr" translatable="false">bpm</string>
+    <string name="unit_rpm" translatable="false">rpm</string>
+    <string name="unit_bpm" translatable="false">bpm</string>
+    <!-- ************* -->
 
     <string name="impossivel_gravar_disco">impossible to write to disk.</string>
     <string name="share">Share</string>
@@ -105,21 +103,6 @@
     <string name="notification_execute">RUNNING...</string>
     <string name="notification_pause">PAUSED</string>
     <string name="notification_pause_automatic">PAUSED AUTOMATICALLY</string>
-    <string name="text_null_value">- -</string>
-    <string name="unit_temp">ºC</string>
-    <string name="percent_humidity">%UR</string>
-    <string name="unit_hr">bpm</string>
-    <string name="unit_rpm">rpm</string>
-    <string name="unit_bpm">bpm</string>
-
-    <string name="pref_module_vel_alert">pref_module_vel_alert_bl</string>
-    <string name="pref_module_vel_alert_name">pref_module_vel_alert_name</string>
-    <string name="pref_module_vel_alert_address">pref_module_vel_alert_address</string>
-
-    <string name="pref_hr_sensor">pref_hm_sensor</string>
-    <string name="pref_hr_sensor_name">pref_hm_sensor_name</string>
-    <string name="pref_hr_sensor_address">pref_hm_sensor_address</string>
-
 
     <string name="temperature">Temperature</string>
     <string name="cadence">Cadence</string>
@@ -136,19 +119,22 @@
     <string name="title_velalert_module">Speedometer Alert Bluetooth Module</string>
     <string name="non_pairing_devices"><![CDATA[<- No paired devices ->]]></string>
 
-    <string name="zones">Zones</string>
+    <string name="zones">Zone</string>
     <string name="heart_hate">Heart hate</string>
     <string name="group_personal">Personal information</string>
     <string name="click_to_edit">Click to edit</string>
-    <string name="max_heart_rate">Max heart rate</string>
-    <string name="resting_heart_rate">Resting heart rate</string>
     <string name="edit_heartrate_zones">Edit heart rate zones</string>
 
+    <string name="max_heart_rate">Max heart rate</string>
+    <string name="resting_heart_rate">Resting heart rate</string>
     <string name="z1_endurance">Z1 (Very Light)</string>
     <string name="z2_moderate">Z2 (Light)</string>
     <string name="z3_time">Z3 (Moderate)</string>
     <string name="z4_threshold">Z4 (Hard)</string>
     <string name="z5_anaerobic">Z5 (Maximum)</string>
+
     <string name="title_hr_sensor">Heartrate sensor</string>
     <string name="info_config_in_running">Pause the activity to edit the settings.</string>
+    <string name="search_sensor">Search sensor...</string>
+    <string name="text_module_hr">Select the HR monitor device.\nFind...</string>
 </resources>

@@ -1,2 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="pref_pause_automatico" translatable="false">key_pause_automatico</string>
+    <string name="pref_informar_tempo" translatable="false">key_informar_tempo</string>
+    <string name="pref_informar_distancia" translatable="false">key_informar_distancia</string>
+    <string name="pref_informar_vatual" translatable="false">key_informar_vatual</string>
+    <string name="pref_informar_vmedia" translatable="false">key_informar_vmedia</string>
+    <string name="pref_informar_vmax" translatable="false">key_informar_vmax</string>
+    <string name="pref_vibrar" translatable="false">pref_vibrar</string>
+    <string name="pref_intervalo" translatable="false">key_intervalo</string>
+    <string name="pref_intervalo_valor" translatable="false">key_intervalo_valor</string>
+
+    <string name="pref_module_vel_alert" translatable="false">pref_module_vel_alert_bl</string>
+    <string name="pref_module_vel_alert_name" translatable="false">pref_module_vel_alert_name</string>
+    <string name="pref_module_vel_alert_address" translatable="false">pref_module_vel_alert_address</string>
+
+    <string name="pref_hr_sensor" translatable="false">pref_hm_sensor</string>
+    <string name="pref_hr_sensor_name" translatable="false">pref_hm_sensor_name</string>
+    <string name="pref_hr_sensor_address" translatable="false">pref_hm_sensor_address</string>
+
+    <string name="pref_hr_max_value" translatable="false">pref_hr_max_value</string>
+    <string name="pref_hr_rest_value" translatable="false">pref_hr_rest_value</string>
+    <string name="pref_hr_z5_value" translatable="false">pref_hr_z5_value</string>
+    <string name="pref_hr_z4_value" translatable="false">pref_hr_z4_value</string>
+    <string name="pref_hr_z3_value" translatable="false">pref_hr_z3_value</string>
+    <string name="pref_hr_z2_value" translatable="false">pref_hr_z2_value</string>
+    <string name="pref_hr_z1_value" translatable="false">pref_hr_z1_value</string>
+</resources>

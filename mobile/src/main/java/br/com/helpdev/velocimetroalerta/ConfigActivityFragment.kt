@@ -7,6 +7,7 @@ import android.preference.ListPreference
 import android.preference.Preference
 import android.preference.PreferenceFragment
 import android.preference.PreferenceManager
+import br.com.helpdev.velocimetroalerta.dialogs.DialogHR
 
 import br.com.helpdev.velocimetroalerta.dialogs.DialogPrefVelAlertBLModule
 
@@ -21,9 +22,11 @@ class ConfigActivityFragment : PreferenceFragment(), Preference.OnPreferenceChan
         val listPreference = findPreference(getString(R.string.pref_intervalo)) as ListPreference
         val editTextPreference = findPreference(getString(R.string.pref_intervalo_valor)) as EditTextPreference
         val dialogPrefVelAlertModule = findPreference(getString(R.string.pref_module_vel_alert)) as DialogPrefVelAlertBLModule
+        val dialogPrefHr = findPreference(getString(R.string.pref_hr_sensor)) as DialogHR
         editSummary(listPreference)
         editSummary(editTextPreference)
         editSummary(dialogPrefVelAlertModule)
+        editSummary(dialogPrefHr)
     }
 
 
@@ -35,6 +38,11 @@ class ConfigActivityFragment : PreferenceFragment(), Preference.OnPreferenceChan
     }
 
     private fun editSummary(preference: DialogPrefVelAlertBLModule) {
+        preference.onPreferenceChangeListener = this
+        onPreferenceChange(preference, preference.summary)
+    }
+
+    private fun editSummary(preference: DialogHR) {
         preference.onPreferenceChangeListener = this
         onPreferenceChange(preference, preference.summary)
     }

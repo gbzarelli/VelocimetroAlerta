@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:title="@string/group_personal">
-        <PreferenceScreen
-            android:title="@string/edit_heartrate_zones">
-            <intent android:action="br.com.helpdev.velocimetroalerta.CONFIG_HR_ACTIVITY"/>
+        <PreferenceScreen android:title="@string/edit_heartrate_zones">
+            <intent android:action="br.com.helpdev.velocimetroalerta.CONFIG_HR_ACTIVITY" />
         </PreferenceScreen>
-    </PreferenceCategory>-
+    </PreferenceCategory>
+    -
 
     <PreferenceCategory android:title="@string/grupo_informacoes_audio">
         <CheckBoxPreference
@@ -58,7 +58,7 @@
 
     <PreferenceCategory android:title="@string/group_sensors">
 
-        <br.com.helpdev.velocimetroalerta.dialogs.DialogPrefVelAlertBLModule
+        <br.com.helpdev.velocimetroalerta.dialogs.DialogHR
             android:defaultValue="false"
             android:key="@string/pref_hr_sensor"
             android:title="@string/title_hr_sensor" />

@@ -51,7 +51,7 @@ class NotificationUtils private constructor() {
             val notificationChannel = NotificationChannel(channelId, title,
                     importance)
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager?.createNotificationChannel(notificationChannel)
+            notificationManager.createNotificationChannel(notificationChannel)
         }
 
         fun notify(context: Context, notificationBuilder: NotificationCompat.Builder, id: Int) {
@@ -64,31 +64,6 @@ class NotificationUtils private constructor() {
             notificationManagerCompat.cancel(id)
         }
 
-
-        /**
-         * Is Notification Service Enabled.
-         * Verifies if the notification listener service is enabled.
-         * Got it from: https://github.com/kpbird/NotificationListenerService-Example/blob/master/NLSExample/src/main/java/com/kpbird/nlsexample/NLService.java
-         *
-         * @return True if eanbled, false otherwise.
-         */
-        fun isNotificationServiceEnabled(context: Context): Boolean {
-            val pkgName = context.packageName
-            val flat = Settings.Secure.getString(context.contentResolver,
-                    ENABLED_NOTIFICATION_LISTENERS)
-            if (!TextUtils.isEmpty(flat)) {
-                val names = flat.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                for (name in names) {
-                    val cn = ComponentName.unflattenFromString(name)
-                    if (cn != null) {
-                        if (TextUtils.equals(pkgName, cn.packageName)) {
-                            return true
-                        }
-                    }
-                }
-            }
-            return false
-        }
     }
 
 }

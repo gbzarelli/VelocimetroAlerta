@@ -9,8 +9,8 @@
     <string name="bt_cancel">Cancelar</string>
 
     <string name="velocidade_atual">Velocidade atual</string>
-    <string name="velocidade_media">Velocidade média</string>
-    <string name="velocidade_maxima">Velocidade máxima</string>
+    <string name="avg">Média</string>
+    <string name="max">Máxima</string>
     <string name="title_activity_config">Configurações</string>
     <string name="title_activity_my_activitys">Minhas atividades</string>
 
@@ -79,17 +79,6 @@
     <string name="elevation">Elevação</string>
     <string name="altitudeAtual">Altitude</string>
 
-    <!-- DEFAULT FOR ALL -->
-    <string name="pref_pause_automatico">key_pause_automatico</string>
-    <string name="pref_informar_tempo">key_informar_tempo</string>
-    <string name="pref_informar_distancia">key_informar_distancia</string>
-    <string name="pref_informar_vatual">key_informar_vatual</string>
-    <string name="pref_informar_vmedia">key_informar_vmedia</string>
-    <string name="pref_informar_vmax">key_informar_vmax</string>
-    <string name="pref_vibrar">pref_vibrar</string>
-    <string name="pref_intervalo">key_intervalo</string>
-    <string name="pref_intervalo_valor">key_intervalo_valor</string>
-    <string name="valor_default">1</string>
     <string name="impossivel_gravar_disco">impossível gravar em disco.</string>
     <string name="share">Compartilhar</string>
     <string name="title_share">Compartilhar arquivo com</string>
@@ -114,7 +103,7 @@
         https://github.com/helpdeveloper/VelocimetroAlertaBLModule</string>
     <string name="title_velalert_module">Velocimetro Alerta Bluetooth Modulo</string>
     <string name="non_pairing_devices"><![CDATA[<- Nenhum dispositivo pareado ->]]></string>
-    <string name="zones">Zonas</string>
+    <string name="zones">Zona</string>
     <string name="heart_hate">Batimentos</string>
     <string name="group_personal">Informações pessoais</string>
     <string name="click_to_edit">Clique para editar</string>
@@ -130,4 +119,6 @@
     <string name="z5_anaerobic">Z5 (Máximo)</string>
     <string name="title_hr_sensor">Sensor de frequência cardíaca</string>
     <string name="info_config_in_running">Pause a atividade para editar as configurações.</string>
+    <string name="search_sensor">Buscando sensor...</string>
+    <string name="text_module_hr">Selecione o dispositivo de monitoramento cardiaco.\nBuscando...</string>
 </resources>

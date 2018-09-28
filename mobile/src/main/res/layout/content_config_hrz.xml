@@ -4,17 +4,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:drawablePadding="5dp"
         android:drawableStart="@drawable/heart_pulse"
+        android:drawablePadding="5dp"
         android:gravity="center_vertical"
         android:padding="5dp"
         android:text="@string/edit_heartrate_zones"
@@ -31,10 +31,13 @@
             android:orientation="vertical">
 
             <LinearLayout
+                android:id="@+id/layout_max_hr"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/box_heart_rate_zones"
                 android:layout_marginTop="@dimen/activity_vertical_margin"
                 android:background="#8f8"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="5dp">
@@ -48,9 +51,10 @@
                     android:textColor="@color/black" />
 
                 <TextView
+                    android:id="@+id/tv_max_hr"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/default_max_hr"
+                    android:text="@string/text_null_value"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
                     android:textColor="@color/black" />
 
@@ -66,10 +70,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_rest_hr"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/box_heart_rate_zones"
                 android:layout_marginTop="5dp"
                 android:background="#bbf"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="5dp">
@@ -84,9 +91,10 @@
 
 
                 <TextView
+                    android:id="@+id/tv_rest_hr"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/default_rest_hr"
+                    android:text="@string/text_null_value"
                     android:textAllCaps="true"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
                     android:textColor="@color/black" />
@@ -102,10 +110,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_z5_hr"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/box_heart_rate_zones"
                 android:layout_marginTop="@dimen/activity_vertical_margin"
                 android:background="@color/color_z5"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="5dp">
@@ -127,11 +138,12 @@
 
 
                 <TextView
+                    android:id="@+id/tv_z5_hr"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingEnd="5dp"
                     android:paddingStart="5dp"
-                    android:text="@string/default_z5"
+                    android:paddingEnd="5dp"
+                    android:text="@string/text_null_value"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
                     android:textColor="@color/black" />
 
@@ -145,10 +157,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_z4_hr"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/box_heart_rate_zones"
                 android:layout_marginTop="5dp"
                 android:background="@color/color_z4"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="5dp">
@@ -170,11 +185,12 @@
 
 
                 <TextView
+                    android:id="@+id/tv_z4_hr"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingEnd="5dp"
                     android:paddingStart="5dp"
-                    android:text="@string/default_z4"
+                    android:paddingEnd="5dp"
+                    android:text="@string/text_null_value"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
                     android:textColor="@color/black" />
 
@@ -188,10 +204,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_z3_hr"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/box_heart_rate_zones"
                 android:layout_marginTop="5dp"
                 android:background="@color/color_z3"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="5dp">
@@ -213,11 +232,12 @@
 
 
                 <TextView
+                    android:id="@+id/tv_z3_hr"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingEnd="5dp"
                     android:paddingStart="5dp"
-                    android:text="@string/default_z3"
+                    android:paddingEnd="5dp"
+                    android:text="@string/text_null_value"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
                     android:textColor="@color/black" />
 
@@ -231,10 +251,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_z2_hr"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/box_heart_rate_zones"
                 android:layout_marginTop="5dp"
                 android:background="@color/color_z2"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="5dp">
@@ -256,11 +279,12 @@
 
 
                 <TextView
+                    android:id="@+id/tv_z2_hr"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingEnd="5dp"
                     android:paddingStart="5dp"
-                    android:text="@string/default_z2"
+                    android:paddingEnd="5dp"
+                    android:text="@string/text_null_value"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
                     android:textColor="@color/black" />
 
@@ -274,10 +298,13 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_z1_hr"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/box_heart_rate_zones"
                 android:layout_marginTop="5dp"
                 android:background="@color/color_z1"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="5dp">
@@ -298,11 +325,12 @@
                     android:textColor="@color/black" />
 
                 <TextView
+                    android:id="@+id/tv_z1_hr"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingEnd="5dp"
                     android:paddingStart="5dp"
-                    android:text="@string/default_z1"
+                    android:paddingEnd="5dp"
+                    android:text="@string/text_null_value"
                     android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
                     android:textColor="@color/black" />
 

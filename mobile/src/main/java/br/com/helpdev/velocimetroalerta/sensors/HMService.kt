@@ -14,12 +14,9 @@ class HMService : Service(), HMGatt.HMGattCallback {
 
     companion object {
         const val LOG = "HMService"
-
-        const val DEFAULT_MAC_ADDRESS = "33:FF:9F:FA:FF:FF"
     }
 
     inner class HMBinder internal constructor(private val hmService: HMService) : Binder() {
-
         fun getHeartHate(): Int {
             return lastHeartHate
         }
@@ -28,16 +25,19 @@ class HMService : Service(), HMGatt.HMGattCallback {
             hmService.start(macAddress)
         }
 
+        fun stop() {
+            hmGatt?.disconnectDevice()
+        }
     }
 
     private var bluetoothAdapter: BluetoothAdapter? = null
     private var bluetoothDevice: BluetoothDevice? = null
     private var hmGatt: HMGatt? = null
     private var lastHeartHate: Int = 0
-    private var macAddress: String? = DEFAULT_MAC_ADDRESS
+    private var macAddress: String? = null
 
     fun start(macAddress: String) {
-        this.macAddress = DEFAULT_MAC_ADDRESS//TODO
+        this.macAddress = macAddress
 
         if (hmGatt != null) {
             hmGatt!!.disconnectDevice()
@@ -45,6 +45,7 @@ class HMService : Service(), HMGatt.HMGattCallback {
 
         val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
         bluetoothAdapter = bluetoothManager.adapter
+        bluetoothAdapter!!.enable()
         bluetoothDevice = bluetoothAdapter!!.getRemoteDevice(macAddress)
 
         if (bluetoothDevice == null) {
@@ -65,8 +66,8 @@ class HMService : Service(), HMGatt.HMGattCallback {
         return START_NOT_STICKY
     }
 
+
     override fun onDestroy() {
-        Log.d(LOG, "onDestroy")
         hmGatt?.disconnectDevice()
         super.onDestroy()
     }

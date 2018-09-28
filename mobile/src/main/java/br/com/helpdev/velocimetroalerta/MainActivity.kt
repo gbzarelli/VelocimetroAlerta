@@ -206,7 +206,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             try {
                 if (callbackNotify != null) callbackNotify!!.onBeforeDisconnect(speedometerService!!)
             } catch (t: Throwable) {
-                Log.e(LOG, "onBeeforeDisconnect")
+                Log.e(LOG, "onBeforeDisconnect")
             }
 
             try {

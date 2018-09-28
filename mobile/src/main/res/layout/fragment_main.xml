@@ -115,7 +115,7 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/tv_pausado_automaticamete"
+                android:id="@+id/pausadoAutomaticamente"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
@@ -124,6 +124,166 @@
                 android:textColor="@color/colorAccentDark"
                 android:textStyle="bold"
                 android:visibility="invisible" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginBottom="@dimen/activity_vertical_margin"
+                android:background="@android:color/black" />
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:gravity="center_horizontal"
+                android:orientation="horizontal">
+
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="20dp"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/texto_sensors"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:text="@string/avg"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:visibility="visible" />
+
+                    <LinearLayout
+                        android:id="@+id/layout_velocidade_2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/velocidadeMedia"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="20"
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textColor="@color/black"
+                            android:textSize="@dimen/size_text_small" />
+
+
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:text="@string/velocidade_atual"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:visibility="visible" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="match_parent"
+                            android:src="@drawable/speedometer" />
+
+                        <TextView
+                            android:id="@+id/velocidadeAtual"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:text="@string/text_null_value"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:textSize="@dimen/text_size_velocidade" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="2dp"
+                            android:gravity="bottom"
+                            android:text="@string/km_h"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="@color/black" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="20dp"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:text="@string/max"
+                        android:textAppearance="?android:attr/textAppearanceSmall"
+                        android:visibility="visible" />
+
+                    <LinearLayout
+                        android:id="@+id/layout_velocidade_3"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/velocidadeMaxima"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="99"
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textColor="@color/black"
+                            android:textSize="@dimen/size_text_small" />
+
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/gpsDesatualizado"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="@string/gps_desatualizado_sem_sinal"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="@color/colorAccentDark"
+                    android:textStyle="bold"
+                    android:visibility="invisible" />
+
+                <TextView
+                    android:id="@+id/tvPrecisionInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="@string/gps_impreciso"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="@color/colorAccentDark"
+                    android:textStyle="bold"
+                    android:visibility="invisible" />
+            </FrameLayout>
 
             <View
                 android:layout_width="match_parent"
@@ -140,93 +300,115 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:baselineAligned="false"
                     android:orientation="horizontal">
 
                     <LinearLayout
-                        android:id="@+id/layout_hm"
-                        android:layout_width="0dp"
+                        android:layout_width="120dp"
                         android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical">
+                        android:gravity="bottom"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:layout_marginStart="10dp"
+                            android:src="@drawable/heart_pulse" />
 
                         <TextView
-                            android:layout_width="match_parent"
+                            android:id="@+id/hm"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center_horizontal"
-                            android:text="@string/heart_hate"
-                            android:textAppearance="?android:attr/textAppearanceSmall" />
+                            android:layout_marginStart="5dp"
+                            android:text="220"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:textSize="@dimen/text_size_default" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
+                        <TextView
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center_horizontal"
-                            android:orientation="horizontal">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="match_parent"
-                                android:src="@drawable/heart_pulse" />
-
-                            <TextView
-                                android:id="@+id/current_hm"
-                                android:layout_width="wrap_content"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="5dp"
-                                android:layout_marginStart="5dp"
-                                android:gravity="center"
-                                android:text="@string/text_null_value"
-                                android:textAppearance="?android:attr/textAppearanceLarge"
-                                android:textSize="@dimen/text_size_default" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="2dp"
-                                android:layout_marginStart="2dp"
-                                android:gravity="center"
-                                android:text="@string/unit_bpm"
-                                android:textAppearance="?android:attr/textAppearanceMedium"
-                                android:textColor="@color/black" />
-                        </LinearLayout>
-
+                            android:layout_marginLeft="2dp"
+                            android:layout_marginStart="2dp"
+                            android:text="@string/unit_bpm"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="@color/black" />
                     </LinearLayout>
 
                     <LinearLayout
-                        android:id="@+id/layout_hm_zone"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:gravity="center_horizontal"
+                        android:gravity="center"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center_horizontal"
+                            android:gravity="center"
+                            android:text="@string/avg"
+                            android:textAppearance="?android:attr/textAppearanceSmall" />
+
+                        <TextView
+                            android:id="@+id/avgHm"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="170 (Z4)"
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textColor="@color/black"
+                            android:textSize="@dimen/size_text_small" />
+
+                    </LinearLayout>
+
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
                             android:text="@string/zones"
                             android:textAppearance="?android:attr/textAppearanceSmall" />
 
-                        <LinearLayout
+                        <TextView
+                            android:id="@+id/zone"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center_horizontal"
-                            android:orientation="horizontal">
+                            android:gravity="center"
+                            android:text="70% - Z5"
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textColor="@color/black"
+                            android:textSize="@dimen/size_text_small" />
+                    </LinearLayout>
+
+                    <LinearLayout
+
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical">
 
 
-                            <TextView
-                                android:id="@+id/current_zone_hm"
-                                android:layout_width="wrap_content"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="5dp"
-                                android:layout_marginStart="5dp"
-                                android:gravity="center"
-                                android:text="@string/text_null_value"
-                                android:textAppearance="?android:attr/textAppearanceLarge"
-                                android:textSize="@dimen/text_size_default" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/max"
+                            android:textAppearance="?android:attr/textAppearanceSmall" />
 
-                        </LinearLayout>
+                        <TextView
+                            android:id="@+id/maxHm"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="197"
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textColor="@color/black"
+                            android:textSize="@dimen/size_text_small" />
 
                     </LinearLayout>
 
@@ -236,7 +418,8 @@
                     android:id="@+id/layout_zones"
                     android:layout_width="match_parent"
                     android:layout_height="25dp"
-                    android:layout_marginTop="5dp">
+                    android:layout_marginTop="5dp"
+                    android:visibility="gone">
 
                     <TextView
                         android:layout_width="0dp"
@@ -288,189 +471,30 @@
                         android:text="z5 | 6%" />
                 </LinearLayout>
 
-                <View
+                <TextView
+                    android:id="@+id/search_sensor_hr"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="@string/search_sensor"
+                    android:textAllCaps="true"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="@color/colorAccentDark"
+                    android:textStyle="bold"
+                    android:visibility="invisible" />
 
+                <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
-                    android:layout_marginTop="@dimen/activity_vertical_margin"
                     android:background="@android:color/black" />
 
             </LinearLayout>
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:gravity="center_horizontal"
-                android:orientation="horizontal">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1.6"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:text="@string/velocidade_atual"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:visibility="visible" />
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="match_parent"
-                            android:src="@drawable/speedometer" />
-
-                        <TextView
-                            android:id="@+id/velocidade_atual"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginLeft="5dp"
-                            android:layout_marginStart="5dp"
-                            android:text="@string/text_null_value"
-                            android:textAppearance="?android:attr/textAppearanceLarge"
-                            android:textSize="@dimen/text_size_velocidade" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginLeft="2dp"
-                            android:layout_marginStart="2dp"
-                            android:gravity="bottom"
-                            android:text="@string/km_h"
-                            android:textAppearance="?android:attr/textAppearanceMedium"
-                            android:textColor="@color/black" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical"
-                    android:visibility="visible">
-
-                    <TextView
-                        android:id="@+id/texto_sensors"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:text="@string/velocidade_media"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:visibility="visible" />
-
-                    <LinearLayout
-                        android:id="@+id/layout_velocidade_2"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/velocidade_media"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/text_null_value"
-                            android:textAppearance="?android:attr/textAppearanceLarge"
-                            android:textSize="@dimen/text_size_default" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginLeft="2dp"
-                            android:layout_marginStart="2dp"
-                            android:text="@string/km_h"
-                            android:textAppearance="?android:attr/textAppearanceSmall"
-                            android:textColor="@color/black" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_horizontal"
-                        android:text="@string/velocidade_maxima"
-                        android:textAppearance="?android:attr/textAppearanceSmall"
-                        android:visibility="visible" />
-
-                    <LinearLayout
-                        android:id="@+id/layout_velocidade_3"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center_horizontal"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/velocidade_maxima"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/text_null_value"
-                            android:textAppearance="?android:attr/textAppearanceLarge"
-                            android:textSize="@dimen/text_size_default" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginLeft="2dp"
-                            android:layout_marginStart="2dp"
-                            android:text="@string/km_h"
-                            android:textAppearance="?android:attr/textAppearanceSmall"
-                            android:textColor="@color/black" />
-                    </LinearLayout>
-                </LinearLayout>
-            </LinearLayout>
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tv_gps_desatualizado"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:text="@string/gps_desatualizado_sem_sinal"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="@color/colorAccentDark"
-                    android:textStyle="bold"
-                    android:visibility="invisible" />
-
-                <TextView
-                    android:id="@+id/tv_gps_impreciso"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:text="@string/gps_impreciso"
-                    android:textAppearance="?android:attr/textAppearanceSmall"
-                    android:textColor="@color/colorAccentDark"
-                    android:textStyle="bold"
-                    android:visibility="invisible" />
-            </FrameLayout>
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginBottom="@dimen/activity_vertical_margin"
-                android:background="@android:color/black" />
-
-
-            <LinearLayout
                 android:id="@+id/layout_sensors_vam"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:orientation="vertical">
 
                 <LinearLayout
@@ -480,51 +504,60 @@
 
                     <LinearLayout
                         android:id="@+id/layout_cadencia"
-                        android:layout_width="0dp"
+                        android:layout_width="120dp"
                         android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:gravity="center_horizontal"
+                        android:gravity="bottom"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:layout_marginStart="10dp"
+                            android:src="@drawable/cadence" />
+
+                        <TextView
+                            android:id="@+id/cadence"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:text="110"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:textSize="@dimen/text_size_default" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="2dp"
+                            android:text="@string/unit_rpm"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="@color/black" />
+
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
                         android:orientation="vertical">
 
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center_horizontal"
-                            android:text="@string/cadence"
+                            android:gravity="center"
+                            android:text="@string/avg"
                             android:textAppearance="?android:attr/textAppearanceSmall" />
 
-                        <LinearLayout
+                        <TextView
+                            android:id="@+id/avgCadence"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center_horizontal"
-                            android:orientation="horizontal">
+                            android:gravity="center"
+                            android:text="80"
+                            android:textAppearance="?android:attr/textAppearanceSmall"
+                            android:textColor="@color/black"
+                            android:textSize="@dimen/size_text_small" />
 
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="match_parent"
-                                android:src="@drawable/cadence" />
-
-                            <TextView
-                                android:id="@+id/cadence"
-                                android:layout_width="wrap_content"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="5dp"
-                                android:layout_marginStart="5dp"
-                                android:gravity="center"
-                                android:text="@string/text_null_value"
-                                android:textAppearance="?android:attr/textAppearanceLarge"
-                                android:textSize="@dimen/text_size_default" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="2dp"
-                                android:layout_marginStart="2dp"
-                                android:gravity="center"
-                                android:text="@string/unit_rpm"
-                                android:textAppearance="?android:attr/textAppearanceMedium"
-                                android:textColor="@color/black" />
-                        </LinearLayout>
                     </LinearLayout>
 
                     <LinearLayout
@@ -532,82 +565,70 @@
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical">
+                        android:gravity="center|bottom"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="4dp"
+                            android:src="@drawable/thermometer" />
 
                         <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_horizontal"
-                            android:text="@string/temperature"
-                            android:textAppearance="?android:attr/textAppearanceSmall" />
-
-                        <LinearLayout
+                            android:id="@+id/temperature"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:orientation="horizontal">
+                            android:layout_marginStart="5dp"
+                            android:text="22"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:textSize="@dimen/text_size_default" />
 
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="match_parent"
-                                android:src="@drawable/thermometer" />
-
-
-                            <TextView
-                                android:id="@+id/temperature"
-                                android:layout_width="wrap_content"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="5dp"
-                                android:layout_marginStart="5dp"
-                                android:gravity="center"
-                                android:text="@string/text_null_value"
-                                android:textAppearance="?android:attr/textAppearanceLarge"
-                                android:textSize="@dimen/text_size_default" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="2dp"
-                                android:layout_marginStart="2dp"
-                                android:gravity="center"
-                                android:text="@string/unit_temp"
-                                android:textAppearance="?android:attr/textAppearanceMedium"
-                                android:textColor="@color/black" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="2dp"
+                            android:text="@string/unit_temp"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="@color/black" />
 
 
-                            <TextView
-                                android:id="@+id/humidity"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="10dp"
-                                android:layout_marginStart="10dp"
-                                android:gravity="center"
-                                android:text="@string/text_null_value"
-                                android:textAppearance="?android:attr/textAppearanceLarge"
-                                android:textSize="@dimen/text_size_default" />
+                        <TextView
+                            android:id="@+id/humidity"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:text="90"
+                            android:textAppearance="?android:attr/textAppearanceLarge"
+                            android:textSize="@dimen/text_size_default" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="match_parent"
-                                android:layout_marginLeft="2dp"
-                                android:layout_marginStart="2dp"
-                                android:gravity="center"
-                                android:text="@string/percent_humidity"
-                                android:textAppearance="?android:attr/textAppearanceMedium"
-                                android:textColor="@color/black" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="2dp"
+                            android:text="@string/percent_humidity"
+                            android:textAppearance="?android:attr/textAppearanceMedium"
+                            android:textColor="@color/black" />
 
-                        </LinearLayout>
                     </LinearLayout>
 
-
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/search_sensor_vam"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="@string/search_sensor"
+                    android:textAllCaps="true"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:textColor="@color/colorAccentDark"
+                    android:textStyle="bold"
+                    android:visibility="invisible" />
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
-                    android:layout_marginTop="@dimen/activity_vertical_margin"
                     android:background="@android:color/black" />
 
             </LinearLayout>
@@ -663,7 +684,7 @@
                         android:src="@drawable/arrow_top_right" />
 
                     <TextView
-                        android:id="@+id/ganho_altitude"
+                        android:id="@+id/ganhoAltitude"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -697,7 +718,7 @@
                         android:src="@drawable/arrow_bottom_right" />
 
                     <TextView
-                        android:id="@+id/ganho_neg_altitude"
+                        android:id="@+id/perdaAltitude"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -773,7 +794,7 @@
                         android:src="@drawable/mountain" />
 
                     <TextView
-                        android:id="@+id/altitude_atual"
+                        android:id="@+id/altitude"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -806,7 +827,7 @@
                         android:src="@drawable/contrast" />
 
                     <TextView
-                        android:id="@+id/precisao_atual"
+                        android:id="@+id/precision"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="5dp"
@@ -837,19 +858,19 @@
 
 
     <ImageButton
-        android:id="@+id/bt_save"
+        android:id="@+id/btSave"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_alignBottom="@+id/bt_play_pause"
+        android:layout_alignBottom="@+id/btStartStop"
         android:layout_marginRight="@dimen/activity_vertical_margin"
-        android:layout_toLeftOf="@+id/bt_play_pause"
+        android:layout_toLeftOf="@+id/btStartStop"
         android:background="@drawable/button_play_pause"
         android:src="@drawable/ic_save"
         android:visibility="gone" />
 
 
     <ImageButton
-        android:id="@+id/bt_play_pause"
+        android:id="@+id/btStartStop"
         android:layout_width="72dp"
         android:layout_height="72dp"
         android:layout_alignParentBottom="true"
@@ -858,13 +879,13 @@
         android:src="@drawable/play" />
 
     <ImageButton
-        android:id="@+id/bt_refresh"
+        android:id="@+id/btRefresh"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_alignBottom="@+id/bt_play_pause"
+        android:layout_alignBottom="@+id/btStartStop"
         android:layout_marginLeft="@dimen/activity_vertical_margin"
-        android:layout_toEndOf="@+id/bt_play_pause"
-        android:layout_toRightOf="@+id/bt_play_pause"
+        android:layout_toEndOf="@+id/btStartStop"
+        android:layout_toRightOf="@+id/btStartStop"
         android:background="@drawable/button_play_pause"
         android:src="@drawable/refresh"
         android:visibility="gone" />

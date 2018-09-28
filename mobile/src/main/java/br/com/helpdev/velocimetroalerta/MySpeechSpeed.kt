@@ -40,10 +40,10 @@ class MySpeechSpeed {
         this.context = context
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         val inter = sp.getString(context.getString(R.string.pref_intervalo), "minutos")
-        if (inter == "minutos") {
-            intervalo = INTERVAL_TEMPO
+        intervalo = if (inter == "minutos") {
+            INTERVAL_TEMPO
         } else {
-            intervalo = INTERVAL_DISTANCE
+            INTERVAL_DISTANCE
         }
         valorIntervalo = Integer.parseInt(sp.getString(context.getString(R.string.pref_intervalo_valor), "1"))
         repAtual = sp.getBoolean(context.getString(R.string.pref_informar_vatual), false)
@@ -66,7 +66,7 @@ class MySpeechSpeed {
         if (speech == null) {
             throw RuntimeException("Not init MySpeechSpeed!")
         }
-        this.distanciaPercorrida = obSpeedometerAlert.distancia
+        this.distanciaPercorrida = obSpeedometerAlert.distance
         if (reproduzindo) {
             return
         }
@@ -101,19 +101,19 @@ class MySpeechSpeed {
 
         if (!speech!!.isSpeaking) {
             if (repAtual) {
-                play(context!!.getString(R.string.speek_velocidade_atual, obSpeedometerAlert.getvAtual().toInt()))
+                play(context!!.getString(R.string.speek_velocidade_atual, obSpeedometerAlert.speed.toInt()))
             }
             if (repMedia) {
-                play(context!!.getString(R.string.speek_media, String.format("%.1f", obSpeedometerAlert.getvMedia()).replace(",".toRegex(), ".")))
+                play(context!!.getString(R.string.speek_media, String.format("%.1f", obSpeedometerAlert.speedAvg).replace(",".toRegex(), ".")))
             }
             if (repMax) {
-                play(context!!.getString(R.string.speek_maxima, obSpeedometerAlert.getvMaxima().toInt()))
+                play(context!!.getString(R.string.speek_maxima, obSpeedometerAlert.speedMax.toInt()))
             }
             if (repDistancia) {
-                play(context!!.getString(R.string.speek_distancia, String.format("%.1f", obSpeedometerAlert.distancia).replace(",".toRegex(), ".")))
+                play(context!!.getString(R.string.speek_distancia, String.format("%.1f", obSpeedometerAlert.distance).replace(",".toRegex(), ".")))
             }
             if (repTempo) {
-                play(context!!.getString(R.string.speek_tempo, java.lang.Double.valueOf(obSpeedometerAlert.getDuracao() / 60000)!!.toInt()))
+                play(context!!.getString(R.string.speek_tempo, (obSpeedometerAlert.time.toDouble() / 60000.toDouble()).toInt()))
             }
         }
     }
