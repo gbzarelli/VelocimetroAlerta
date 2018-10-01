@@ -313,7 +313,7 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
     }
 
     private fun reset() {
-        gpx = Gpx(getString(R.string.app_name))
+        gpx = Gpx("Velocimeter_Alert")
         obSpeedometerAlert = ObSpeedometerAlert(getConfigHR())
         val base = SystemClock.elapsedRealtime()
         firstBase = base
