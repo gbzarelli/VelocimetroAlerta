@@ -2,12 +2,9 @@
 
 # Speedometer Alert - Velocimetro Alerta
 
-<img src=imagens/Screenshot_20180929-100657.png width=170>
-<img src=imagens/Screenshot_20180930-171106.png width=170>
-<img src=imagens/Screenshot_20180930-180614.png width=170>
-<img src=imagens/Screenshot_20180929-100722.png width=170>
-<img src=imagens/Screenshot_20180929-100727.png width=170>
-<img src=imagens/Screenshot_20180929-100735.png width=170>
+<img src=imagens/Screenshot_20180929-100657.png width=170> . <img src=imagens/Screenshot_20180930-171106.png width=170> . <img src=imagens/Screenshot_20180930-180614.png width=170>
+
+<img src=imagens/Screenshot_20180929-100722.png width=170> . <img src=imagens/Screenshot_20180929-100727.png width=170> . <img src=imagens/Screenshot_20180929-100735.png width=170>
 
 
 [en] The Speedometer Alert is an application that indicates precisely through GPS positions the current speed, average speed, maximum speed, elapsed time, altimetry, ALTIMETRY GAIN/LOSS IN REAL TIME and distance traveled of a started activity, is able to predict a GPS interruption or stop activity if you do not have speed and stop activity automatically, thus not losing important information such as time and average speed.
