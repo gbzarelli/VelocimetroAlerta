@@ -1,0 +1,16 @@
+[versions]
+agp = "9.4.1"
+support = "27.1.1"
+constraint = "1.1.3"
+gson = "2.14.0"
+simple-xml = "2.7.1"
+
+[libraries]
+support-appcompat = { module = "com.android.support:appcompat-v7", version.ref = "support" }
+support-design = { module = "com.android.support:design", version.ref = "support" }
+support-constraint = { module = "com.android.support.constraint:constraint-layout", version.ref = "constraint" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+simple-xml = { module = "org.simpleframework:simple-xml", version.ref = "simple-xml" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

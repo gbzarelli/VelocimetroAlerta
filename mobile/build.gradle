@@ -1,44 +1,60 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+def releaseSigningValues = [
+        storeFile    : System.getenv('VEL_ALERT_UPLOAD_STORE_FILE'),
+        storePassword: System.getenv('VEL_ALERT_UPLOAD_STORE_PASSWORD'),
+        keyAlias     : System.getenv('VEL_ALERT_UPLOAD_KEY_ALIAS'),
+        keyPassword  : System.getenv('VEL_ALERT_UPLOAD_KEY_PASSWORD')
+]
+def hasReleaseSigning = releaseSigningValues.values().every { it != null && !it.trim().isEmpty() }
 
 android {
+    namespace = 'br.com.helpdev.velocimetroalerta'
+    compileSdk = 37
+
+    defaultConfig {
+        applicationId = 'br.com.helpdev.velocimetroalerta'
+        minSdk = 19
+        targetSdk = 37
+        versionCode = 12
+        versionName = '4.1'
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
     signingConfigs {
-        playStore {
-            keyPassword '*'
-            keyAlias 'miibijanbgkqhkig9w0baqefaaocaq8amiibcgkcaqeasdprrf/g0qth0reliql5zkxp6durvhprwnnihfclrnd8wrqjf4kc/2ubcmdieyfkz0ob0d0iomgv4s2xstxsgax/yai3u3yoea7w5wuhyfm5z7cvtjxtmsvzpg7gj1xtjxxeoftpnqake8gvy2dfzfl8m7z4ykqkhldma50t5d4jxrlqxzdec1jrfm/c59pont/6dewwey1rkiwpx1kh3ef1yzes9ezujk6qn84mzgu3spcdlyqgksyh399cat910enz2ymzek5g1hfzosmm6mit1h7yzx6xzhzyzggdlrnkh0xhyymbfaoeuqvzv6fimts1typmzw+ebjlcefltzqidaqab'
-            storeFile file('velocimetro_alerta.jks')
-            storePassword '*'
+        if (hasReleaseSigning) {
+            create('playStore') {
+                storeFile = file(releaseSigningValues.storeFile)
+                storePassword = releaseSigningValues.storePassword
+                keyAlias = releaseSigningValues.keyAlias
+                keyPassword = releaseSigningValues.keyPassword
+            }
         }
     }
-    compileSdkVersion 27
-    buildToolsVersion "27.0.3"
-    defaultConfig {
-        applicationId "br.com.helpdev.velocimetroalerta"
-        minSdkVersion 19
-        targetSdkVersion 27
-        versionCode 12
-        versionName "4.1"
-    }
+
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.playStore
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName('playStore')
+            }
         }
-    }
-    lintOptions{
-        checkReleaseBuilds false
     }
 }
 
 dependencies {
-    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
-    implementation 'com.android.support:appcompat-v7:27.1.1'
-    implementation 'com.android.support:design:27.1.1'
-    implementation 'com.google.code.gson:gson:2.8.2'
-    implementation('org.simpleframework:simple-xml:2.7.1') {
+    implementation(libs.support.constraint)
+    implementation(libs.support.appcompat)
+    implementation(libs.support.design)
+    implementation(libs.gson)
+    implementation(libs.simple.xml) {
         exclude group: 'stax', module: 'stax-api'
         exclude group: 'xpp3', module: 'xpp3'
     }

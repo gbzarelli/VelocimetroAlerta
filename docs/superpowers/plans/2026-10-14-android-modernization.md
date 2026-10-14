@@ -6,7 +6,7 @@
 
 **Architecture:** Restore a reproducible Gradle build, migrate the existing view-based app to AndroidX and ViewBinding, and isolate API-level permission decisions in a small policy helper. Keep foreground location tracking behind an explicit user action and stream GPX output through the Storage Access Framework.
 
-**Tech Stack:** Kotlin, Android Gradle Plugin 9.5.0, Gradle 9.6.0, JDK 17 or newer, Android API 37 (Android 17), AGP built-in Kotlin, AndroidX, Material Components, Android `XmlSerializer`/`XmlPullParser`, JUnit, AndroidX Test.
+**Tech Stack:** Kotlin, Android Gradle Plugin 9.4.1, Gradle 9.6.0, JDK 17 or newer, Android API 37 (Android 17), AGP built-in Kotlin, AndroidX, Material Components, Android `XmlSerializer`/`XmlPullParser`, JUnit, AndroidX Test.
 
 **Spec:** `docs/superpowers/specs/2026-10-14-android-play-republication-design.md`
 
@@ -18,7 +18,7 @@
 - Keep the app free and without ads; add no ad SDK, ad unit, AdMob configuration, or Advertising ID permission.
 - Do not track location before the user starts tracking with required permission; do not add `ACCESS_BACKGROUND_LOCATION` unless the reviewed behavior and Play policy require it.
 - Keep keystores, passwords, and private key material outside tracked files and command output.
-- Use Gradle 9.6.0 with AGP 9.5.0 and a JDK 17+ runtime; AGP 9.5 supports API 37 and requires Gradle 9.6/JDK 17. See [AGP 9.5 release notes](https://developer.android.com/build/releases/agp-9-5-0-release-notes) and [built-in Kotlin migration](https://developer.android.com/build/migrate-to-built-in-kotlin).
+- Use Gradle 9.6.0 with AGP 9.4.1 and a JDK 17+ runtime; AGP 9.4.1 is the latest stable artifact available, supports API 37, and requires Gradle 9.6/JDK 17. See [AGP 9.4 release notes](https://developer.android.com/build/releases/agp-9-4-0-release-notes) and [built-in Kotlin migration](https://developer.android.com/build/migrate-to-built-in-kotlin).
 
 ## Review Focus
 
@@ -48,17 +48,17 @@
 - Regenerate: `gradlew`, `gradlew.bat`
 
 **Interfaces:**
-- Produces: checked-in Gradle Wrapper 9.6.0; Android plugin 9.5.0; a version catalog for pinned plugins and dependencies; module configuration with compile/target API 37 and conditional `minSdk = 19`.
+- Produces: checked-in Gradle Wrapper 9.6.0; Android plugin 9.4.1; a version catalog for pinned plugins and dependencies; module configuration with compile/target API 37 and conditional `minSdk = 19`.
 
-- [ ] Replace the incomplete wrapper with the official Gradle 9.6.0 wrapper scripts, JAR, and properties; stop ignoring the wrapper directory while retaining ignores for local build outputs and signing files.
-- [ ] Move plugin resolution to `pluginManagement` with Google and Maven Central; remove JCenter and the legacy root `buildscript` Kotlin/AGP classpaths.
-- [ ] Apply `com.android.application` from the version catalog at 9.5.0; use AGP built-in Kotlin instead of `kotlin-android` and remove the direct `kotlin-stdlib-jre7` dependency.
-- [ ] Set `compileSdk` and `targetSdk` to API 37 for Android 17, installing the Android 17 SDK platform and API 37 build tools; Google Play's update floor is currently API 36+, so recheck its policy immediately before upload and use a higher supported API if required. Keep `minSdk = 19` pending the dependency audit; enable AndroidX and ViewBinding; omit a hard-coded `buildToolsVersion` so AGP selects its compatible default.
-- [ ] Remove the tracked `playStore` signing block and credential-like values from `mobile/build.gradle`. Configure release signing only from local ignored properties or environment variables; leave local release builds unsigned when those values are absent.
-- [ ] Replace the legacy root `clean` task declaration with Gradle 9-compatible task registration or remove it if the base plugin already provides the required task.
-- [ ] Run `./gradlew :mobile:dependencies --configuration debugRuntimeClasspath` and `./gradlew :mobile:dependencies --configuration releaseRuntimeClasspath`; record each direct/transitive library's resolved version, license, minSdk constraint, maintenance status, known advisories, local-network behavior, and keep/upgrade/replace decision in `docs/android-dependency-audit.md`.
-- [ ] Run `./gradlew --version` and `./gradlew help`.
-- [ ] Commit the wrapper and build-configuration changes as `build: modernize Android Gradle toolchain`.
+- [x] Replace the incomplete wrapper with the official Gradle 9.6.0 wrapper scripts, JAR, and properties; stop ignoring the wrapper directory while retaining ignores for local build outputs and signing files.
+- [x] Move plugin resolution to `pluginManagement` with Google and Maven Central; remove JCenter and the legacy root `buildscript` Kotlin/AGP classpaths.
+- [x] Apply `com.android.application` from the version catalog at 9.4.1; use AGP built-in Kotlin instead of `kotlin-android` and remove the direct `kotlin-stdlib-jre7` dependency.
+- [x] Set `compileSdk` and `targetSdk` to API 37 for Android 17, installing the Android 17 SDK platform; AGP 9.4 uses SDK Build Tools 36.0.0 by default, so omit a hard-coded `buildToolsVersion`. Google Play's update floor is currently API 36+, so recheck its policy immediately before upload and use a higher supported API if required. Keep `minSdk = 19` pending the dependency audit; enable AndroidX and ViewBinding.
+- [x] Remove the tracked `playStore` signing block and credential-like values from `mobile/build.gradle`. Configure release signing only from local ignored properties or environment variables; leave local release builds unsigned when those values are absent.
+- [x] Replace the legacy root `clean` task declaration with Gradle 9-compatible task registration or remove it if the base plugin already provides the required task.
+- [x] Run `./gradlew :mobile:dependencies --configuration debugRuntimeClasspath` and `./gradlew :mobile:dependencies --configuration releaseRuntimeClasspath`; record each direct/transitive library's resolved version, license, minSdk constraint, maintenance status, known advisories, local-network behavior, and keep/upgrade/replace decision in `docs/android-dependency-audit.md`.
+- [x] Run `./gradlew --version` and `./gradlew help`.
+- [x] Commit the wrapper and build-configuration changes as `build: modernize Android Gradle toolchain`.
 
 Run: `./gradlew --version` and `./gradlew help`
 Expected: Gradle 9.6.0 starts on JDK 17 or newer, and project configuration completes without resolving JCenter or requiring the missing local keystore.
@@ -78,7 +78,7 @@ Expected: Gradle 9.6.0 starts on JDK 17 or newer, and project configuration comp
 - Create: `mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/ConfigScreensSmokeTest.kt`
 
 **Interfaces:**
-- Consumes: Gradle 9.6.0, AGP 9.5.0, and the version catalog from Task 1.
+- Consumes: Gradle 9.6.0, AGP 9.4.1, and the version catalog from Task 1.
 - Produces: AndroidX `AppCompatActivity`, Fragment, Preference (`PreferenceFragmentCompat`), Core, ConstraintLayout, Material Components, and generated ViewBinding classes for existing layouts.
 
 - [ ] Pin current stable AndroidX and Material Components dependencies compatible with the approved minimum SDK in `gradle/libs.versions.toml`; remove `com.android.support:*` and `com.android.support.constraint:*` dependencies.
@@ -113,6 +113,7 @@ Expected: debug APK assembles and both smoke tests pass without support-library 
 - [ ] Run `./gradlew :mobile:testDebugUnitTest --tests '*RuntimePermissionPolicyTest'` and confirm it fails because the policy type has not been created.
 - [ ] Write `TrackingPermissionFlowTest.locationDeniedDoesNotStartTracking`, `preciseGrantStartsLocationForegroundService`, `approximateOnlyDoesNotStartPrecisionTracking`, `notificationDeniedDoesNotCrashTracking`, and `revokedLocationStopsTracking`; run on API 37 and confirm the current launch-time permission/service behavior violates the expected explicit-start flow.
 - [ ] Implement the policy helper and update the manifest with coarse/fine location, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`, and API-31 Bluetooth permissions; cap legacy Bluetooth permissions at API 30 and mark scan `neverForLocation` only if code review confirms scan results are not used to infer location.
+- [ ] Set explicit `android:exported` values for every manifest component with an intent filter: `MainActivity=true` for the launcher, `ConfigHRZActivity=false` because the app starts it explicitly, and any other filtered components according to their required external entry point; mark internal services `false`.
 - [ ] Set `android:foregroundServiceType="location"` on `SpeedometerService`; keep background-location permission out unless the implementation audit proves it is necessary.
 - [ ] Change `MainActivity` so app launch binds the service without prompting for storage/location or subscribing to GPS. Register permission requests with Activity Result APIs and request precise location only when the user taps Start.
 - [ ] Change `Gps.init` to initialize without updates. Start location updates only after precise permission is granted and tracking begins; stop updates on track stop and service destruction.
@@ -259,6 +260,7 @@ Expected: unit and instrumentation suites pass; the physical-device checklist pa
 
 ## Platform references
 
+- AGP 9.4 supports API 37 with Gradle 9.6, Build Tools 36.0.0, and JDK 17: <https://developer.android.com/build/releases/agp-9-4-0-release-notes>.
 - Android 17 SDK setup and API 37 platform installation: <https://developer.android.com/about/versions/17/setup-sdk>.
 - Android 17 behavior changes for target API 37, including background audio, large-screen orientation, and Bluetooth socket EOF: <https://developer.android.com/about/versions/17/behavior-changes-17>.
 - Android 17 migration guide: <https://developer.android.com/about/versions/17/migration>.
