@@ -31,6 +31,8 @@ Debug and release runtime classpaths resolve the same 75 artifact coordinates af
 | Kotlin stdlib 2.2.10, Coroutines 1.9.0, annotations 23.0.0, JSpecify 1.0.0, Error Prone annotations 2.48.0 and Guava `listenablefuture:1.0` | Apache-2.0 for published metadata; AndroidX and the Android Gradle Plugin bring these transitively. `listenablefuture` is a small compatibility future type and has no active network behavior. | Keep as transitive runtime/compiler support. No direct application code depends on these APIs. |
 | `org.simpleframework:simple-xml:2.7.1`; `stax:stax:1.2.0` | Simple XML declares Apache-2.0; StAX's published POM does not declare a license. Neither has an Android manifest minimum. No matching OSV advisory in this scan. | Keep only until Task 5 replaces GPX serialization/parsing; remove both from the final release graph. |
 
+Task 7 replaced Core 1.19.1 with Core 1.18.0: 1.19.1 requires compile SDK 37, which is still Preview, while 1.18.0 is the latest stable release that builds against released SDK 36.1. The final release graph below supersedes the Task 2 dependency list.
+
 The OSV batch scan of all 75 packaged runtime coordinates returned no matching advisories. The selected AndroidX and Material versions do not add an ads, analytics, attribution, or network client SDK.
 
 Resolved debug and release runtime artifact coordinates (BOM alignment metadata omitted):
@@ -127,4 +129,100 @@ Source and the resolved runtime graph contain no ad, analytics, attribution, or 
 
 ## Final release graph
 
-Update this document after Tasks 2 and 5 with the final debug and release graphs. Record each coordinate, resolved version, license, Android minimum, maintenance status, advisory result, local-network behavior, and keep/upgrade/replace decision. Acceptance requires no JCenter, Simple XML/StAX, advertising SDK, `AD_ID`, or unexplained `ACCESS_LOCAL_NETWORK` permission in the release graph or merged manifest.
+## Final release graph (2026-10-14)
+
+The final debug and release runtime reports resolve the same 81 graph coordinates. This includes 78 Android/JVM artifacts and three BOM nodes used only for version alignment; the BOMs are not packaged. The complete artifact coordinate list is below. The release AAB builds unsigned with package `br.com.helpdev.velocimetroalerta`, `minSdk 23`, `targetSdk 36`, version code 13, and version name 4.2. Its release manifest passed AAR metadata checks against released compile SDK 36.1.
+
+| Final dependency group | License, minimum SDK, maintenance and security | Disposition |
+| --- | --- | --- |
+| AndroidX, Material Components, and generated ViewBinding artifacts | Published Apache-2.0 metadata. Resolved AAR metadata is compatible with the owner-approved `minSdk 23`; `:mobile:checkReleaseAarMetadata` passes with compile SDK 36.1. Direct versions are stable Google Maven releases on 2026-10-14. The OSV batch returned no matching advisories for the final graph. | Keep. The older transitive Loader, ViewPager, ViewPager2, CardView, and Window versions are requested by upstream component metadata and are not used directly; do not force upgrades without compatibility need. |
+| `com.google.code.gson:gson:2.14.0`, Kotlin stdlib 2.2.10, Coroutines 1.9.0, Kotlin serialization 1.7.3, JetBrains annotations 23.0.0, JSpecify 1.0.0, Error Prone annotations 2.48.0, and Guava `listenablefuture:1.0` | Published Apache-2.0 metadata. Any Android AARs in this group are compatible with the approved `minSdk 23`; Java archives have no Android manifest minimum. No matching OSV advisories in the final scan. | Keep: Gson parses the VAM sensor payload, Kotlin is supplied by the Android Gradle Plugin, and the rest arrive transitively. |
+| Kotlin, Coroutines, and Serialization BOM coordinates | POM-only version alignment metadata, not packaged artifacts. | Keep as resolution metadata only. |
+| Advertising, analytics, attribution, IP networking, Simple XML, and StAX | None found in the final resolved release graph. The merged release manifest declares no `INTERNET`, `AD_ID`, `ACCESS_LOCAL_NETWORK`, `READ_EXTERNAL_STORAGE`, or `WRITE_EXTERNAL_STORAGE`; the GPX flow uses the Storage Access Framework. | No ad units or SDKs are needed. Do not declare Advertising ID use while the product remains ad-free. |
+
+The OSV batch queried 78 resolved non-BOM Maven coordinates on 2026-10-14 and returned zero matching advisories.
+
+Resolved non-BOM release runtime coordinates:
+
+```text
+androidx.activity:activity-ktx:1.8.1
+androidx.activity:activity:1.8.1
+androidx.annotation:annotation-experimental:1.4.1
+androidx.annotation:annotation-jvm:1.10.0
+androidx.annotation:annotation:1.10.0
+androidx.appcompat:appcompat-resources:1.8.0
+androidx.appcompat:appcompat:1.8.0
+androidx.arch.core:core-common:2.2.0
+androidx.arch.core:core-runtime:2.2.0
+androidx.cardview:cardview:1.0.0
+androidx.collection:collection-jvm:1.6.0
+androidx.collection:collection:1.6.0
+androidx.concurrent:concurrent-futures:1.1.0
+androidx.constraintlayout:constraintlayout-core:1.1.2
+androidx.constraintlayout:constraintlayout:2.2.2
+androidx.coordinatorlayout:coordinatorlayout:1.3.0
+androidx.core:core-ktx:1.18.0
+androidx.core:core-viewtree:1.0.0
+androidx.core:core:1.18.0
+androidx.cursoradapter:cursoradapter:1.0.0
+androidx.customview:customview:1.2.0
+androidx.databinding:viewbinding:9.4.1
+androidx.drawerlayout:drawerlayout:1.2.0
+androidx.dynamicanimation:dynamicanimation:1.1.0
+androidx.emoji2:emoji2-views-helper:1.3.0
+androidx.emoji2:emoji2:1.3.0
+androidx.fragment:fragment-ktx:1.9.1
+androidx.fragment:fragment:1.9.1
+androidx.graphics:graphics-shapes-android:1.0.1
+androidx.graphics:graphics-shapes:1.0.1
+androidx.interpolator:interpolator:1.0.0
+androidx.lifecycle:lifecycle-common-jvm:2.10.0
+androidx.lifecycle:lifecycle-common:2.10.0
+androidx.lifecycle:lifecycle-livedata-core-ktx:2.10.0
+androidx.lifecycle:lifecycle-livedata-core:2.10.0
+androidx.lifecycle:lifecycle-livedata:2.10.0
+androidx.lifecycle:lifecycle-process:2.10.0
+androidx.lifecycle:lifecycle-runtime-android:2.10.0
+androidx.lifecycle:lifecycle-runtime-ktx-android:2.10.0
+androidx.lifecycle:lifecycle-runtime-ktx:2.10.0
+androidx.lifecycle:lifecycle-runtime:2.10.0
+androidx.lifecycle:lifecycle-viewmodel-android:2.10.0
+androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0
+androidx.lifecycle:lifecycle-viewmodel-savedstate-android:2.10.0
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0
+androidx.lifecycle:lifecycle-viewmodel:2.10.0
+androidx.loader:loader:1.0.0
+androidx.preference:preference-ktx:1.2.1
+androidx.preference:preference:1.2.1
+androidx.profileinstaller:profileinstaller:1.4.0
+androidx.recyclerview:recyclerview:1.2.1
+androidx.resourceinspection:resourceinspection-annotation:1.0.1
+androidx.savedstate:savedstate-android:1.4.0
+androidx.savedstate:savedstate-ktx:1.4.0
+androidx.savedstate:savedstate:1.4.0
+androidx.slidingpanelayout:slidingpanelayout:1.2.0
+androidx.startup:startup-runtime:1.1.1
+androidx.tracing:tracing-android:2.0.0
+androidx.tracing:tracing:2.0.0
+androidx.transition:transition:1.5.0
+androidx.vectordrawable:vectordrawable-animated:1.1.0
+androidx.vectordrawable:vectordrawable:1.1.0
+androidx.versionedparcelable:versionedparcelable:1.1.1
+androidx.viewpager2:viewpager2:1.0.0
+androidx.viewpager:viewpager:1.0.0
+androidx.window:window:1.0.0
+com.google.android.material:material:1.14.0
+com.google.code.gson:gson:2.14.0
+com.google.errorprone:error_prone_annotations:2.48.0
+com.google.guava:listenablefuture:1.0
+org.jetbrains.kotlin:kotlin-stdlib:2.2.10
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0
+org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0
+org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.3
+org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3
+org.jetbrains:annotations:23.0.0
+org.jspecify:jspecify:1.0.0
+```
+
+The three version-alignment nodes omitted from that artifact list are `org.jetbrains.kotlin:kotlin-bom:1.8.22`, `org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0`, and `org.jetbrains.kotlinx:kotlinx-serialization-bom:1.7.3`.

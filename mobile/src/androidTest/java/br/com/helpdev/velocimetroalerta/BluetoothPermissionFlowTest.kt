@@ -9,6 +9,7 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
@@ -40,11 +41,17 @@ class BluetoothPermissionFlowTest {
         assertTrue("Prepare the emulator with precise location granted", locationGranted)
         assertTrue("Prepare the emulator with Bluetooth connect denied", bluetoothDenied)
         assertTrue("Prepare the emulator with notifications granted", notificationsGranted)
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .remove("location_background_disclosure_accepted")
+            .commit()
 
         preferences.edit().putBoolean(sensorPreference, true).apply()
         try {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 onView(androidx.test.espresso.matcher.ViewMatchers.withId(R.id.btStartStop)).perform(click())
+                onView(withText(R.string.location_background_disclosure_message)).check(matches(isDisplayed()))
+                onView(withText(R.string.location_background_disclosure_continue)).perform(click())
 
                 val denyButton = device.wait(
                     Until.findObject(By.res("com.android.permissioncontroller", "permission_deny_button")),

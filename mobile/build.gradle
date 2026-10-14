@@ -12,7 +12,11 @@ def hasReleaseSigning = releaseSigningValues.values().every { it != null && !it.
 
 android {
     namespace = 'br.com.helpdev.velocimetroalerta'
-    compileSdk = 37
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
 
     buildFeatures {
         viewBinding = true
@@ -21,9 +25,9 @@ android {
     defaultConfig {
         applicationId = 'br.com.helpdev.velocimetroalerta'
         minSdk = 23
-        targetSdk = 37
-        versionCode = 12
-        versionName = '4.1'
+        targetSdk = 36
+        versionCode = 13
+        versionName = '4.2'
         testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
     }
 
@@ -70,5 +74,6 @@ dependencies {
     androidTestImplementation(libs.test.core.ktx)
     androidTestImplementation(libs.test.junit)
     androidTestImplementation(libs.test.espresso)
+    androidTestImplementation(libs.test.espresso.intents)
     androidTestImplementation(libs.test.uiautomator)
 }

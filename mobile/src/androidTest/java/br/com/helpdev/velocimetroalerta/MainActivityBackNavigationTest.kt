@@ -11,6 +11,7 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.preference.PreferenceManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
@@ -47,8 +48,14 @@ class MainActivityBackNavigationTest {
 
     @Test
     fun backDuringRideRequiresConfirmation() {
+        PreferenceManager.getDefaultSharedPreferences(context)
+            .edit()
+            .remove("location_background_disclosure_accepted")
+            .commit()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity -> activity.requestTrackingStart() }
+            onView(withText(R.string.location_background_disclosure_message)).check(matches(isDisplayed()))
+            onView(withText(R.string.location_background_disclosure_continue)).perform(click())
             awaitTracking(scenario)
 
             pressBack()

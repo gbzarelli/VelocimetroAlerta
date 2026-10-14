@@ -5,6 +5,8 @@ import br.com.helpdev.velocimetroalerta.gpx.objects.TrkPt
 object GpxMath {
 
     fun calculateGain(indexStartTrkPt: Int, trkPts: List<TrkPt>): Pair<Double, Double> {
+        if (trkPts.isEmpty()) return 0.0 to 0.0
+
         var constMediaAccuracy = 0.0
         val size = trkPts.size
         for (i in 0 until size) {

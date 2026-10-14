@@ -12,6 +12,10 @@
     <string name="retry">Try again</string>
     <string name="open_settings">Open settings</string>
     <string name="precise_location_required">Precise location is required to calculate speed and record a route. Grant precise location and try again.</string>
+    <string name="location_background_disclosure_title">Location during an active activity</string>
+    <string name="location_background_disclosure_message">When you start an activity, Velocímetro Alerta uses your precise location to calculate speed, distance, and elevation, record your route, and provide spoken speed alerts, even while the app is in the background or the screen is off. Android maintains a tracking notification, subject to your notification settings. Location is not used before you start or after you stop the activity. Routes stay on this device; a GPX file is exported only when you choose a destination.</string>
+    <string name="location_background_disclosure_continue">Continue</string>
+    <string name="location_background_disclosure_cancel">Cancel</string>
     <string name="notification_permission_limited">Tracking will continue, but Android may hide the ongoing notification.</string>
     <string name="bluetooth_permission_limited">Tracking will continue without the configured Bluetooth sensor. Allow Bluetooth access in Settings to use it.</string>
     <string name="bluetooth_not_supported">This device does not support Bluetooth sensors.</string>
@@ -63,6 +67,9 @@
     <string name="avaliar">Rating</string>
     <string name="compartilhar">Share</string>
     <string name="publico">Public</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="privacy_policy_url">https://helpdev.com.br/apps/velocimetro-alerta/privacidade/#english</string>
+    <string name="privacy_policy_unavailable">No browser is available to open the privacy policy.</string>
     <string name="minhas_atividades">My activities (coming soon)</string>
     <string name="pause_automatico">Automatic Pause</string>
     <string name="site_helpdev">www.helpdev.com.br</string>

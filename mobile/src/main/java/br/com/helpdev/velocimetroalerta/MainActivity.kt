@@ -129,6 +129,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     fun requestTrackingStart() {
+        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        if (!preferences.getBoolean(LOCATION_BACKGROUND_DISCLOSURE_ACCEPTED, false)) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.location_background_disclosure_title)
+                .setMessage(R.string.location_background_disclosure_message)
+                .setPositiveButton(R.string.location_background_disclosure_continue) { _, _ ->
+                    preferences.edit().putBoolean(LOCATION_BACKGROUND_DISCLOSURE_ACCEPTED, true).apply()
+                    requestTrackingStart()
+                }
+                .setNegativeButton(R.string.location_background_disclosure_cancel, null)
+                .show()
+            return
+        }
+
         val locationPermissions = RuntimePermissionPolicy.permissionsFor(
             RuntimePermissionPolicy.Feature.LOCATION,
             Build.VERSION.SDK_INT
@@ -201,6 +215,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         when (id) {
             R.id.nav_star -> openAppInGooglePlay()
+            R.id.nav_privacy_policy -> openPrivacyPolicy()
             R.id.nav_atividades -> activitiesLauncher.launch(Intent(this, MyActivities::class.java))
             R.id.nav_config -> configActivityLauncher.launch(Intent(this, ConfigActivity::class.java))
             R.id.nav_share -> shareApp()
@@ -209,6 +224,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         drawer.closeDrawer(GravityCompat.START)
         return false
+    }
+
+    private fun openPrivacyPolicy() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.privacy_policy_url)))
+        try {
+            startActivity(intent)
+        } catch (_: android.content.ActivityNotFoundException) {
+            Toast.makeText(this, R.string.privacy_policy_unavailable, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun openAppInGooglePlay() {
@@ -327,6 +351,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     companion object {
         private const val BACK_CONFIRMATION_TAG = "back-confirmation"
+        private const val LOCATION_BACKGROUND_DISCLOSURE_ACCEPTED = "location_background_disclosure_accepted"
         private const val SP_KEEP_ALIVE = "keep_alive"
         private const val LOG = "MainActivity"
     }

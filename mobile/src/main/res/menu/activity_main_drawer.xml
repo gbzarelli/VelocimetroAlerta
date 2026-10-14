@@ -25,6 +25,10 @@
                 android:id="@+id/nav_star"
                 android:icon="@drawable/star"
                 android:title="@string/avaliar" />
+            <item
+                android:id="@+id/nav_privacy_policy"
+                android:icon="@drawable/ic_privacy_policy"
+                android:title="@string/privacy_policy" />
         </menu>
     </item>
 

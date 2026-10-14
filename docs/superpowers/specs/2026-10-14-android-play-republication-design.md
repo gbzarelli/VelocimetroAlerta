@@ -7,9 +7,9 @@ Restore and republish Velocímetro Alerta as a functional Android application co
 ## Agreed scope
 
 - The application remains free and without advertising. Repository inspection found no ad SDK, ad unit, or advertising integration, and the AdMob account has no app registration matching `br.com.helpdev.velocimetroalerta`. Do not create an AdMob app or unit, add an advertising SDK, or declare Advertising ID use unless the product decision changes.
-- Modernize the Android build and target API 36 or higher if Play's requirements at submission time demand it.
-- Preserve the current minimum SDK (19) if the maintained dependency set and compatibility validation allow it. If a required dependency forces raising it, quantify the device impact and ask the owner before making that product decision.
-- Preserve `applicationId` `br.com.helpdev.velocimetroalerta`. The next release must use a `versionCode` greater than the current source value, 12.
+- Modernize the Android build for stable Android 16 / API 36, the minimum currently required for Play submissions; do not target Android 17/API 37 while its SDK is still Preview.
+- Set the minimum SDK to API 23 / Android 6.0. The owner approved this after the current stable Material Components release required API 23; this drops support for Android 5.x and earlier.
+- Preserve `applicationId` `br.com.helpdev.velocimetroalerta`. The next release must use a `versionCode` greater than 12; after auditing Play's visible release history, source is set to `versionCode` 13 / `versionName` 4.2.
 - Audit existing signing material and Play App Signing state before selecting a signing key. Do not generate or substitute a signing key blindly.
 - Resolve the Play Console policy, app-content, package-verification, and release-track requirements before production rollout.
 
@@ -19,7 +19,7 @@ Restore and republish Velocímetro Alerta as a functional Android application co
 - `mobile/build.gradle` declares Android Gradle Plugin 3.1.3, Kotlin Gradle Plugin 1.2.30, compile/target SDK 27, minimum SDK 19, and version code 12. It uses old support libraries and a hard-coded local signing configuration.
 - The Gradle wrapper scripts exist, but the wrapper JAR/properties needed to run them are absent. The repository ignores `/gradle/`. JCenter and old Kotlin Android extensions are part of the legacy build setup.
 - The source uses GPS tracking and a foreground service, BLE/legacy Bluetooth, spoken speed alerts, and GPX file export. The manifest and implementation use permissions and APIs that require review for current Android releases.
-- The local Android SDK has platforms and build tools through API 36. ADB is available; no system Gradle executable is installed.
+- The local Android SDK has released platforms through API 36.1 and preview platforms through API 37.2. ADB is available; no system Gradle executable is installed.
 - There are no existing mobile source test directories. Hardware behavior (GPS and Bluetooth heart-rate equipment) therefore needs physical-device validation in addition to automated checks.
 - The Play Console lists the app as removed by Google. Its policy email cites missing or inaccurate target-audience information. The app-content page currently lists nine declarations needing attention: Data safety, Financial features, Health apps, Privacy policy, Sign-in details, Target audience and content, Advertising ID, Government apps, and Location permissions.
 - The Play Console account's Android developer verification page shows this package in Draft with zero registered keys. The app's Play App Signing/integrity page did not load during inspection, so enrollment and certificate fingerprints remain unverified.

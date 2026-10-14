@@ -6,14 +6,14 @@
 
 **Architecture:** Restore a reproducible Gradle build, migrate the existing view-based app to AndroidX and ViewBinding, and isolate API-level permission decisions in a small policy helper. Keep foreground location tracking behind an explicit user action and stream GPX output through the Storage Access Framework.
 
-**Tech Stack:** Kotlin, Android Gradle Plugin 9.4.1, Gradle 9.6.0, JDK 17 or newer, Android API 37 (Android 17), AGP built-in Kotlin, AndroidX, Material Components, Android `XmlSerializer`/`XmlPullParser`, JUnit, AndroidX Test.
+**Tech Stack:** Kotlin, Android Gradle Plugin 9.4.1, Gradle 9.6.0, JDK 17 or newer, Android API 36 (Android 16 stable release), AGP built-in Kotlin, AndroidX, Material Components, Android `XmlSerializer`/`XmlPullParser`, JUnit, AndroidX Test.
 
 **Spec:** `docs/superpowers/specs/2026-10-14-android-play-republication-design.md`
 
 ## Global Constraints
 
 - Preserve `applicationId` `br.com.helpdev.velocimetroalerta`.
-- Compile and target API 37, the latest stable Android release at plan creation; recheck the Play minimum (currently API 36+) before upload and raise the target if that minimum advances.
+- Compile against released Android 16 API 36.1 and target API 36 for this stable Play release. Android 17/API 37 is still listed as a Preview SDK on 2026-10-14; retain API 37 as a forward-compatibility test target where an emulator is available, but do not ship against its preview SDK.
 - Set `minSdk` to 23, approved by the owner after the current stable Material Components requirement was confirmed; this drops support below Android 6.0.
 - Keep the app free and without ads; add no ad SDK, ad unit, AdMob configuration, or Advertising ID permission.
 - Do not track location before the user starts tracking with required permission; do not add `ACCESS_BACKGROUND_LOCATION` unless the reviewed behavior and Play policy require it.
@@ -48,12 +48,12 @@
 - Regenerate: `gradlew`, `gradlew.bat`
 
 **Interfaces:**
-- Produces: checked-in Gradle Wrapper 9.6.0; Android plugin 9.4.1; a version catalog for pinned plugins and dependencies; module configuration with compile/target API 37 and `minSdk = 23` (approved after the Material Components audit).
+- Produces: checked-in Gradle Wrapper 9.6.0; Android plugin 9.4.1; a version catalog for pinned plugins and dependencies; module configuration with compile API 36.1, target API 36, and `minSdk = 23` (approved after the Material Components audit).
 
 - [x] Replace the incomplete wrapper with the official Gradle 9.6.0 wrapper scripts, JAR, and properties; stop ignoring the wrapper directory while retaining ignores for local build outputs and signing files.
 - [x] Move plugin resolution to `pluginManagement` with Google and Maven Central; remove JCenter and the legacy root `buildscript` Kotlin/AGP classpaths.
 - [x] Apply `com.android.application` from the version catalog at 9.4.1; use AGP built-in Kotlin instead of `kotlin-android` and remove the direct `kotlin-stdlib-jre7` dependency.
-- [x] Set `compileSdk` and `targetSdk` to API 37 for Android 17, installing the Android 17 SDK platform; AGP 9.4 uses SDK Build Tools 36.0.0 by default, so omit a hard-coded `buildToolsVersion`. Google Play's update floor is currently API 36+, so recheck its policy immediately before upload and use a higher supported API if required. Set `minSdk = 23` after the dependency audit and owner approval; enable AndroidX and ViewBinding.
+- [x] Set compile SDK to released API 36.1 and target SDK to API 36 for the stable Android 16 / current Play release requirement; AGP 9.4 uses SDK Build Tools 36.0.0 by default, so omit a hard-coded `buildToolsVersion`. Set `minSdk = 23` after the dependency audit and owner approval; enable AndroidX and ViewBinding. Keep API 37 compatibility coverage separate because Android 17 is still Preview.
 - [x] Remove the tracked `playStore` signing block and credential-like values from `mobile/build.gradle`. Configure release signing only from local ignored properties or environment variables; leave local release builds unsigned when those values are absent.
 - [x] Replace the legacy root `clean` task declaration with Gradle 9-compatible task registration or remove it if the base plugin already provides the required task.
 - [x] Run `./gradlew :mobile:dependencies --configuration debugRuntimeClasspath` and `./gradlew :mobile:dependencies --configuration releaseRuntimeClasspath`; record each direct/transitive library's resolved version, license, minSdk constraint, maintenance status, known advisories, local-network behavior, and keep/upgrade/replace decision in `docs/android-dependency-audit.md`.
@@ -91,10 +91,10 @@ Expected: Gradle 9.6.0 starts on JDK 17 or newer, and project configuration comp
 - [x] Set the speedometer notification `PendingIntent` to immutable; the API 35 main-screen smoke test exposed the Android 12+ runtime crash during service creation.
 - [x] Add AndroidX Test runner/rules and the two smoke tests. `MainActivitySmokeTest` launches the main screen with its required test permissions granted and asserts the speed display and start control are visible. `ConfigScreensSmokeTest` opens settings and heart-rate configuration and checks both toolbars and the heart-rate content root.
 - [x] Run `rg -n 'android\.support|android\.preference|kotlinx\.android\.synthetic' mobile/src/main/java mobile/src/main/res`; expected: no matches.
-- [x] Run `./gradlew :mobile:assembleDebug :mobile:connectedDebugAndroidTest` on the available API 35 emulator. The SDK Manager listed no API 37 system image on 2026-10-14; API 37 compile/platform and manifest validation still pass.
+- [x] Run `./gradlew :mobile:assembleDebug :mobile:connectedDebugAndroidTest` on the available API 35 emulator. The SDK Manager listed no API 36 or API 37 emulator image on 2026-10-14; API 36 platform build/manifest validation and API 35 runtime tests pass.
 - [x] Commit the AndroidX and ViewBinding migration as `refactor: migrate app UI to AndroidX` (`08d4f3d`).
 
-Expected: debug APK assembles and both smoke tests pass without Support Library or synthetic-view references on the available modern emulator; API 37 remains the compile and target platform.
+Expected: debug APK assembles and both smoke tests pass without Support Library or synthetic-view references on the available modern emulator; API 36.1 is the stable compile platform and API 36 is the target.
 
 ### Task 3: Make location permission and foreground tracking API-aware
 
@@ -121,9 +121,9 @@ Expected: debug APK assembles and both smoke tests pass without Support Library 
 - [x] Change `Gps.init` to initialize without updates. Start location updates only after precise permission is granted and tracking begins; stop updates on track stop and service destruction.
 - [x] Promote `SpeedometerService` to a location foreground service synchronously from the explicit Start action before processing location; handle `SecurityException` by stopping foreground state and returning a visible recoverable error.
 - [x] Make notification denial non-fatal to GPS tracking while explaining that notification visibility is limited; location denial or approximate-only access must prevent precise speed tracking and offer a retry path.
-- [x] Make the tracking permission scenarios pass on API 35: denied location, approximate-only, notification denial, and precise tracking with emulator GPS fix; stopping clears the fix and foreground state. Host `dumpsys` also confirmed an ongoing location foreground notification.
+- [x] Make the tracking permission scenarios pass on API 35 and API 36: denied location, approximate-only, notification denial, precise tracking with emulator GPS fix, and cancellation of the new location disclosure; stopping clears the fix and foreground state. Host `dumpsys` also confirmed an ongoing location foreground notification.
 - [ ] On API 37, start tracking while the activity is visible, turn the screen off, and verify location updates and spoken speed alerts continue under the location foreground service; stop tracking and verify both cease. API 35 testing confirmed the foreground service remains active with the screen off; spoken output was not exercised, and the API 37 emulator image is unavailable in the installed SDK.
-- [ ] Run `./gradlew :mobile:testDebugUnitTest :mobile:connectedDebugAndroidTest` on API 23, API 30, API 31, API 33, API 36, and API 37 emulators where available. Only API 35 is installed; Task 7 retains the final device-matrix check.
+- [ ] Extend the permission matrix to API 23, API 30, API 31, API 33, and API 37 when those emulator images are available; the permission suite passes on available API 35 and API 36.
 - [x] Commit the location and Bluetooth permission/service changes together as `fix: modernize location and Bluetooth permissions` because Tasks 3 and 4 share the foreground service, permission policy, and main screen callbacks (`45024c3`).
 
 Expected: policy unit cases pass; no GPS update subscription or foreground location service starts before an explicit permitted Start action.
@@ -157,8 +157,8 @@ Expected: policy unit cases pass; no GPS update subscription or foreground locat
 - [x] Add user-visible sensor states for unsupported hardware, permission denial, Bluetooth disabled, connection failure, and reconnection; keep speedometer GPS controls operational in all sensor failure cases.
 - [x] Add `VamFrameReaderTest.closedSocketReturnsDisconnected` and `partialReadsProduceOneCrlfFrame`; make an EOF (`read() == -1`) return a disconnect result instead of writing a negative byte count or spinning.
 - [x] Update `VAMService` to close the RFCOMM socket and clear/reset sensor state on EOF, then retry connection with bounded delay while GPS remains active.
-- [x] Run unit tests and the Bluetooth permission instrumentation scenario on the available API 35 emulator; a connected suite excluding the separately configured location-permission matrix also passed 3/3. API 30/31/33/36/37 emulator images are not installed.
-- [ ] Make `BluetoothPermissionFlowTest` pass on API 31/36/37, then perform physical sensor validation below. API 35 passed; API 31/36/37 images and physical BLE/RFCOMM sensors are unavailable in this environment.
+- [x] Run unit tests and the Bluetooth permission instrumentation scenario on API 35 and API 36; the connected suite excluding the separately configured location-permission matrix passes 8/8 on both.
+- [ ] Make `BluetoothPermissionFlowTest` pass on API 31/37, then perform physical sensor validation below. API 35/36 passed; API 31/37 images and physical BLE/RFCOMM sensors are unavailable in this environment.
 - [ ] On physical hardware, pair and connect a BLE heart-rate sensor and the classic RFCOMM VAM module, receive readings, revoke permission, disable Bluetooth, drop each connection during a read, and verify recovery without interrupting GPS tracking.
 - [x] Commit the location and Bluetooth permission/service changes as `fix: modernize location and Bluetooth permissions` (`45024c3`).
 
@@ -197,7 +197,8 @@ Expected: API 30 uses legacy permission behavior; API 31+ prompts for the specif
 - [x] Run `./gradlew :mobile:testDebugUnitTest --tests '*TrackPointExtensionJsonParserTest'`.
 - [x] Replace `WRITE_EXTERNAL_STORAGE`/`READ_EXTERNAL_STORAGE` checks in `MainActivityFragment.save()` with `CreateDocument`; validate that the GPX has points before launching the picker, write in a background executor via `ContentResolver.openOutputStream`, use a collision-resistant timestamp filename, and report chooser cancellation without error.
 - [x] Share the saved document URI using `Intent.EXTRA_STREAM`, `ClipData`, and `FLAG_GRANT_READ_URI_PERMISSION`; remove `file://` sharing and broad external-storage manifest permissions.
-- [ ] Run GPX instrumentation tests on API 30, API 36, and API 37. Only API 35 is installed in this environment; API 35 GPX instrumentation and unit tests pass.
+- [x] Run the GPX instrumentation tests on API 35 and API 36; both GPX instrumentation cases pass on both emulators.
+- [ ] Run GPX instrumentation tests on API 30 and API 37 when those emulator images are available.
 - [x] On API 35, simulate a GPS route and export twice through SAF; both distinct GPX documents contain 62 points, and parsing the first after saving the second confirms it remains readable.
 - [x] Cancel a third document picker; the app returns to the paused activity without an error.
 - [ ] Open the exported file in a dedicated GPX viewer and hand it off to a recipient app. The Android share chooser displayed Drive and Gmail with the GPX attached; no destination was selected because that would send the location history outside the device.
@@ -228,7 +229,7 @@ Expected: saved GPX round-trips with all existing track and sensor data; no exte
 - [x] Replace `onBackPressed()` with `OnBackPressedCallback`; replace `startActivityForResult`/`onActivityResult` for configuration and activity navigation with registered Activity Result launchers.
 - [x] Enable edge-to-edge with `WindowCompat.setDecorFitsSystemWindows(window, false)` and apply status/navigation bar insets to the activity and settings roots so the toolbar, speed readouts, and controls remain tappable. Smoke tests cover the main and configuration screens on API 35.
 - [x] Support large-screen rotation and resizing: remove the manifest's portrait-only restriction, add responsive dimensions for `sw >= 600dp`, and verify active tracking remains visible and the foreground service remains active while resizing/rotating an API 35 emulator between portrait and a 960dp-wide landscape profile. Retain the phone layout where it remains appropriate.
-- [ ] Capture and inspect API 30/API 36/API 37 phone screenshots and API 37 tablet/foldable configurations. API 35 phone and 960dp-wide emulator-profile screenshots were inspected; API 30/36/37 images and a foldable are unavailable here.
+- [ ] Capture and inspect API 30/API 36/API 37 phone screenshots and API 37 tablet/foldable configurations. API 35 phone and 960dp-wide emulator-profile screenshots were inspected; API 30/37 images and a foldable are unavailable here.
 - [x] Commit edge-to-edge and Back navigation changes as `fix: support edge-to-edge and predictive Back`.
 
 Expected: drawer, confirmation, and normal Back behaviors match existing intent; API 35 screenshots and layout bounds show content clear of system bars, and active tracking survives rotation. API 30/36/37 and physical foldable coverage remains in the final device matrix.
@@ -239,26 +240,39 @@ Expected: drawer, confirmation, and normal Back behaviors match existing intent;
 - Create: `mobile/src/test/java/br/com/helpdev/velocimetroalerta/gpx/GpxMathTest.kt`
 - Create: `mobile/src/test/java/br/com/helpdev/velocimetroalerta/gps/ObSpeedometerAlertTest.kt`
 - Modify: `mobile/src/main/java/br/com/helpdev/velocimetroalerta/gpx/GpxMath.kt`
-- Modify: `mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/TrackingPermissionFlowTest.kt`
+- Modify: `mobile/src/main/java/br/com/helpdev/velocimetroalerta/MainActivity.kt`
 - Modify: `mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/MainActivitySmokeTest.kt`
+- Create: `mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/PrivacyPolicyNavigationTest.kt`
+- Modify: `mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/TrackingPermissionFlowTest.kt`
+- Modify: `mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/BluetoothPermissionFlowTest.kt`
+- Modify: `mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/MainActivityBackNavigationTest.kt`
+- Modify: `mobile/src/main/res/menu/activity_main_drawer.xml`
+- Modify: `mobile/src/main/res/values/strings.xml`
+- Modify: `mobile/src/main/res/values-pt/strings.xml`
 - Modify: `mobile/build.gradle`
+- Modify: `gradle/libs.versions.toml`
+- Modify: `docs/android-dependency-audit.md`
 - Modify: `README.md` only if build/test or SDK support instructions have changed
 
 **Interfaces:**
 - Consumes: modernized UI, permission, service, Bluetooth, GPX, and toolchain behavior from Tasks 1–6.
 - Produces: a validated release bundle build; final version code and Play signing configuration are applied in the Play republication plan after checking the Console's highest uploaded code.
 
-- [ ] Add `GpxMathTest.calculateGainCountsChangesAtLeastMeanAccuracy` using elevations 100, 102, 105, 103 with accuracy 2 for each point and assert gain/loss `(5.0, 2.0)`; add `calculateGainReturnsZeroForEmptyTrack` and assert `(0.0, 0.0)` after adding the empty-input guard.
-- [ ] Add `ObSpeedometerAlertTest.cadenceAndBpmAveragesExcludePausedSamples`: cadence 20, paused 40, then 30 yields average 25 and max 40; heart rate 100, paused 200, then 120 yields average 110 and max 200. Add `addTimePausedAccumulatesMilliseconds` and assert inputs 1000.0 and 250.0 yield `timePaused == 1250L`.
-- [ ] Run `./gradlew :mobile:testDebugUnitTest --tests '*GpxMathTest.calculateGainReturnsZeroForEmptyTrack'`; confirm it fails on the current empty-list indexing behavior, then add the empty-input guard in `GpxMath.calculateGain` and rerun it to pass.
-- [ ] Run `./gradlew :mobile:testDebugUnitTest` and `./gradlew :mobile:connectedDebugAndroidTest` on API 23, API 30, API 31, API 33, API 34, API 35, API 36, and API 37; include API 19 if it remains the approved minimum. Include API 37 large-screen rotation/resizing and screen-off speech-alert scenarios.
+- [x] Add `GpxMathTest.calculateGainCountsChangesAtLeastMeanAccuracy` using elevations 100, 102, 105, 103 with accuracy 2 for each point and assert gain/loss `(5.0, 2.0)`; add `calculateGainReturnsZeroForEmptyTrack` and assert `(0.0, 0.0)` after adding the empty-input guard.
+- [x] Add `ObSpeedometerAlertTest.cadenceAndBpmAveragesExcludePausedSamples`: cadence 20, paused 40, then 30 yields average 25 and max 40; heart rate 100, paused 200, then 120 yields average 110 and max 200. Add `addTimePausedAccumulatesMilliseconds` and assert inputs 1000.0 and 250.0 yield `timePaused == 1250L`.
+- [x] Run `./gradlew :mobile:testDebugUnitTest --tests '*GpxMathTest.calculateGainReturnsZeroForEmptyTrack'`; confirmed it failed on the empty-list indexing behavior, added the empty-input guard in `GpxMath.calculateGain`, and reran it successfully.
+- [x] Run the available-device matrix on API 35 and API 36: 15 JVM unit tests, five location-permission scenarios, and an eight-test connected regression suite passed on both APIs before the final disclosure copy assertions were added.
+- [x] After the final disclosure copy changes, rerun `:mobile:assembleDebug`, `:mobile:testDebugUnitTest`, and `:mobile:bundleRelease`; all passed. The updated cancel/disclosure instrumentation test passed on API 36. API 35 could not be revalidated on this host: the headless emulator reports no focused app window to Espresso, and the attempted graphical emulator went offline before starting tests.
+- [ ] Complete runtime coverage on API 23, API 30, API 31, API 33, and API 34; run API 37 Preview only as forward-compatibility coverage. Include API 37 large-screen rotation/resizing and screen-off speech-alert scenarios. Those emulator images are not installed.
 - [ ] On physical hardware, run a GPS route with screen off, spoken speed alerts, pause/resume, heart-rate sensor reconnect, and GPX export/import/share; record device/API and outcome for each scenario.
-- [ ] Run `./gradlew :mobile:assembleDebug` and `./gradlew :mobile:bundleRelease` with no signing credentials present; expected: debug APK and unsigned release AAB build without hidden local-keystore assumptions.
-- [ ] Inspect the resolved dependency report and merged manifest; verify no JCenter, Simple XML, advertising SDK, `AD_ID`, broad storage permission, or `ACCESS_LOCAL_NETWORK` remains unless the audited app/dependency behavior requires local-network access and the Android 17 permission has been correctly implemented.
-- [ ] Update `docs/android-dependency-audit.md` from the final release dependency graph and confirm every shipped dependency has a documented disposition.
+- [x] Rebuild using `./gradlew :mobile:assembleDebug :mobile:testDebugUnitTest :mobile:bundleRelease` after the Console-confirmed versionCode 13 / versionName 4.2 bump. Debug APK and unsigned release AAB build; no release signing credentials are configured.
+- [x] Inspect the resolved dependency report and merged release manifest; no JCenter, Simple XML, advertising SDK, `AD_ID`, broad storage permission, `INTERNET`, or `ACCESS_LOCAL_NETWORK` remains. The bundle targets API 36 and has minSdk 23.
+- [x] Update `docs/android-dependency-audit.md` from the release dependency graph; all 78 non-BOM dependencies and 3 BOM nodes are documented, the debug/release graphs match, and the OSV batch query returned no matching advisories on 2026-10-14.
+- [x] Add an in-app privacy-policy link and a one-time disclosure explaining location while the activity is minimized/screen off. The updated Cancel flow and English/Portuguese disclosure wording pass on API 36; the previous API 35 cancel run passed before its final copy assertions were added.
+- [x] Record the unavailable API-level and physical-device checks as release validation gates; API 23/30/31/33/34/37 images, BLE/RFCOMM sensors, and a physical GPS/speech scenario were not available on this host.
 - [ ] Commit the regression suite and final build configuration as `test: cover Android modernization release flows`.
 
-Expected: unit and instrumentation suites pass; the physical-device checklist passes; release bundle metadata preserves package ID and targets API 37.
+Expected: unit tests and the available API 36 updated disclosure test pass; earlier API 35/36 instrumentation coverage passed before the final disclosure wording assertion. The latest API 35 rerun is unverified because this host's headless emulator cannot provide the focused window Espresso requires. Additional API levels and physical-device Bluetooth/speech scenarios remain pending. The unsigned release bundle preserves the package ID and targets stable API 36.
 
 ## Platform references
 
