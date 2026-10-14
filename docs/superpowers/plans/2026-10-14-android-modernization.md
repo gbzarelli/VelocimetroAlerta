@@ -270,7 +270,7 @@ Expected: drawer, confirmation, and normal Back behaviors match existing intent;
 - [x] Update `docs/android-dependency-audit.md` from the release dependency graph; all 78 non-BOM dependencies and 3 BOM nodes are documented, the debug/release graphs match, and the OSV batch query returned no matching advisories on 2026-10-14.
 - [x] Add an in-app privacy-policy link and a one-time disclosure explaining location while the activity is minimized/screen off. The updated Cancel flow and English/Portuguese disclosure wording pass on API 36; the previous API 35 cancel run passed before its final copy assertions were added.
 - [x] Record the unavailable API-level and physical-device checks as release validation gates; API 23/30/31/33/34/37 images, BLE/RFCOMM sensors, and a physical GPS/speech scenario were not available on this host.
-- [ ] Commit the regression suite and final build configuration as `test: cover Android modernization release flows`.
+- [x] Commit the regression suite and final build configuration as `test: cover Android modernization release flows` (`8c21ef2`).
 
 Expected: unit tests and the available API 36 updated disclosure test pass; earlier API 35/36 instrumentation coverage passed before the final disclosure wording assertion. The latest API 35 rerun is unverified because this host's headless emulator cannot provide the focused window Espresso requires. Additional API levels and physical-device Bluetooth/speech scenarios remain pending. The unsigned release bundle preserves the package ID and targets stable API 36.
 
