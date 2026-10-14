@@ -13,8 +13,10 @@ class ConfigHRZActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdge.enable(window)
         binding = ActivityConfigHrzBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        EdgeToEdge.applySystemBarInsets(window, binding.root)
         val content = binding.contentConfigHrz
         setSupportActionBar(binding.toolbar)
         if (supportActionBar != null) supportActionBar!!.setDisplayHomeAsUpEnabled(true)

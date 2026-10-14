@@ -4,6 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/my_activities_root"
+    android:background="@android:color/white"
     tools:context="br.com.helpdev.velocimetroalerta.MyActivities">
 
     <com.google.android.material.appbar.AppBarLayout

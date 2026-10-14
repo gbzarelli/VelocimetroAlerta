@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
 import com.google.android.material.navigation.NavigationView
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -38,6 +39,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var isServiceBound = false
     var speedometerService: SpeedometerService? = null
         private set
+
+    private val configActivityLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { reloadPreferences() }
+    private val activitiesLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { }
 
     private val trackingPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -78,11 +86,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdge.enable(window)
         setContentView(R.layout.activity_main)
+        val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
+        EdgeToEdge.applySystemBarInsets(window, findViewById(R.id.app_bar_main))
+        EdgeToEdge.applySystemBarInsets(window, findViewById(R.id.nav_view))
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-        val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         val toggle = ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
         drawer.addDrawerListener(toggle)
@@ -90,6 +101,31 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
         navigationView.setNavigationItemSelectedListener(this)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (drawer.isDrawerOpen(GravityCompat.START)) {
+                    drawer.closeDrawer(GravityCompat.START)
+                } else if (speedometerService?.isRunning == true) {
+                    if (supportFragmentManager.findFragmentByTag(BACK_CONFIRMATION_TAG) == null) {
+                        ConfirmDialogFrag.getInstance(
+                            getString(R.string.confirme_sair),
+                            true,
+                            DialogInterface.OnClickListener { _, which ->
+                                if (which == DialogInterface.BUTTON_POSITIVE) {
+                                    stopService()
+                                    finish()
+                                }
+                            }
+                        ).show(supportFragmentManager, BACK_CONFIRMATION_TAG)
+                    }
+                } else {
+                    stopService()
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
 
     fun requestTrackingStart() {
@@ -165,8 +201,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         when (id) {
             R.id.nav_star -> openAppInGooglePlay()
-            R.id.nav_atividades -> startActivityForResult(Intent(this, MyActivities::class.java), REQUEST_MY_ACTIVITIES)
-            R.id.nav_config -> startActivityForResult(Intent(this, ConfigActivity::class.java), REQUEST_CONFIG_AUDIO)
+            R.id.nav_atividades -> activitiesLauncher.launch(Intent(this, MyActivities::class.java))
+            R.id.nav_config -> configActivityLauncher.launch(Intent(this, ConfigActivity::class.java))
             R.id.nav_share -> shareApp()
         }
 
@@ -191,30 +227,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         sendIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.app_name) + " https://play.google.com/store/apps/details?id=" + packageName)
         sendIntent.type = "text/plain"
         startActivity(sendIntent)
-    }
-
-    override fun onBackPressed() {
-        val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START)
-            return
-        }
-
-        if (speedometerService != null && speedometerService!!.isRunning) {
-            if (supportFragmentManager.findFragmentByTag("DIALOG") == null) {
-                ConfirmDialogFrag.getInstance(getString(R.string.confirme_sair), true, DialogInterface.OnClickListener { dialog, which ->
-                    if (which == DialogInterface.BUTTON_POSITIVE) {
-                        stopService()
-                        this@MainActivity.finish()
-                    }
-                }).show(supportFragmentManager, "DIALOG")
-            }
-            return
-        } else {
-            stopService()
-        }
-
-        super.onBackPressed()
     }
 
     private fun stopService() {
@@ -242,7 +254,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val id = item.itemId
         if (id == R.id.action_settings) {
             if (speedometerService == null || !speedometerService!!.isRunning || speedometerService!!.isPause) {
-                startActivityForResult(Intent(this, ConfigActivity::class.java), REQUEST_CONFIG_AUDIO)
+                configActivityLauncher.launch(Intent(this, ConfigActivity::class.java))
             }else{
                 val dialog = AlertDialog.Builder(this)
                 dialog.setTitle(R.string.app_name)
@@ -289,13 +301,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CONFIG_AUDIO) {
-            reloadPreferences()
-        }
-    }
-
     private fun reloadPreferences() {
         if (speedometerService != null) {
             speedometerService!!.reloadPreferences()
@@ -321,8 +326,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     companion object {
-        private const val REQUEST_CONFIG_AUDIO = 2
-        private const val REQUEST_MY_ACTIVITIES = 29
+        private const val BACK_CONFIRMATION_TAG = "back-confirmation"
         private const val SP_KEEP_ALIVE = "keep_alive"
         private const val LOG = "MainActivity"
     }

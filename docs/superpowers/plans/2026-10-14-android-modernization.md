@@ -48,12 +48,12 @@
 - Regenerate: `gradlew`, `gradlew.bat`
 
 **Interfaces:**
-- Produces: checked-in Gradle Wrapper 9.6.0; Android plugin 9.4.1; a version catalog for pinned plugins and dependencies; module configuration with compile/target API 37 and conditional `minSdk = 19`.
+- Produces: checked-in Gradle Wrapper 9.6.0; Android plugin 9.4.1; a version catalog for pinned plugins and dependencies; module configuration with compile/target API 37 and `minSdk = 23` (approved after the Material Components audit).
 
 - [x] Replace the incomplete wrapper with the official Gradle 9.6.0 wrapper scripts, JAR, and properties; stop ignoring the wrapper directory while retaining ignores for local build outputs and signing files.
 - [x] Move plugin resolution to `pluginManagement` with Google and Maven Central; remove JCenter and the legacy root `buildscript` Kotlin/AGP classpaths.
 - [x] Apply `com.android.application` from the version catalog at 9.4.1; use AGP built-in Kotlin instead of `kotlin-android` and remove the direct `kotlin-stdlib-jre7` dependency.
-- [x] Set `compileSdk` and `targetSdk` to API 37 for Android 17, installing the Android 17 SDK platform; AGP 9.4 uses SDK Build Tools 36.0.0 by default, so omit a hard-coded `buildToolsVersion`. Google Play's update floor is currently API 36+, so recheck its policy immediately before upload and use a higher supported API if required. Keep `minSdk = 19` pending the dependency audit; enable AndroidX and ViewBinding.
+- [x] Set `compileSdk` and `targetSdk` to API 37 for Android 17, installing the Android 17 SDK platform; AGP 9.4 uses SDK Build Tools 36.0.0 by default, so omit a hard-coded `buildToolsVersion`. Google Play's update floor is currently API 36+, so recheck its policy immediately before upload and use a higher supported API if required. Set `minSdk = 23` after the dependency audit and owner approval; enable AndroidX and ViewBinding.
 - [x] Remove the tracked `playStore` signing block and credential-like values from `mobile/build.gradle`. Configure release signing only from local ignored properties or environment variables; leave local release builds unsigned when those values are absent.
 - [x] Replace the legacy root `clean` task declaration with Gradle 9-compatible task registration or remove it if the base plugin already provides the required task.
 - [x] Run `./gradlew :mobile:dependencies --configuration debugRuntimeClasspath` and `./gradlew :mobile:dependencies --configuration releaseRuntimeClasspath`; record each direct/transitive library's resolved version, license, minSdk constraint, maintenance status, known advisories, local-network behavior, and keep/upgrade/replace decision in `docs/android-dependency-audit.md`.
@@ -201,7 +201,7 @@ Expected: API 30 uses legacy permission behavior; API 31+ prompts for the specif
 - [x] On API 35, simulate a GPS route and export twice through SAF; both distinct GPX documents contain 62 points, and parsing the first after saving the second confirms it remains readable.
 - [x] Cancel a third document picker; the app returns to the paused activity without an error.
 - [ ] Open the exported file in a dedicated GPX viewer and hand it off to a recipient app. The Android share chooser displayed Drive and Gmail with the GPX attached; no destination was selected because that would send the location history outside the device.
-- [ ] Commit the GPX serialization/export migration as `feat: export GPX through the document picker`.
+- [x] Commit the GPX serialization/export migration as `feat: export GPX through the document picker` (`8e980e1`).
 
 Expected: saved GPX round-trips with all existing track and sensor data; no external-storage permission is requested; canceling the picker leaves the activity intact.
 
@@ -224,14 +224,14 @@ Expected: saved GPX round-trips with all existing track and sensor data; no exte
 **Interfaces:**
 - Produces: `MainActivity` uses AndroidX `OnBackPressedDispatcher`; navigation drawer closes first, then an active ride prompts before exit, and an inactive screen follows normal Back behavior.
 
-- [ ] Write `MainActivityBackNavigationTest.backClosesDrawerBeforeActivity` and `backDuringRideRequiresConfirmation`; run them on API 37 and confirm the edge-to-edge/back requirements are not yet covered or fail due to the legacy callback.
-- [ ] Replace `onBackPressed()` with `OnBackPressedCallback`; replace `startActivityForResult`/`onActivityResult` for configuration and activity navigation with registered Activity Result launchers.
-- [ ] Enable edge-to-edge with `WindowCompat.setDecorFitsSystemWindows(window, false)` and apply status/navigation bar insets to the activity and fragment roots so the toolbar, speed readouts, and controls remain tappable.
-- [ ] Support large-screen rotation and resizing: remove reliance on the manifest's portrait-only restriction for large screens, use responsive layouts for `sw >= 600dp`, and preserve active ride state across configuration changes. Retain the phone layout where it remains appropriate.
-- [ ] Run Back-flow tests and capture screenshots on API 30/API 36/API 37 phones and API 37 tablet/foldable configurations; inspect system-bar overlap, touch targets, drawer behavior, resize, rotate, and fold/unfold while tracking.
-- [ ] Commit edge-to-edge and Back navigation changes as `fix: support edge-to-edge and predictive Back`.
+- [x] Add `MainActivityBackNavigationTest.backClosesDrawerBeforeActivity` and `backDuringRideRequiresConfirmation`; run both on the available API 35 emulator. Both tests also passed against the legacy callback before migration, so they capture the existing contract rather than a prior failure.
+- [x] Replace `onBackPressed()` with `OnBackPressedCallback`; replace `startActivityForResult`/`onActivityResult` for configuration and activity navigation with registered Activity Result launchers.
+- [x] Enable edge-to-edge with `WindowCompat.setDecorFitsSystemWindows(window, false)` and apply status/navigation bar insets to the activity and settings roots so the toolbar, speed readouts, and controls remain tappable. Smoke tests cover the main and configuration screens on API 35.
+- [x] Support large-screen rotation and resizing: remove the manifest's portrait-only restriction, add responsive dimensions for `sw >= 600dp`, and verify active tracking remains visible and the foreground service remains active while resizing/rotating an API 35 emulator between portrait and a 960dp-wide landscape profile. Retain the phone layout where it remains appropriate.
+- [ ] Capture and inspect API 30/API 36/API 37 phone screenshots and API 37 tablet/foldable configurations. API 35 phone and 960dp-wide emulator-profile screenshots were inspected; API 30/36/37 images and a foldable are unavailable here.
+- [x] Commit edge-to-edge and Back navigation changes as `fix: support edge-to-edge and predictive Back`.
 
-Expected: drawer, confirmation, and normal Back behaviors match existing intent; no interactive content is covered by system bars on API 35/36/37 or in large-screen configurations.
+Expected: drawer, confirmation, and normal Back behaviors match existing intent; API 35 screenshots and layout bounds show content clear of system bars, and active tracking survives rotation. API 30/36/37 and physical foldable coverage remains in the final device matrix.
 
 ### Task 7: Complete regression coverage and produce a release-ready AAB
 
