@@ -8,8 +8,6 @@ import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 
-import com.google.gson.Gson
-
 import java.io.EOFException
 import java.io.IOException
 import java.nio.charset.StandardCharsets
@@ -31,7 +29,6 @@ class VAMService : Service(), Runnable {
     private var lastValueModule: TrackPointExtension = TrackPointExtension()
     @Volatile
     private var activeSocket: BluetoothSocket? = null
-    private val gson = Gson()
     @Volatile
     internal var statusListener: SensorStatusListener? = null
     @Volatile
@@ -146,7 +143,7 @@ class VAMService : Service(), Runnable {
                                     btSocket.outputStream.write(REQUEST_VALUE)
                                     val frame = frameReader.readFrame()
                                         ?: throw EOFException("VAM sensor closed the RFCOMM socket")
-                                    gson.fromJson(frame, TrackPointExtension::class.java) ?: TrackPointExtension()
+                                    TrackPointExtensionJsonParser.parse(frame) ?: TrackPointExtension()
                                 })
                                 Thread(futureTask, "Thr-VelAlertBTFrame").start()
                                 try {

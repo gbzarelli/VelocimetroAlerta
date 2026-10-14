@@ -69,7 +69,7 @@
     <string name="pause_automatico">Pause automático</string>
     <string name="atividades_sem_dados">ATIVIDADE SEM DADOS SUFICIENTES PARA A GRAVAÇÃO.</string>
     <string name="aguarde_salvando">AGUARDE, SALVANDO...</string>
-    <string name="arquivo_gravado_sucesso">Arquivo GPX gravado com sucesso em: \n\n%s\n\n </string>
+    <string name="arquivo_gravado_sucesso">Arquivo GPX salvo com sucesso.</string>
     <string name="erro_gravar_gpx">Erro ao gravar arquivo GPX. {%s}</string>
 
     <string name="bloqueio_desativado">BLOQUEIO DE TELA: DESATIVADO.</string>

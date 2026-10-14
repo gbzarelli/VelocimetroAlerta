@@ -5,23 +5,18 @@
  */
 package br.com.helpdev.velocimetroalerta.gpx.objects;
 
-import org.simpleframework.xml.Element;
-import org.simpleframework.xml.Root;
 
 
 /**
  * @author Guilherme
  */
-@Root(name = "trk")
 public class Trk {
 
     public Trk() {
         trkseg = new TrkSeg();
     }
 
-    @Element(name = "name")
     private String name;
-    @Element(name = "trkseg", type = TrkSeg.class)
     private TrkSeg trkseg;
 
     public String getName() {

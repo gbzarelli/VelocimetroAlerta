@@ -7,8 +7,6 @@ package br.com.helpdev.velocimetroalerta.gpx.objects;
 
 import android.location.Location;
 
-import org.simpleframework.xml.ElementList;
-import org.simpleframework.xml.Root;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,17 +14,12 @@ import java.util.List;
 /**
  * @author Guilherme
  */
-@Root(name = "trkseg")
 public class TrkSeg {
 
     public TrkSeg() {
         trkPts = new ArrayList<>();
     }
 
-    @ElementList(name = "trkpt",
-            type = TrkPt.class,
-            inline = true,
-            required = false)
     private List<TrkPt> trkPts;
 
     public List<TrkPt> getTrkPts() {

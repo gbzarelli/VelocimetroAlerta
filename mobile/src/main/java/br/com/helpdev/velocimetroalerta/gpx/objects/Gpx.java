@@ -5,47 +5,28 @@
  */
 package br.com.helpdev.velocimetroalerta.gpx.objects;
 
-import org.simpleframework.xml.Attribute;
-import org.simpleframework.xml.Element;
-import org.simpleframework.xml.Root;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import org.simpleframework.xml.Namespace;
-import org.simpleframework.xml.NamespaceList;
 
 /**
  * @author Guilherme
  */
-@Root(name = "gpx", strict = false)
-@Namespace(reference = "http://www.topografix.com/GPX/1/1")
-@NamespaceList(
-        value = {
-                @Namespace(prefix = "gpxtpx", reference = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1")
-                , @Namespace(prefix = "gpxx", reference = "http://www.garmin.com/xmlschemas/GpxExtensions/v3")
-                , @Namespace(prefix = "xsi", reference = "http://www.w3.org/2001/XMLSchema-instance")
-        }
-)
 public class Gpx {
 
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault());
 
-    @Attribute(name = "xsi:shemaLocation")
     private String schemaLocation = "http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensionsv3.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v1 http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd";
 
-    @Attribute(name = "creator")
     private String creator;
 
-    @Attribute(name = "version")
     private String version = "1.1";
 
-    @Element(name = "metadata", type = MetaData.class)
     private MetaData metaData;
 
-    @Element(name = "trk", type = Trk.class)
     private Trk trk;
 
     public Gpx() {

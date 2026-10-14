@@ -68,7 +68,7 @@
     <string name="site_helpdev">www.helpdev.com.br</string>
     <string name="atividades_sem_dados">ACTIVITY WITHOUT ENOUGH DATA FOR RECORDING.</string>
     <string name="aguarde_salvando">AWAIT, SAVING ...</string>
-    <string name="arquivo_gravado_sucesso">GPX file successfully saved in: \n\n%s\n\n </string>
+    <string name="arquivo_gravado_sucesso">GPX file saved successfully.</string>
     <string name="erro_gravar_gpx">Error writing GPX file. {%s}</string>
 
     <string name="bloqueio_desativado">SCREEN LOCK: OFF</string>

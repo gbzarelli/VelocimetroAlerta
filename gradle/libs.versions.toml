@@ -1,7 +1,6 @@
 [versions]
 agp = "9.4.1"
 gson = "2.14.0"
-simple-xml = "2.7.1"
 appcompat = "1.8.0"
 constraintlayout = "2.2.2"
 core = "1.19.1"
@@ -28,7 +27,6 @@ androidx-coordinatorlayout = { module = "androidx.coordinatorlayout:coordinatorl
 androidx-drawerlayout = { module = "androidx.drawerlayout:drawerlayout", version.ref = "drawerlayout" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
-simple-xml = { module = "org.simpleframework:simple-xml", version.ref = "simple-xml" }
 test-runner = { module = "androidx.test:runner", version.ref = "test-runner" }
 test-rules = { module = "androidx.test:rules", version.ref = "test-rules" }
 test-core-ktx = { module = "androidx.test:core-ktx", version.ref = "test-core" }

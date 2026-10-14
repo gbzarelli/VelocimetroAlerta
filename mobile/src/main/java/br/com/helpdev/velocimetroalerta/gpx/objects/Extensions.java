@@ -5,13 +5,10 @@
  */
 package br.com.helpdev.velocimetroalerta.gpx.objects;
 
-import org.simpleframework.xml.Element;
-import org.simpleframework.xml.Root;
 
 /**
  * @author Guilherme
  */
-@Root(name = "elements")
 public class Extensions {
     public Extensions() {
     }
@@ -20,7 +17,6 @@ public class Extensions {
         this.trackPointExtension = trackPointExtension;
     }
 
-    @Element(name = "gpxtpx:TrackPointExtension", type = TrackPointExtension.class)
     private TrackPointExtension trackPointExtension;
 
     public TrackPointExtension getTrackPointExtension() {

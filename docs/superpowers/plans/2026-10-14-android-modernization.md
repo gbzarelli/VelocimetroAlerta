@@ -124,7 +124,7 @@ Expected: debug APK assembles and both smoke tests pass without Support Library 
 - [x] Make the tracking permission scenarios pass on API 35: denied location, approximate-only, notification denial, and precise tracking with emulator GPS fix; stopping clears the fix and foreground state. Host `dumpsys` also confirmed an ongoing location foreground notification.
 - [ ] On API 37, start tracking while the activity is visible, turn the screen off, and verify location updates and spoken speed alerts continue under the location foreground service; stop tracking and verify both cease. API 35 testing confirmed the foreground service remains active with the screen off; spoken output was not exercised, and the API 37 emulator image is unavailable in the installed SDK.
 - [ ] Run `./gradlew :mobile:testDebugUnitTest :mobile:connectedDebugAndroidTest` on API 23, API 30, API 31, API 33, API 36, and API 37 emulators where available. Only API 35 is installed; Task 7 retains the final device-matrix check.
-- [ ] Commit the location and Bluetooth permission/service changes together as `fix: modernize location and Bluetooth permissions` because Tasks 3 and 4 share the foreground service, permission policy, and main screen callbacks.
+- [x] Commit the location and Bluetooth permission/service changes together as `fix: modernize location and Bluetooth permissions` because Tasks 3 and 4 share the foreground service, permission policy, and main screen callbacks (`45024c3`).
 
 Expected: policy unit cases pass; no GPS update subscription or foreground location service starts before an explicit permitted Start action.
 
@@ -160,7 +160,7 @@ Expected: policy unit cases pass; no GPS update subscription or foreground locat
 - [x] Run unit tests and the Bluetooth permission instrumentation scenario on the available API 35 emulator; a connected suite excluding the separately configured location-permission matrix also passed 3/3. API 30/31/33/36/37 emulator images are not installed.
 - [ ] Make `BluetoothPermissionFlowTest` pass on API 31/36/37, then perform physical sensor validation below. API 35 passed; API 31/36/37 images and physical BLE/RFCOMM sensors are unavailable in this environment.
 - [ ] On physical hardware, pair and connect a BLE heart-rate sensor and the classic RFCOMM VAM module, receive readings, revoke permission, disable Bluetooth, drop each connection during a read, and verify recovery without interrupting GPS tracking.
-- [ ] Commit the location and Bluetooth permission/service changes as `fix: modernize location and Bluetooth permissions`.
+- [x] Commit the location and Bluetooth permission/service changes as `fix: modernize location and Bluetooth permissions` (`45024c3`).
 
 Expected: API 30 uses legacy permission behavior; API 31+ prompts for the specific scan/connect permissions; BLE or RFCOMM sensor denial/disconnect does not crash or stop GPS, and RFCOMM EOF causes a clean reconnect path.
 
@@ -188,18 +188,19 @@ Expected: API 30 uses legacy permission behavior; API 31+ prompts for the specif
 - Produces: `TrackPointExtensionJsonParser.parse(json: String): TrackPointExtension?` for the JSON conversion used by `VAMService`.
 - Produces: `MainActivityFragment` saves with `ActivityResultContracts.CreateDocument("application/gpx+xml")` and shares the resulting `content://` URI with read permission.
 
-- [ ] Write `GpxFileUtilsTest` with a track containing two points and heart-rate/cadence extensions; parse the result and assert GPX 1.1 namespace, creator, timestamps, coordinates, elevation, and extension values. Add `writeGpxRejectsEmptyTrack`, which asserts `IllegalArgumentException` for a GPX with no points.
-- [ ] Run the GPX instrumentation test and confirm it fails because the OutputStream writer and empty-track validation have not been implemented.
-- [ ] Replace Simple XML annotations/`Persister` with Android `XmlSerializer`; emit correctly namespaced GPX 1.1 and Garmin track-point extensions. Remove the unused altitude debug writer and obsolete file-only serialization methods after confirming no callers remain; retain the empty-track behavior by asserting that the user flow does not launch export without a valid track.
-- [ ] Remove `org.simpleframework:simple-xml`; upgrade Gson from 2.8.2 to a current stable version pinned in `gradle/libs.versions.toml`.
-- [ ] Write `TrackPointExtensionJsonParserTest.parsesSensorValuesAndMissingOptionalFields` for `{"cad":"82","atemp":"21","rhu":null,"hr":"144"}`; assert getters return cadence `82`, temperature `21`, humidity `null`, and heart rate `144`, then run it and confirm the new parser API is missing.
-- [ ] Implement `TrackPointExtensionJsonParser.parse(json: String): TrackPointExtension?` with the pinned Gson dependency, inject/use it in `VAMService`, and keep absent JSON properties null.
-- [ ] Run `./gradlew :mobile:testDebugUnitTest --tests '*TrackPointExtensionJsonParserTest'`.
-- [ ] Replace `WRITE_EXTERNAL_STORAGE`/`READ_EXTERNAL_STORAGE` checks in `MainActivityFragment.save()` with `CreateDocument`; validate that the GPX has points before launching the picker, write in a background executor via `ContentResolver.openOutputStream`, use a collision-resistant timestamp filename, and report chooser cancellation without error.
-- [ ] Share the saved document URI using `Intent.EXTRA_STREAM`, `ClipData`, and `FLAG_GRANT_READ_URI_PERMISSION`; remove `file://` sharing and broad external-storage manifest permissions.
-- [ ] Run GPX instrumentation tests and `./gradlew :mobile:testDebugUnitTest :mobile:connectedDebugAndroidTest` on API 30, API 36, and API 37.
-- [ ] Manually export twice, cancel the picker, reopen the exported file in a GPX viewer, and share it to another app.
-- [ ] Verify the two exports have distinct document names and the first export remains readable after the second is saved.
+- [x] Write `GpxFileUtilsTest` with a track containing two points and heart-rate/cadence extensions; parse the result and assert GPX 1.1 namespace, creator, timestamps, coordinates, elevation, and extension values. Add `writeGpxRejectsEmptyTrack`, which asserts `IllegalArgumentException` for a GPX with no points.
+- [x] Run the GPX instrumentation test and confirm it fails because the OutputStream writer and empty-track validation have not been implemented.
+- [x] Replace Simple XML annotations/`Persister` with Android `XmlSerializer`; emit correctly namespaced GPX 1.1 and Garmin track-point extensions. Remove the unused altitude debug writer and obsolete file-only serialization methods after confirming no callers remain; retain the empty-track behavior by asserting that the user flow does not launch export without a valid track.
+- [x] Remove `org.simpleframework:simple-xml`; Gson 2.14.0 is pinned in `gradle/libs.versions.toml` and was upgraded in Task 1.
+- [x] Write `TrackPointExtensionJsonParserTest.parsesSensorValuesAndMissingOptionalFields` for `{"cad":"82","atemp":"21","rhu":null,"hr":"144"}`; assert getters return cadence `82`, temperature `21`, humidity `null`, and heart rate `144`, then run it and confirm the new parser API is missing.
+- [x] Implement `TrackPointExtensionJsonParser.parse(json: String): TrackPointExtension?` with the pinned Gson dependency, use it in `VAMService`, and keep absent JSON properties null.
+- [x] Run `./gradlew :mobile:testDebugUnitTest --tests '*TrackPointExtensionJsonParserTest'`.
+- [x] Replace `WRITE_EXTERNAL_STORAGE`/`READ_EXTERNAL_STORAGE` checks in `MainActivityFragment.save()` with `CreateDocument`; validate that the GPX has points before launching the picker, write in a background executor via `ContentResolver.openOutputStream`, use a collision-resistant timestamp filename, and report chooser cancellation without error.
+- [x] Share the saved document URI using `Intent.EXTRA_STREAM`, `ClipData`, and `FLAG_GRANT_READ_URI_PERMISSION`; remove `file://` sharing and broad external-storage manifest permissions.
+- [ ] Run GPX instrumentation tests on API 30, API 36, and API 37. Only API 35 is installed in this environment; API 35 GPX instrumentation and unit tests pass.
+- [x] On API 35, simulate a GPS route and export twice through SAF; both distinct GPX documents contain 62 points, and parsing the first after saving the second confirms it remains readable.
+- [x] Cancel a third document picker; the app returns to the paused activity without an error.
+- [ ] Open the exported file in a dedicated GPX viewer and hand it off to a recipient app. The Android share chooser displayed Drive and Gmail with the GPX attached; no destination was selected because that would send the location history outside the device.
 - [ ] Commit the GPX serialization/export migration as `feat: export GPX through the document picker`.
 
 Expected: saved GPX round-trips with all existing track and sensor data; no external-storage permission is requested; canceling the picker leaves the activity intact.
