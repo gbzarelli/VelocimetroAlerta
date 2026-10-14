@@ -24,6 +24,8 @@ import br.com.helpdev.velocimetroalerta.gps.ObSpeedometerAlert
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
 import br.com.helpdev.velocimetroalerta.gpx.GpxFileUtils
 import br.com.helpdev.velocimetroalerta.databinding.FragmentMainBinding
+import br.com.helpdev.velocimetroalerta.sensors.SensorConnectionState
+import br.com.helpdev.velocimetroalerta.sensors.SensorKind
 import java.io.File
 import java.lang.String.format
 import java.text.SimpleDateFormat
@@ -41,6 +43,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
 
     private var progressDialog: ProgressDialog? = null
     private var obSpeedometerAlert: ObSpeedometerAlert? = null
+    private val sensorStates = mutableMapOf<SensorKind, SensorConnectionState>()
 
     private val gpsProcess: SpeedometerService?
         get() = if (myActivity == null) null else myActivity!!.speedometerService
@@ -224,7 +227,8 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
 
 
         } else {
-            gpsProcess!!.start(this)
+            myActivity?.requestTrackingStart()
+            return
         }
         binding.btSave.visibility = if (gpsProcess!!.isPause) View.VISIBLE else View.GONE
         binding.btStartStop.setImageResource(if (gpsProcess!!.isPause) R.drawable.play else R.drawable.pause)
@@ -247,6 +251,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
 
                     if (obSpeedometerAlert!!.cadence < 0) {
                         binding.cadence.setText(R.string.text_null_value)
+                        binding.searchSensorVam.text = sensorStatusText(sensorStates[SensorKind.VAM])
                         binding.searchSensorVam.visibility = View.VISIBLE
                     } else {
                         binding.searchSensorVam.visibility = View.INVISIBLE
@@ -265,6 +270,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
                     }
 
                     if (obSpeedometerAlert!!.bpm <= 0) {
+                        binding.searchSensorHr.text = sensorStatusText(sensorStates[SensorKind.HEART_RATE])
                         binding.searchSensorHr.visibility = View.VISIBLE
                         binding.hm.setText(R.string.text_null_value)
                         binding.zone.setText(R.string.text_null_value)
@@ -385,13 +391,44 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
                 binding.chronometer.base = base
                 if (resume) {
                     binding.chronometer.start()
+                    binding.btStartStop.setImageResource(R.drawable.pause)
                 }
             }
     }
 
     override fun onErrorProcessingData(t: Throwable) {
-
+        if (t is SecurityException) {
+            activity?.runOnUiThread {
+                clear()
+                android.widget.Toast.makeText(requireContext(), R.string.precise_location_required, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
+
+    override fun setSensorStatus(sensor: SensorKind, state: SensorConnectionState) {
+        sensorStates[sensor] = state
+        val host = activity ?: return
+        host.runOnUiThread {
+            if (_binding == null) return@runOnUiThread
+            when (sensor) {
+                SensorKind.HEART_RATE -> binding.searchSensorHr.text = sensorStatusText(state)
+                SensorKind.VAM -> binding.searchSensorVam.text = sensorStatusText(state)
+            }
+        }
+    }
+
+    private fun sensorStatusText(state: SensorConnectionState?): String = getString(
+        when (state) {
+            SensorConnectionState.UNSUPPORTED -> R.string.bluetooth_sensor_unsupported
+            SensorConnectionState.PERMISSION_DENIED -> R.string.bluetooth_sensor_permission_denied
+            SensorConnectionState.BLUETOOTH_DISABLED -> R.string.bluetooth_sensor_disabled
+            SensorConnectionState.CONNECTING -> R.string.bluetooth_sensor_connecting
+            SensorConnectionState.CONNECTED -> R.string.bluetooth_sensor_connected
+            SensorConnectionState.RECONNECTING -> R.string.bluetooth_sensor_reconnecting
+            SensorConnectionState.CONNECTION_FAILED -> R.string.bluetooth_sensor_connection_failed
+            null -> R.string.search_sensor
+        }
+    )
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
         if (_binding == null) return

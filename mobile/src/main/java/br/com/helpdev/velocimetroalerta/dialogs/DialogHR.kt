@@ -1,8 +1,16 @@
 package br.com.helpdev.velocimetroalerta.dialogs
 
+import android.app.Activity
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.le.BluetoothLeScanner
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.AdapterView
@@ -10,22 +18,65 @@ import android.widget.ArrayAdapter
 import android.widget.BaseAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
 import androidx.preference.Preference
 import androidx.preference.PreferenceManager
 import br.com.helpdev.velocimetroalerta.R
 import br.com.helpdev.velocimetroalerta.bluetooth.Bluetooth
+import br.com.helpdev.velocimetroalerta.permissions.RuntimePermissionPolicy
 
-class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attrs), BluetoothAdapter.LeScanCallback {
+class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attrs) {
 
     private val devices = mutableListOf<MyDevice>()
     private var listView: ListView? = null
-    private var scanningAdapter: BluetoothAdapter? = null
+    private var scanner: BluetoothLeScanner? = null
+    private val scanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            addDevice(result.device)
+        }
+
+        override fun onBatchScanResults(results: MutableList<ScanResult>) {
+            results.forEach { addDevice(it.device) }
+        }
+    }
 
     override fun onClick() {
-        if (!Bluetooth.isAdapterEnabled) {
+        val activity = context as? Activity ?: return
+        val requiredPermissions = RuntimePermissionPolicy.permissionsFor(
+            RuntimePermissionPolicy.Feature.BLUETOOTH_SCAN,
+            Build.VERSION.SDK_INT
+        ) + RuntimePermissionPolicy.permissionsFor(
+            RuntimePermissionPolicy.Feature.BLUETOOTH_CONNECT,
+            Build.VERSION.SDK_INT
+        )
+        val missingPermissions = requiredPermissions.filter {
+            ActivityCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missingPermissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(activity, missingPermissions.toTypedArray(), REQUEST_BLUETOOTH_PERMISSIONS)
+            return
+        }
+        openScanner()
+    }
+
+    fun onBluetoothPermissionResult(granted: Boolean) {
+        if (granted) {
+            openScanner()
+        } else {
+            android.widget.Toast.makeText(context, R.string.bluetooth_permission_limited, android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun openScanner() {
+        if (!Bluetooth.isSupported(context)) {
+            android.widget.Toast.makeText(context, R.string.bluetooth_not_supported, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        if (!Bluetooth.isAdapterEnabled(context)) {
             AlertDialog.Builder(context)
                 .setMessage(R.string.disabled_bluetooth)
-                .setPositiveButton(R.string.bt_enable) { _, _ -> Bluetooth.enableAdapter() }
+                .setPositiveButton(R.string.bt_enable) { _, _ -> requestEnableBluetooth() }
                 .show()
             return
         }
@@ -50,17 +101,35 @@ class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attr
             dialog.dismiss()
         }
         dialog.setOnDismissListener {
-            scanningAdapter?.stopLeScan(this)
-            scanningAdapter = null
+            try {
+                scanner?.stopScan(scanCallback)
+            } catch (_: SecurityException) {
+            }
+            scanner = null
             onPreferenceChangeListener?.onPreferenceChange(this, summary)
         }
         dialog.show()
 
-        scanningAdapter = Bluetooth.bluetoothAdapter
-        scanningAdapter?.startLeScan(this)
+        scanner = Bluetooth.adapter(context)?.bluetoothLeScanner
+        if (scanner == null) {
+            dialog.dismiss()
+            android.widget.Toast.makeText(context, R.string.bluetooth_not_supported, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        try {
+            scanner?.startScan(scanCallback)
+        } catch (_: SecurityException) {
+            dialog.dismiss()
+            onBluetoothPermissionResult(false)
+        }
     }
 
-    override fun onLeScan(device: BluetoothDevice, rssi: Int, scanRecord: ByteArray?) {
+    private fun requestEnableBluetooth() {
+        val activity = context as? Activity ?: return
+        activity.startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+    }
+
+    private fun addDevice(device: BluetoothDevice) {
         if (devices.any { it.address == device.address }) return
         devices.add(MyDevice(device))
         listView?.post { (listView?.adapter as? BaseAdapter)?.notifyDataSetChanged() }
@@ -93,5 +162,9 @@ class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attr
             get() = device.address
 
         override fun toString(): String = "$name\n$address"
+    }
+
+    companion object {
+        const val REQUEST_BLUETOOTH_PERMISSIONS = 301
     }
 }

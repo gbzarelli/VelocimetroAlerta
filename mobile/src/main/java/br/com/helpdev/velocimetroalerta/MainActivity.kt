@@ -8,10 +8,12 @@ import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.Settings
 import com.google.android.material.navigation.NavigationView
-import androidx.core.app.ActivityCompat
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -26,15 +28,42 @@ import android.widget.Toast
 
 import br.com.helpdev.velocimetroalerta.dialogs.ConfirmDialogFrag
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
+import br.com.helpdev.velocimetroalerta.permissions.RuntimePermissionPolicy
+import br.com.helpdev.velocimetroalerta.sensors.SensorConnectionState
+import br.com.helpdev.velocimetroalerta.sensors.SensorKind
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, ServiceConnection {
 
     private var callbackNotify: CallbackNotify? = null
+    private var isServiceBound = false
     var speedometerService: SpeedometerService? = null
         private set
 
-    private val isPermissionsGranted: Boolean
-        get() = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    private val trackingPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (hasPreciseLocationPermission()) {
+            if (Build.VERSION.SDK_INT >= 33 && results[Manifest.permission.POST_NOTIFICATIONS] == false) {
+                Toast.makeText(this, R.string.notification_permission_limited, Toast.LENGTH_LONG).show()
+            }
+            if (hasConfiguredBluetoothSensors() && Build.VERSION.SDK_INT >= 31 &&
+                results[Manifest.permission.BLUETOOTH_CONNECT] == false) {
+                Toast.makeText(this, R.string.bluetooth_permission_limited, Toast.LENGTH_LONG).show()
+                val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+                speedometerService?.let { service ->
+                    if (preferences.getBoolean(getString(R.string.pref_hr_sensor), false)) {
+                        service.reportSensorStatus(SensorKind.HEART_RATE, SensorConnectionState.PERMISSION_DENIED)
+                    }
+                    if (preferences.getBoolean(getString(R.string.pref_module_vel_alert), false)) {
+                        service.reportSensorStatus(SensorKind.VAM, SensorConnectionState.PERMISSION_DENIED)
+                    }
+                }
+            }
+            startTrackingService()
+        } else {
+            showPreciseLocationRequired()
+        }
+    }
 
     private val sharePref: SharedPreferences
         get() = getSharedPreferences("sp_main_activity", MODE_PRIVATE)
@@ -53,10 +82,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-        if (savedInstanceState == null) {
-            loadPermissions()
-        }
-
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         val toggle = ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
@@ -67,14 +92,71 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         navigationView.setNavigationItemSelectedListener(this)
     }
 
-    private fun loadPermissions() {
-        if (isPermissionsGranted) {
-            val service = Intent(this, SpeedometerService::class.java)
-            startService(service)
-            bindService(service, this, BIND_AUTO_CREATE)
-        } else {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION), 12)
+    fun requestTrackingStart() {
+        val locationPermissions = RuntimePermissionPolicy.permissionsFor(
+            RuntimePermissionPolicy.Feature.LOCATION,
+            Build.VERSION.SDK_INT
+        )
+        val requestedPermissions = mutableSetOf<String>()
+        if (locationPermissions.any { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) {
+            // Android 12+ requires coarse and fine to be requested in the same request.
+            requestedPermissions += locationPermissions
         }
+        requestedPermissions += RuntimePermissionPolicy.permissionsFor(
+            RuntimePermissionPolicy.Feature.POST_NOTIFICATIONS,
+            Build.VERSION.SDK_INT
+        )
+        if (hasConfiguredBluetoothSensors()) {
+            requestedPermissions += RuntimePermissionPolicy.permissionsFor(
+                RuntimePermissionPolicy.Feature.BLUETOOTH_CONNECT,
+                Build.VERSION.SDK_INT
+            )
+        }
+
+        val missingPermissions = requestedPermissions.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missingPermissions.isEmpty()) {
+            startTrackingService()
+        } else {
+            trackingPermissionLauncher.launch(missingPermissions.toTypedArray())
+        }
+    }
+
+    private fun hasPreciseLocationPermission(): Boolean =
+        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    internal fun stopTrackingIfLocationPermissionWasRevoked() {
+        if (speedometerService?.isTracking == true && !hasPreciseLocationPermission()) {
+            speedometerService?.stop()
+        }
+    }
+
+    private fun hasConfiguredBluetoothSensors(): Boolean {
+        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        return preferences.getBoolean(getString(R.string.pref_hr_sensor), false) ||
+            preferences.getBoolean(getString(R.string.pref_module_vel_alert), false)
+    }
+
+    private fun startTrackingService() {
+        val intent = Intent(this, SpeedometerService::class.java).setAction(SpeedometerService.ACTION_START_TRACKING)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
+
+    private fun showPreciseLocationRequired() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.app_name)
+            .setMessage(R.string.precise_location_required)
+            .setPositiveButton(R.string.retry) { _, _ -> requestTrackingStart() }
+            .setNegativeButton(R.string.open_settings) { _, _ ->
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            }
+            .setNeutralButton(R.string.bt_cancel, null)
+            .show()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -140,16 +222,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         stopService(Intent(this, SpeedometerService::class.java))
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        for (i in grantResults) {
-            if (i != PackageManager.PERMISSION_GRANTED) {
-                loadPermissions()
-                break
-            }
-        }
-    }
-
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         loadIconKeepAlive(menu.getItem(0))
@@ -195,22 +267,21 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onResume() {
         super.onResume()
-        if (isPermissionsGranted) {
-            bindService(Intent(this, SpeedometerService::class.java), this, BIND_AUTO_CREATE)
-        }
+        isServiceBound = bindService(Intent(this, SpeedometerService::class.java), this, BIND_AUTO_CREATE)
     }
 
     override fun onPause() {
         super.onPause()
-        if (speedometerService != null) {
+        if (isServiceBound) {
             try {
-                if (callbackNotify != null) callbackNotify!!.onBeforeDisconnect(speedometerService!!)
+                speedometerService?.let { service -> callbackNotify?.onBeforeDisconnect(service) }
             } catch (t: Throwable) {
                 Log.e(LOG, "onBeforeDisconnect")
             }
 
             try {
                 unbindService(this)
+                isServiceBound = false
             } catch (t: Throwable) {
                 Log.e(LOG, "unbindService")
             }
@@ -239,6 +310,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
         if (iBinder is SpeedometerService.MyBinder) {
             speedometerService = iBinder.speedometerService
+            stopTrackingIfLocationPermissionWasRevoked()
             reloadPreferences()
             if (callbackNotify != null) callbackNotify!!.onServiceConnected(speedometerService)
         }

@@ -7,6 +7,19 @@
 
     <string name="bt_ok">OK</string>
     <string name="bt_cancel">Cancelar</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="open_settings">Abrir configurações</string>
+    <string name="precise_location_required">A localização precisa é necessária para calcular a velocidade e gravar o percurso. Permita o acesso preciso e tente novamente.</string>
+    <string name="notification_permission_limited">O rastreamento continuará, mas o Android pode ocultar a notificação permanente.</string>
+    <string name="bluetooth_permission_limited">O rastreamento continuará sem o sensor Bluetooth configurado. Permita o acesso ao Bluetooth nas configurações para usá-lo.</string>
+    <string name="bluetooth_not_supported">Este dispositivo não oferece suporte a sensores Bluetooth.</string>
+    <string name="bluetooth_sensor_unsupported">O Bluetooth não está disponível neste dispositivo.</string>
+    <string name="bluetooth_sensor_permission_denied">A permissão do Bluetooth foi negada. O GPS continuará sem este sensor.</string>
+    <string name="bluetooth_sensor_disabled">O Bluetooth está desligado. Ative-o para usar este sensor.</string>
+    <string name="bluetooth_sensor_connecting">Conectando ao sensor…</string>
+    <string name="bluetooth_sensor_connected">Sensor conectado; aguardando dados…</string>
+    <string name="bluetooth_sensor_reconnecting">Sensor desconectado. Reconectando…</string>
+    <string name="bluetooth_sensor_connection_failed">Não foi possível conectar ao sensor. Tentando novamente…</string>
 
     <string name="velocidade_atual">Velocidade atual</string>
     <string name="avg">Média</string>

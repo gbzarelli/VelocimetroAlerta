@@ -9,6 +9,19 @@
 
     <string name="bt_ok">OK</string>
     <string name="bt_cancel">Cancel</string>
+    <string name="retry">Try again</string>
+    <string name="open_settings">Open settings</string>
+    <string name="precise_location_required">Precise location is required to calculate speed and record a route. Grant precise location and try again.</string>
+    <string name="notification_permission_limited">Tracking will continue, but Android may hide the ongoing notification.</string>
+    <string name="bluetooth_permission_limited">Tracking will continue without the configured Bluetooth sensor. Allow Bluetooth access in Settings to use it.</string>
+    <string name="bluetooth_not_supported">This device does not support Bluetooth sensors.</string>
+    <string name="bluetooth_sensor_unsupported">Bluetooth is not available on this device.</string>
+    <string name="bluetooth_sensor_permission_denied">Bluetooth permission is denied. GPS tracking continues without this sensor.</string>
+    <string name="bluetooth_sensor_disabled">Bluetooth is off. Turn it on to use this sensor.</string>
+    <string name="bluetooth_sensor_connecting">Connecting to sensor…</string>
+    <string name="bluetooth_sensor_connected">Sensor connected; waiting for data…</string>
+    <string name="bluetooth_sensor_reconnecting">Sensor disconnected. Reconnecting…</string>
+    <string name="bluetooth_sensor_connection_failed">Could not connect to sensor. Retrying…</string>
 
     <string name="velocidade_atual">Current speed</string>
     <string name="avg">Average</string>

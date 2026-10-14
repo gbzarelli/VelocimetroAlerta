@@ -6,6 +6,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.content.pm.PackageManager
 
 /**
  * Permissions <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"></uses-permission>
@@ -18,8 +19,13 @@ class Gps : LocationListener {
         private set
     private var location: Location? = null
     private var locationManager: LocationManager? = null
+    private var appContext: Context? = null
     var isPermission = false
         private set
+    var isTracking = false
+        private set
+    val hasLocationFix: Boolean
+        get() = location != null
 
     val isGpsEnable: Boolean
         get() {
@@ -36,16 +42,41 @@ class Gps : LocationListener {
 
     @SuppressLint("MissingPermission")
     fun init(context: Context) {
+        appContext = context.applicationContext
         locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    }
+
+    @SuppressLint("MissingPermission")
+    fun startTracking() {
+        val manager = locationManager ?: throw RuntimeException("No init Gps")
+        val context = appContext ?: throw RuntimeException("No init Gps")
+        if (context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            throw SecurityException("Precise location permission is required to track speed")
+        }
+        if (isTracking) return
+
+        location = null
+        views = -1
+        manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, this)
         isPermission = true
-        locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, this)
+        isTracking = true
+    }
+
+    fun stopTracking() {
+        val manager = locationManager ?: return
+        if (isTracking) {
+            manager.removeUpdates(this)
+        }
+        isTracking = false
+        isPermission = false
+        location = null
+        views = -1
     }
 
     fun close() {
-        if (locationManager == null) {
-            throw RuntimeException("No init Gps")
-        }
-        locationManager!!.removeUpdates(this)
+        stopTracking()
+        locationManager = null
+        appContext = null
     }
 
     override fun onLocationChanged(location: Location) {

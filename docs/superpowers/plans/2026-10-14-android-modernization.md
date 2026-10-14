@@ -112,19 +112,19 @@ Expected: debug APK assembles and both smoke tests pass without Support Library 
 - Produces: `RuntimePermissionPolicy.permissionsFor(feature: RuntimePermissionPolicy.Feature, sdkInt: Int): Set<String>`; nested `Feature` values are `LOCATION`, `BLUETOOTH_SCAN`, `BLUETOOTH_CONNECT`, and `POST_NOTIFICATIONS`.
 - Produces: `Gps.init(context)` configures `LocationManager` without subscribing; `Gps.startTracking()` subscribes only after permission is granted; `Gps.stopTracking()` removes updates; `Gps.close()` stops and releases tracking.
 
-- [ ] Write `RuntimePermissionPolicyTest` with exact expectations: location is empty at API 22 and `{ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION}` at API 23; Bluetooth scan is `{ACCESS_FINE_LOCATION}` at API 30 and `{BLUETOOTH_SCAN}` at API 31; connect is `{BLUETOOTH_CONNECT}` at API 31; notifications are empty at API 32 and `{POST_NOTIFICATIONS}` at API 33.
-- [ ] Run `./gradlew :mobile:testDebugUnitTest --tests '*RuntimePermissionPolicyTest'` and confirm it fails because the policy type has not been created.
-- [ ] Write `TrackingPermissionFlowTest.locationDeniedDoesNotStartTracking`, `preciseGrantStartsLocationForegroundService`, `approximateOnlyDoesNotStartPrecisionTracking`, `notificationDeniedDoesNotCrashTracking`, and `revokedLocationStopsTracking`; run on API 37 and confirm the current launch-time permission/service behavior violates the expected explicit-start flow.
-- [ ] Implement the policy helper and update the manifest with coarse/fine location, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`, and API-31 Bluetooth permissions; cap legacy Bluetooth permissions at API 30 and mark scan `neverForLocation` only if code review confirms scan results are not used to infer location.
-- [ ] Set `android:foregroundServiceType="location"` on `SpeedometerService`; keep background-location permission out unless the implementation audit proves it is necessary.
-- [ ] Change `MainActivity` so app launch binds the service without prompting for storage/location or subscribing to GPS. Register permission requests with Activity Result APIs and request precise location only when the user taps Start.
-- [ ] Change `Gps.init` to initialize without updates. Start location updates only after precise permission is granted and tracking begins; stop updates on track stop and service destruction.
-- [ ] Promote `SpeedometerService` to a location foreground service synchronously from the explicit Start action before processing location; handle `SecurityException` by stopping foreground state and returning a visible recoverable error.
-- [ ] Make notification denial non-fatal to GPS tracking while explaining that notification visibility is limited; location denial or approximate-only access must prevent precise speed tracking and offer a retry path.
-- [ ] Make `TrackingPermissionFlowTest` pass: denied location leaves tracking stopped; after granting precise location and tapping Start, the service shows its ongoing notification and receives emulator GPS updates; stopping removes updates and the foreground notification.
-- [ ] On API 37, start tracking while the activity is visible, turn the screen off, and verify location updates and spoken speed alerts continue under the location foreground service; stop tracking and verify both cease.
-- [ ] Run `./gradlew :mobile:testDebugUnitTest :mobile:connectedDebugAndroidTest` on API 23, API 30, API 31, API 33, API 36, and API 37 emulators where available.
-- [ ] Commit permission and foreground-location changes as `fix: gate GPS tracking on modern permissions`.
+- [x] Write `RuntimePermissionPolicyTest` with exact expectations: location is empty at API 22 and `{ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION}` at API 23; Bluetooth scan is `{ACCESS_FINE_LOCATION}` at API 30 and `{BLUETOOTH_SCAN}` at API 31; connect is `{BLUETOOTH_CONNECT}` at API 31; notifications are empty at API 32 and `{POST_NOTIFICATIONS}` at API 33.
+- [x] Run `./gradlew :mobile:testDebugUnitTest --tests '*RuntimePermissionPolicyTest'` and confirm it fails because the policy type has not been created.
+- [x] Write the four `TrackingPermissionFlowTest` cases for denied, precise, approximate-only, and notification-denied access. Validate location revocation from the host with `adb`, because Android restarts the app process after precise-location downgrade; the instrumentation runner cannot survive revoking its target process.
+- [x] Implement the policy helper and update the manifest with coarse/fine location, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`, and API-31 Bluetooth permissions; cap legacy Bluetooth permissions at API 30 and mark scan `neverForLocation` only if code review confirms scan results are not used to infer location.
+- [x] Set `android:foregroundServiceType="location"` on `SpeedometerService`; keep background-location permission out unless the implementation audit proves it is necessary.
+- [x] Change `MainActivity` so app launch binds the service without prompting for storage/location or subscribing to GPS. Register permission requests with Activity Result APIs and request precise location only when the user taps Start.
+- [x] Change `Gps.init` to initialize without updates. Start location updates only after precise permission is granted and tracking begins; stop updates on track stop and service destruction.
+- [x] Promote `SpeedometerService` to a location foreground service synchronously from the explicit Start action before processing location; handle `SecurityException` by stopping foreground state and returning a visible recoverable error.
+- [x] Make notification denial non-fatal to GPS tracking while explaining that notification visibility is limited; location denial or approximate-only access must prevent precise speed tracking and offer a retry path.
+- [x] Make the tracking permission scenarios pass on API 35: denied location, approximate-only, notification denial, and precise tracking with emulator GPS fix; stopping clears the fix and foreground state. Host `dumpsys` also confirmed an ongoing location foreground notification.
+- [ ] On API 37, start tracking while the activity is visible, turn the screen off, and verify location updates and spoken speed alerts continue under the location foreground service; stop tracking and verify both cease. API 35 testing confirmed the foreground service remains active with the screen off; spoken output was not exercised, and the API 37 emulator image is unavailable in the installed SDK.
+- [ ] Run `./gradlew :mobile:testDebugUnitTest :mobile:connectedDebugAndroidTest` on API 23, API 30, API 31, API 33, API 36, and API 37 emulators where available. Only API 35 is installed; Task 7 retains the final device-matrix check.
+- [ ] Commit the location and Bluetooth permission/service changes together as `fix: modernize location and Bluetooth permissions` because Tasks 3 and 4 share the foreground service, permission policy, and main screen callbacks.
 
 Expected: policy unit cases pass; no GPS update subscription or foreground location service starts before an explicit permitted Start action.
 
@@ -149,18 +149,18 @@ Expected: policy unit cases pass; no GPS update subscription or foreground locat
 - Consumes: `RuntimePermissionPolicy.permissionsFor` from Task 3.
 - Produces: user-initiated scan/connect flows that request only the Bluetooth capability needed for the selected sensor, handle RFCOMM EOF/disconnects, and leave GPS tracking usable if Bluetooth is unavailable.
 
-- [ ] Extend permission-policy tests with the expected API 30 and API 31 scan/connect permission sets; leave denial behavior to the instrumentation test below.
-- [ ] Write `BluetoothPermissionFlowTest.deniedBluetoothPermissionLeavesGpsAvailable` and run it on API 31; confirm the current sensor flow attempts a permission-protected Bluetooth operation or fails to report denial.
-- [ ] Request scan permission before discovery and connect permission before reading bonded devices or starting GATT; do not request Bluetooth permissions on app launch.
-- [ ] Replace programmatic `BluetoothAdapter.enable()`/`disable()` calls with the system enable request flow; use `BluetoothManager.adapter` and guard every privileged Bluetooth operation with the matching permission.
-- [ ] Update dynamic receiver registration for Android 13+ receiver flags and close/unregister receivers and GATT connections on lifecycle termination.
-- [ ] Add user-visible sensor states for unsupported hardware, permission denial, Bluetooth disabled, connection failure, and reconnection; keep speedometer GPS controls operational in all sensor failure cases.
-- [ ] Add `VamFrameReaderTest.closedSocketReturnsDisconnected` and `partialReadsProduceOneCrlfFrame`; make an EOF (`read() == -1`) return a disconnect result instead of writing a negative byte count or spinning.
-- [ ] Update `VAMService` to close the RFCOMM socket and clear/reset sensor state on EOF, then retry connection with bounded delay while GPS remains active.
-- [ ] Run `./gradlew :mobile:testDebugUnitTest :mobile:connectedDebugAndroidTest` on API 30/31/33/36/37.
-- [ ] Make `BluetoothPermissionFlowTest` pass on API 31/36/37, then perform physical sensor validation below.
+- [x] Extend permission-policy tests with the expected API 30 and API 31 scan/connect permission sets; leave denial behavior to the instrumentation test below.
+- [x] Write `BluetoothPermissionFlowTest.deniedBluetoothPermissionLeavesGpsAvailable` and run it on API 35; its denial scenario verifies GPS remains active and the sensor denial status is visible.
+- [x] Request scan permission before discovery and connect permission before reading bonded devices or starting GATT; do not request Bluetooth permissions on app launch.
+- [x] Replace programmatic `BluetoothAdapter.enable()`/`disable()` calls with the system enable request flow; use `BluetoothManager.adapter` and guard every privileged Bluetooth operation with the matching permission.
+- [x] Update dynamic receiver registration for Android 13+ receiver flags and close/unregister receivers and GATT connections on lifecycle termination.
+- [x] Add user-visible sensor states for unsupported hardware, permission denial, Bluetooth disabled, connection failure, and reconnection; keep speedometer GPS controls operational in all sensor failure cases.
+- [x] Add `VamFrameReaderTest.closedSocketReturnsDisconnected` and `partialReadsProduceOneCrlfFrame`; make an EOF (`read() == -1`) return a disconnect result instead of writing a negative byte count or spinning.
+- [x] Update `VAMService` to close the RFCOMM socket and clear/reset sensor state on EOF, then retry connection with bounded delay while GPS remains active.
+- [x] Run unit tests and the Bluetooth permission instrumentation scenario on the available API 35 emulator; a connected suite excluding the separately configured location-permission matrix also passed 3/3. API 30/31/33/36/37 emulator images are not installed.
+- [ ] Make `BluetoothPermissionFlowTest` pass on API 31/36/37, then perform physical sensor validation below. API 35 passed; API 31/36/37 images and physical BLE/RFCOMM sensors are unavailable in this environment.
 - [ ] On physical hardware, pair and connect a BLE heart-rate sensor and the classic RFCOMM VAM module, receive readings, revoke permission, disable Bluetooth, drop each connection during a read, and verify recovery without interrupting GPS tracking.
-- [ ] Commit Bluetooth permission and connection changes as `fix: handle modern Bluetooth permissions`.
+- [ ] Commit the location and Bluetooth permission/service changes as `fix: modernize location and Bluetooth permissions`.
 
 Expected: API 30 uses legacy permission behavior; API 31+ prompts for the specific scan/connect permissions; BLE or RFCOMM sensor denial/disconnect does not crash or stop GPS, and RFCOMM EOF causes a clean reconnect path.
 

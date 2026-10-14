@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -11,6 +12,8 @@ import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.location.Location
 import android.os.*
+import android.content.pm.ServiceInfo
+import android.content.pm.PackageManager
 import androidx.preference.PreferenceManager
 import android.util.Log
 
@@ -18,6 +21,7 @@ import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 import br.com.helpdev.velocimetroalerta.MainActivity
 import br.com.helpdev.velocimetroalerta.MySpeechSpeed
@@ -34,7 +38,7 @@ import br.com.helpdev.velocimetroalerta.utils.NotificationUtils
 /**
  * Created by Guilherme Biff Zarelli on 04/04/16.
  */
-class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPreferences.OnSharedPreferenceChangeListener {
+class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPreferenceChangeListener {
 
     private var firstBase: Long = 0
     private var baseTime: Long = 0
@@ -62,8 +66,27 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
     private var notificationManager: NotificationManager? = null
     private var sensorVelAlertModule: VAMService.SensorsBinder? = null
     private var sensorHMService: HMService.HMBinder? = null
+    private val sensorStates = ConcurrentHashMap<SensorKind, SensorConnectionState>()
+    private var isVamServiceBound = false
+    private var isHmServiceBound = false
     private lateinit var itServiceVelAlertModule: Intent
     private lateinit var itServiceHM: Intent
+
+    private val vamServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder) = handleVamServiceConnected(service)
+        override fun onServiceDisconnected(name: ComponentName) {
+            sensorVelAlertModule = null
+            reportSensorStatus(SensorKind.VAM, SensorConnectionState.RECONNECTING)
+        }
+    }
+
+    private val hmServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder) = handleHmServiceConnected(service)
+        override fun onServiceDisconnected(name: ComponentName) {
+            sensorHMService = null
+            reportSensorStatus(SensorKind.HEART_RATE, SensorConnectionState.RECONNECTING)
+        }
+    }
 
     @Volatile
     private var tmpCalculatingAltimetry = false
@@ -75,6 +98,15 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
 
     val isPause: Boolean
         get() = statusService == STATUS_PAUSADO
+
+    val isTracking: Boolean
+        get() = gps.isTracking
+
+    val hasLocationFix: Boolean
+        get() = gps.hasLocationFix
+
+    var isForegroundTracking: Boolean = false
+        private set
 
     private val chronometerTime: Long
         get() = SystemClock.elapsedRealtime() - baseTime
@@ -98,6 +130,8 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
 
         fun onErrorProcessingData(t: Throwable)
 
+        fun setSensorStatus(sensor: SensorKind, state: SensorConnectionState)
+
         companion object {
 
             const val GPS_ATUALIZADO = 1
@@ -120,8 +154,6 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
 
         val pref = PreferenceManager.getDefaultSharedPreferences(this)
         pref.registerOnSharedPreferenceChangeListener(this)
-        onSharedPreferenceChanged(pref, getString(R.string.pref_module_vel_alert))
-        onSharedPreferenceChanged(pref, getString(R.string.pref_hr_sensor))
 
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         mySpeechSpeed.init(this)
@@ -167,7 +199,13 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
         return ObConfigHR(max, rest, z5, z4, z3, z2, z1)
     }
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_START_TRACKING) {
+            beginTracking()
+            if (gps.isTracking) {
+                activateConfiguredSensors()
+            }
+        }
         return Service.START_NOT_STICKY
     }
 
@@ -184,21 +222,6 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
         } catch (t: Throwable) {
         }
 
-        try {
-            unbindService(this)
-        } catch (t: Throwable) {
-        }
-
-        try {
-            stopService(itServiceHM)
-        } catch (t: Throwable) {
-        }
-
-        try {
-            stopService(itServiceVelAlertModule)
-        } catch (t: Throwable) {
-        }
-
         super.onDestroy()
     }
 
@@ -207,37 +230,25 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
         try {
             if (preferenceKey == getString(R.string.pref_module_vel_alert)) {
                 if (pref.getBoolean(preferenceKey, false)) {
-                    startService(itServiceVelAlertModule)
-                    bindService(itServiceVelAlertModule, this, Context.BIND_AUTO_CREATE)
+                    activateVamSensor()
                 } else {
-                    stopService(itServiceVelAlertModule)
+                    deactivateVamSensor()
                 }
             } else if (preferenceKey == getString(R.string.pref_module_vel_alert_address)) {
-                if (sensorVelAlertModule != null) {
-                    val newMacAddress = pref.getString(preferenceKey, null)
-                    if (newMacAddress == null) {
-                        stopService(itServiceVelAlertModule)
-                    } else {
-                        sensorVelAlertModule!!.start(newMacAddress)
-                    }
+                if (pref.getBoolean(getString(R.string.pref_module_vel_alert), false) && gps.isTracking) {
+                    if (pref.getString(preferenceKey, null).isNullOrBlank()) deactivateVamSensor()
+                    else activateVamSensor()
                 }
             } else if (preferenceKey == getString(R.string.pref_hr_sensor)) {
                 if (pref.getBoolean(preferenceKey, false)) {
-                    startService(itServiceHM)
-                    bindService(itServiceHM, this, Context.BIND_AUTO_CREATE)
+                    activateHeartRateSensor()
                 } else {
-                    sensorHMService?.stop()
-                    stopService(itServiceHM)
+                    deactivateHeartRateSensor()
                 }
             } else if (preferenceKey == getString(R.string.pref_hr_sensor_address)) {
-                if (sensorHMService != null) {
-                    val newMacAddress = pref.getString(preferenceKey, null)
-                    if (newMacAddress == null) {
-                        sensorHMService?.stop()
-                        stopService(itServiceHM)
-                    } else {
-                        sensorHMService!!.start(newMacAddress)
-                    }
+                if (pref.getBoolean(getString(R.string.pref_hr_sensor), false) && gps.isTracking) {
+                    if (pref.getString(preferenceKey, null).isNullOrBlank()) deactivateHeartRateSensor()
+                    else activateHeartRateSensor()
                 }
             }
         } catch (t: Throwable) {
@@ -253,6 +264,80 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
         val sp = PreferenceManager.getDefaultSharedPreferences(this)
         this.pauseAutomaticEnable = sp.getBoolean(getString(R.string.pref_pause_automatico), true)
         mySpeechSpeed.reloadPreferences(this)
+    }
+
+    private fun activateConfiguredSensors() {
+        activateVamSensor()
+        activateHeartRateSensor()
+    }
+
+    private fun hasBluetoothConnectPermission(): Boolean =
+        Build.VERSION.SDK_INT < 31 ||
+            checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+
+    private fun isSensorAllowed(sensor: SensorKind, configured: Boolean): Boolean {
+        val hasPermission = hasBluetoothConnectPermission()
+        val allowed = SensorActivationPolicy.shouldActivate(gps.isTracking, configured, hasPermission)
+        if (gps.isTracking && configured && !hasPermission) {
+            reportSensorStatus(sensor, SensorConnectionState.PERMISSION_DENIED)
+        }
+        return allowed
+    }
+
+    private fun activateVamSensor() {
+        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val configured = preferences.getBoolean(getString(R.string.pref_module_vel_alert), false)
+        if (!isSensorAllowed(SensorKind.VAM, configured)) return
+        val address = preferences.getString(getString(R.string.pref_module_vel_alert_address), null)
+        if (address.isNullOrBlank()) return
+        if (sensorVelAlertModule != null) {
+            sensorVelAlertModule?.start(address)
+        } else if (!isVamServiceBound) {
+            isVamServiceBound = bindService(itServiceVelAlertModule, vamServiceConnection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    private fun activateHeartRateSensor() {
+        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val configured = preferences.getBoolean(getString(R.string.pref_hr_sensor), false)
+        if (!isSensorAllowed(SensorKind.HEART_RATE, configured)) return
+        val address = preferences.getString(getString(R.string.pref_hr_sensor_address), null)
+        if (address.isNullOrBlank()) return
+        if (sensorHMService != null) {
+            sensorHMService?.start(address)
+        } else if (!isHmServiceBound) {
+            isHmServiceBound = bindService(itServiceHM, hmServiceConnection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    private fun deactivateVamSensor() {
+        sensorVelAlertModule?.setStatusListener(null)
+        sensorVelAlertModule?.stop()
+        sensorVelAlertModule = null
+        if (isVamServiceBound) {
+            try {
+                unbindService(vamServiceConnection)
+            } catch (error: IllegalArgumentException) {
+                Log.w(LOG, "VAM service was already unbound", error)
+            }
+            isVamServiceBound = false
+        }
+        stopService(itServiceVelAlertModule)
+    }
+
+    private fun deactivateHeartRateSensor() {
+        sensorHMService?.setStatusListener(null)
+        sensorHMService?.stop()
+        sensorHMService = null
+        if (isHmServiceBound) {
+            try {
+                unbindService(hmServiceConnection)
+            } catch (error: IllegalArgumentException) {
+                Log.w(LOG, "Heart-rate service was already unbound", error)
+            }
+            isHmServiceBound = false
+        }
+        stopService(itServiceHM)
     }
 
     @Synchronized
@@ -277,44 +362,78 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
     @Synchronized
     fun stop() {
         this.statusService = STATUS_FINALIZADO
+        gps.stopTracking()
+        deactivateHeartRateSensor()
+        deactivateVamSensor()
+        isForegroundTracking = false
         try {
             stopForeground(true)
         } catch (t: Throwable) {
         }
-
+        stopSelf()
     }
 
     @Synchronized
     fun start(callbackGpsThread: CallbackGpsThread) {
         this.callbackGpsThread = callbackGpsThread
+        beginTracking()
+    }
+
+    @Synchronized
+    private fun beginTracking() {
         if (statusService == STATUS_FINALIZADO) {
-            val myThread = Thread(this)
-            myThread.isDaemon = true
-            myThread.name = "TH-" + SpeedometerService::class.java.name
-            myThread.start()
+            try {
+                val notification = myNotificationBuilder!!.build()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startForeground(
+                        ID_NOTIFICATION_FOREGROUND,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                    )
+                } else {
+                    startForeground(ID_NOTIFICATION_FOREGROUND, notification)
+                }
+                isForegroundTracking = true
+                gps.startTracking()
+                statusService = STATUS_RODANDO
+                val myThread = Thread(this)
+                myThread.isDaemon = true
+                myThread.name = "TH-" + SpeedometerService::class.java.name
+                myThread.start()
+            } catch (error: SecurityException) {
+                statusService = STATUS_FINALIZADO
+                gps.stopTracking()
+                isForegroundTracking = false
+                try {
+                    stopForeground(true)
+                } catch (_: Throwable) {
+                }
+                stopSelf()
+                callbackGpsThread?.onErrorProcessingData(error)
+            }
         }
     }
 
-    override fun onServiceConnected(name: ComponentName, service: IBinder) {
-        if (service is VAMService.SensorsBinder) {
-            sensorVelAlertModule = service
-            val pref = PreferenceManager.getDefaultSharedPreferences(this)
-            val addressModuleBT = pref.getString(getString(R.string.pref_module_vel_alert_address), null)
-            if (addressModuleBT != null) {
-                sensorVelAlertModule!!.start(addressModuleBT)
-            }
-        } else if (service is HMService.HMBinder) {
-            sensorHMService = service
-            val pref = PreferenceManager.getDefaultSharedPreferences(this)
-            val addressModuleBT = pref.getString(getString(R.string.pref_hr_sensor_address), null)
-            if (addressModuleBT != null) {
-                sensorHMService!!.start(addressModuleBT)
-            }
-        }
+    private fun handleVamServiceConnected(service: IBinder) {
+        if (service !is VAMService.SensorsBinder) return
+        sensorVelAlertModule = service
+        service.setStatusListener(SensorStatusListener(::reportSensorStatus))
+        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val configured = preferences.getBoolean(getString(R.string.pref_module_vel_alert), false)
+        val address = preferences.getString(getString(R.string.pref_module_vel_alert_address), null)
+        if (isSensorAllowed(SensorKind.VAM, configured) && !address.isNullOrBlank()) service.start(address)
+        else service.stop()
     }
 
-    override fun onServiceDisconnected(name: ComponentName) {
-        sensorVelAlertModule = null
+    private fun handleHmServiceConnected(service: IBinder) {
+        if (service !is HMService.HMBinder) return
+        sensorHMService = service
+        service.setStatusListener(SensorStatusListener(::reportSensorStatus))
+        val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val configured = preferences.getBoolean(getString(R.string.pref_hr_sensor), false)
+        val address = preferences.getString(getString(R.string.pref_hr_sensor_address), null)
+        if (isSensorAllowed(SensorKind.HEART_RATE, configured) && !address.isNullOrBlank()) service.start(address)
+        else service.stop()
     }
 
     private fun reset() {
@@ -626,6 +745,14 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
                 this.callbackGpsThread!!.setPauseAutomatic(obSpeedometerAlert.inPauseAutomatic)
             }
         }
+        this.callbackGpsThread?.let { callback ->
+            sensorStates.forEach { (sensor, state) -> callback.setSensorStatus(sensor, state) }
+        }
+    }
+
+    fun reportSensorStatus(sensor: SensorKind, state: SensorConnectionState) {
+        sensorStates[sensor] = state
+        callbackGpsThread?.setSensorStatus(sensor, state)
     }
 
     private fun vibrate() {
@@ -638,6 +765,8 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
     }
 
     companion object {
+
+        const val ACTION_START_TRACKING = "br.com.helpdev.velocimetroalerta.action.START_TRACKING"
 
         private const val ID_NOTIFICATION_FOREGROUND = 10
         private const val LOG = "SpeedometerService"

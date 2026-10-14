@@ -69,9 +69,11 @@ dependencies {
         exclude group: 'xpp3', module: 'xpp3'
     }
 
+    testImplementation(libs.junit)
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.test.rules)
     androidTestImplementation(libs.test.core.ktx)
     androidTestImplementation(libs.test.junit)
     androidTestImplementation(libs.test.espresso)
+    androidTestImplementation(libs.test.uiautomator)
 }

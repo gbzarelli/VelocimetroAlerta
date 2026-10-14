@@ -16,6 +16,15 @@ import br.com.helpdev.velocimetroalerta.dialogs.DialogPrefVelAlertBLModule
  */
 class ConfigActivityFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChangeListener {
 
+    fun onBluetoothPermissionResult(requestCode: Int, granted: Boolean) {
+        when (requestCode) {
+            DialogHR.REQUEST_BLUETOOTH_PERMISSIONS -> findPreference<DialogHR>(getString(R.string.pref_hr_sensor))
+                ?.onBluetoothPermissionResult(granted)
+            DialogPrefVelAlertBLModule.REQUEST_BLUETOOTH_PERMISSIONS -> findPreference<DialogPrefVelAlertBLModule>(getString(R.string.pref_module_vel_alert))
+                ?.onBluetoothPermissionResult(granted)
+        }
+    }
+
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.configs, rootKey)
         val listPreference = requireNotNull(findPreference<ListPreference>(getString(R.string.pref_intervalo)))
