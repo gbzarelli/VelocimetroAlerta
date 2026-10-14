@@ -92,7 +92,7 @@ Expected: Gradle 9.6.0 starts on JDK 17 or newer, and project configuration comp
 - [x] Add AndroidX Test runner/rules and the two smoke tests. `MainActivitySmokeTest` launches the main screen with its required test permissions granted and asserts the speed display and start control are visible. `ConfigScreensSmokeTest` opens settings and heart-rate configuration and checks both toolbars and the heart-rate content root.
 - [x] Run `rg -n 'android\.support|android\.preference|kotlinx\.android\.synthetic' mobile/src/main/java mobile/src/main/res`; expected: no matches.
 - [x] Run `./gradlew :mobile:assembleDebug :mobile:connectedDebugAndroidTest` on the available API 35 emulator. The SDK Manager listed no API 37 system image on 2026-10-14; API 37 compile/platform and manifest validation still pass.
-- [ ] Commit the AndroidX and ViewBinding migration as `refactor: migrate app UI to AndroidX`.
+- [x] Commit the AndroidX and ViewBinding migration as `refactor: migrate app UI to AndroidX` (`08d4f3d`).
 
 Expected: debug APK assembles and both smoke tests pass without Support Library or synthetic-view references on the available modern emulator; API 37 remains the compile and target platform.
 
