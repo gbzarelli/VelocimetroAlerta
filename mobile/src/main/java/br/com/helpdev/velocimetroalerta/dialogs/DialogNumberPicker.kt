@@ -1,10 +1,11 @@
 package br.com.helpdev.velocimetroalerta.dialogs
 
-import android.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
 import br.com.helpdev.velocimetroalerta.R
-import kotlinx.android.synthetic.main.dialog_number_picker.*
+import br.com.helpdev.velocimetroalerta.databinding.DialogNumberPickerBinding
+import android.view.LayoutInflater
 
 class DialogNumberPicker(context: Context,
                          private val message: String,
@@ -18,18 +19,21 @@ class DialogNumberPicker(context: Context,
         const val BT_TYPE_CANCEL = 11
     }
 
+    private lateinit var binding: DialogNumberPickerBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.dialog_number_picker)
-        dialogMessage.text = message
-        numberPicker.minValue = minValue
-        numberPicker.maxValue = maxValue
-        numberPicker.value = value
-        btOk.setOnClickListener {
-            buttonClick(BT_TYPE_OK, numberPicker.value)
+        binding = DialogNumberPickerBinding.inflate(LayoutInflater.from(context))
+        setContentView(binding.root)
+        binding.dialogMessage.text = message
+        binding.numberPicker.minValue = minValue
+        binding.numberPicker.maxValue = maxValue
+        binding.numberPicker.value = value
+        binding.btOk.setOnClickListener {
+            buttonClick(BT_TYPE_OK, binding.numberPicker.value)
             dismiss()
         }
-        btCancel.setOnClickListener {
+        binding.btCancel.setOnClickListener {
             buttonClick(BT_TYPE_CANCEL, value)
             dismiss()
         }

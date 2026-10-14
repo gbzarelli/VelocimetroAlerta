@@ -2,7 +2,7 @@ package br.com.helpdev.velocimetroalerta
 
 import android.content.Context
 import android.os.Vibrator
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import android.speech.tts.TextToSpeech
 
 import java.util.Locale

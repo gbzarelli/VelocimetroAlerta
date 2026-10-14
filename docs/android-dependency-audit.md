@@ -18,6 +18,101 @@ The list below records every coordinate in that graph. Android Support and Archi
 
 `OSV` queried all 27 resolved coordinates after the Gson update; it returned no matching advisories. The earlier source version Gson 2.8.2 did match the advisory above, so it is not retained.
 
+## Task 2 AndroidX graph
+
+Debug and release runtime classpaths resolve the same 75 artifact coordinates after the AndroidX migration. Three additional BOM coordinates appear in Gradle's dependency report only as version-alignment metadata and are not packaged. The complete resolved artifact list is recorded below; the rationale by group follows it.
+
+| Dependency group | License, minimum SDK, and status | Disposition |
+| --- | --- | --- |
+| AndroidX AppCompat 1.8.0, Core 1.19.1, Fragment 1.9.1, Preference 1.2.1, ConstraintLayout 2.2.2, CoordinatorLayout 1.3.0, DrawerLayout 1.2.0 and their transitive AndroidX artifacts listed below | Apache-2.0. `:mobile:checkDebugAarMetadata` passes with app `minSdk` 23; no AndroidX AAR requires a higher minimum. The selected direct releases are stable in Google Maven metadata on 2026-10-14. | Replace the legacy Support and Architecture libraries. Keep current direct APIs; old stable transitive components such as Loader 1.0.0, ViewPager 1.0.0, ViewPager2 1.0.0, CardView 1.0.0, and Window 1.0.0 are still requested by upstream component metadata and are not used directly by app code. Do not force newer versions without an upstream compatibility need. |
+| `com.google.android.material:material:1.14.0` | Apache-2.0; requires API 23. Current stable version. The upstream project is in maintenance mode and does not plan further feature releases for Views. | Keep the existing Material-based view UI on the latest stable version. This requirement caused the owner-approved `minSdk` increase from 19 to 23. |
+| `androidx.databinding:viewbinding:9.4.1` | Apache-2.0; generated binding runtime for the pinned Android Gradle Plugin. | Keep; required by the ViewBinding feature enabled in Task 2. |
+| `com.google.code.gson:gson:2.14.0` | Apache-2.0; no matching OSV advisory. | Keep through Task 4 for VAM JSON parsing; remove or retain only if the replacement protocol implementation still needs it. |
+| Kotlin stdlib 2.2.10, Coroutines 1.9.0, annotations 23.0.0, JSpecify 1.0.0, Error Prone annotations 2.48.0 and Guava `listenablefuture:1.0` | Apache-2.0 for published metadata; AndroidX and the Android Gradle Plugin bring these transitively. `listenablefuture` is a small compatibility future type and has no active network behavior. | Keep as transitive runtime/compiler support. No direct application code depends on these APIs. |
+| `org.simpleframework:simple-xml:2.7.1`; `stax:stax:1.2.0` | Simple XML declares Apache-2.0; StAX's published POM does not declare a license. Neither has an Android manifest minimum. No matching OSV advisory in this scan. | Keep only until Task 5 replaces GPX serialization/parsing; remove both from the final release graph. |
+
+The OSV batch scan of all 75 packaged runtime coordinates returned no matching advisories. The selected AndroidX and Material versions do not add an ads, analytics, attribution, or network client SDK.
+
+Resolved debug and release runtime artifact coordinates (BOM alignment metadata omitted):
+
+```text
+androidx.activity:activity-ktx:1.8.1
+androidx.activity:activity:1.8.1
+androidx.annotation:annotation-experimental:1.4.1
+androidx.annotation:annotation-jvm:1.10.0
+androidx.annotation:annotation:1.10.0
+androidx.appcompat:appcompat-resources:1.8.0
+androidx.appcompat:appcompat:1.8.0
+androidx.arch.core:core-common:2.2.0
+androidx.arch.core:core-runtime:2.2.0
+androidx.cardview:cardview:1.0.0
+androidx.collection:collection-jvm:1.6.0
+androidx.collection:collection:1.6.0
+androidx.concurrent:concurrent-futures:1.1.0
+androidx.constraintlayout:constraintlayout-core:1.1.2
+androidx.constraintlayout:constraintlayout:2.2.2
+androidx.coordinatorlayout:coordinatorlayout:1.3.0
+androidx.core:core-ktx:1.19.1
+androidx.core:core-viewtree:1.0.0
+androidx.core:core:1.19.1
+androidx.cursoradapter:cursoradapter:1.0.0
+androidx.customview:customview:1.2.0
+androidx.databinding:viewbinding:9.4.1
+androidx.drawerlayout:drawerlayout:1.2.0
+androidx.dynamicanimation:dynamicanimation:1.1.0
+androidx.emoji2:emoji2:1.3.0
+androidx.fragment:fragment-ktx:1.9.1
+androidx.fragment:fragment:1.9.1
+androidx.graphics:graphics-shapes-android:1.0.1
+androidx.graphics:graphics-shapes:1.0.1
+androidx.interpolator:interpolator:1.0.0
+androidx.lifecycle:lifecycle-common-jvm:2.10.0
+androidx.lifecycle:lifecycle-common:2.10.0
+androidx.lifecycle:lifecycle-livedata-core-ktx:2.10.0
+androidx.lifecycle:lifecycle-livedata-core:2.10.0
+androidx.lifecycle:lifecycle-runtime-android:2.10.0
+androidx.lifecycle:lifecycle-runtime-ktx-android:2.10.0
+androidx.lifecycle:lifecycle-runtime:2.10.0
+androidx.lifecycle:lifecycle-viewmodel-android:2.10.0
+androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0
+androidx.lifecycle:lifecycle-viewmodel-savedstate-android:2.10.0
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0
+androidx.lifecycle:lifecycle-viewmodel:2.10.0
+androidx.loader:loader:1.0.0
+androidx.preference:preference-ktx:1.2.1
+androidx.preference:preference:1.2.1
+androidx.profileinstaller:profileinstaller:1.4.0
+androidx.recyclerview:recyclerview:1.2.1
+androidx.resourceinspection:resourceinspection-annotation:1.0.1
+androidx.savedstate:savedstate-android:1.4.0
+androidx.savedstate:savedstate:1.4.0
+androidx.slidingpanelayout:slidingpanelayout:1.2.0
+androidx.startup:startup-runtime:1.1.1
+androidx.tracing:tracing-android:2.0.0
+androidx.tracing:tracing:2.0.0
+androidx.transition:transition:1.5.0
+androidx.vectordrawable:vectordrawable-animated:1.1.0
+androidx.vectordrawable:vectordrawable:1.1.0
+androidx.versionedparcelable:versionedparcelable:1.1.1
+androidx.viewpager2:viewpager2:1.0.0
+androidx.viewpager:viewpager:1.0.0
+androidx.window:window:1.0.0
+com.google.android.material:material:1.14.0
+com.google.code.gson:gson:2.14.0
+com.google.errorprone:error_prone_annotations:2.48.0
+com.google.guava:listenablefuture:1.0
+org.jetbrains.kotlin:kotlin-stdlib:2.2.10
+org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0
+org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0
+org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.3
+org.jetbrains.kotlinx:kotlinx-serialization-core:1.7.3
+org.jetbrains:annotations:23.0.0
+org.jspecify:jspecify:1.0.0
+org.simpleframework:simple-xml:2.7.1
+stax:stax:1.2.0
+```
+
 ## App network and advertising inventory
 
 Source and the resolved runtime graph contain no ad, analytics, attribution, or IP networking SDK. The manifest does not request `INTERNET`, `AD_ID`, or `ACCESS_LOCAL_NETWORK`. The app uses Bluetooth socket APIs for the VAM sensor; this is not local IP network access. No SDK in this graph initiates network traffic on behalf of the app. Recheck the final merged manifest and graph in Task 7 after AndroidX migration.

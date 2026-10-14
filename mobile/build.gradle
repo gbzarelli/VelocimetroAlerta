@@ -14,12 +14,17 @@ android {
     namespace = 'br.com.helpdev.velocimetroalerta'
     compileSdk = 37
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     defaultConfig {
         applicationId = 'br.com.helpdev.velocimetroalerta'
-        minSdk = 19
+        minSdk = 23
         targetSdk = 37
         versionCode = 12
         versionName = '4.1'
+        testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
     }
 
     compileOptions {
@@ -50,12 +55,23 @@ android {
 }
 
 dependencies {
-    implementation(libs.support.constraint)
-    implementation(libs.support.appcompat)
-    implementation(libs.support.design)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.preference.ktx)
+    implementation(libs.androidx.coordinatorlayout)
+    implementation(libs.androidx.drawerlayout)
+    implementation(libs.material)
     implementation(libs.gson)
     implementation(libs.simple.xml) {
         exclude group: 'stax', module: 'stax-api'
         exclude group: 'xpp3', module: 'xpp3'
     }
+
+    androidTestImplementation(libs.test.runner)
+    androidTestImplementation(libs.test.rules)
+    androidTestImplementation(libs.test.core.ktx)
+    androidTestImplementation(libs.test.junit)
+    androidTestImplementation(libs.test.espresso)
 }

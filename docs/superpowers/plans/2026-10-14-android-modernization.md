@@ -14,7 +14,7 @@
 
 - Preserve `applicationId` `br.com.helpdev.velocimetroalerta`.
 - Compile and target API 37, the latest stable Android release at plan creation; recheck the Play minimum (currently API 36+) before upload and raise the target if that minimum advances.
-- Preserve `minSdk` 19 unless a maintained required dependency forces an increase; ask the owner before raising it.
+- Set `minSdk` to 23, approved by the owner after the current stable Material Components requirement was confirmed; this drops support below Android 6.0.
 - Keep the app free and without ads; add no ad SDK, ad unit, AdMob configuration, or Advertising ID permission.
 - Do not track location before the user starts tracking with required permission; do not add `ACCESS_BACKGROUND_LOCATION` unless the reviewed behavior and Play policy require it.
 - Keep keystores, passwords, and private key material outside tracked files and command output.
@@ -68,6 +68,7 @@ Expected: Gradle 9.6.0 starts on JDK 17 or newer, and project configuration comp
 **Files:**
 - Modify: `gradle/libs.versions.toml`
 - Modify: `mobile/build.gradle`
+- Modify: `mobile/src/main/AndroidManifest.xml`
 - Modify: Kotlin sources under `mobile/src/main/java/br/com/helpdev/velocimetroalerta/` that import `android.support.*`, `android.preference.*`, or `kotlinx.android.synthetic.*`
 - Modify: `mobile/src/main/java/br/com/helpdev/velocimetroalerta/ConfigActivityFragment.kt`
 - Modify: `mobile/src/main/java/br/com/helpdev/velocimetroalerta/dialogs/DialogHR.kt`
@@ -79,19 +80,21 @@ Expected: Gradle 9.6.0 starts on JDK 17 or newer, and project configuration comp
 
 **Interfaces:**
 - Consumes: Gradle 9.6.0, AGP 9.4.1, and the version catalog from Task 1.
-- Produces: AndroidX `AppCompatActivity`, Fragment, Preference (`PreferenceFragmentCompat`), Core, ConstraintLayout, Material Components, and generated ViewBinding classes for existing layouts.
+- Produces: AndroidX `AppCompatActivity`, Fragment, Preference (`PreferenceFragmentCompat`), Core, ConstraintLayout, Material Components, generated ViewBinding classes for existing layouts, and valid explicit exported settings for Android 12+ components.
 
-- [ ] Pin current stable AndroidX and Material Components dependencies compatible with the approved minimum SDK in `gradle/libs.versions.toml`; remove `com.android.support:*` and `com.android.support.constraint:*` dependencies.
-- [ ] Update `docs/android-dependency-audit.md` with the selected AndroidX versions and any minimum-SDK or license constraints; leave no resolved runtime dependency without a keep/upgrade/replace rationale.
-- [ ] Replace every `android.support.*` Kotlin import and every `android.support.*` XML class with its AndroidX or Material Components equivalent; update manifest parent-activity metadata where needed.
-- [ ] Migrate `ConfigActivityFragment` and its custom dialog preferences from platform `android.preference` to AndroidX Preference; remove the stray `-` text node in `configs.xml` while preserving all preference keys and defaults.
-- [ ] Enable and use ViewBinding in `MainActivityFragment`, `DialogNumberPicker`, and `ConfigHRZActivity`; remove synthetic imports from those files and the unused import in `SpeedometerService`; clear fragment binding in `onDestroyView`.
-- [ ] Add AndroidX Test runner/rules and the two smoke tests. `MainActivitySmokeTest` launches the main screen with its required test permissions granted and asserts the speed display and start control are visible. `ConfigScreensSmokeTest` opens the settings and heart-rate configuration screens and asserts their toolbar/content roots render.
-- [ ] Run `rg -n 'android\.support|android\.preference|kotlinx\.android\.synthetic' mobile/src/main`; expected: no matches.
-- [ ] Run `./gradlew :mobile:assembleDebug :mobile:connectedDebugAndroidTest` on an API 37 emulator.
+- [x] Pin current stable AndroidX and Material Components dependencies in `gradle/libs.versions.toml`, set `minSdk = 23` for Material Components 1.14.0, and remove `com.android.support:*` and `com.android.support.constraint:*` dependencies.
+- [x] Resolve the already reproduced `:mobile:processDebugManifest` failure by setting `android:exported="true"` on launcher `MainActivity`, changing the heart-rate zones preference in `configs.xml` to target `ConfigHRZActivity` explicitly, setting `android:exported="false"` on that internal activity, and marking internal services `false`; rerun `./gradlew :mobile:processDebugManifest`.
+- [x] Update `docs/android-dependency-audit.md` with the selected AndroidX versions and any minimum-SDK or license constraints; record all 75 resolved runtime artifacts and their group rationale.
+- [x] Replace every legacy Support Library Kotlin import and layout class with its AndroidX or Material Components equivalent. Preserve the platform parent-activity metadata key `android.support.PARENT_ACTIVITY`; AndroidX `NavUtils` still defines and reads this key.
+- [x] Migrate `ConfigActivityFragment` and its custom dialog preferences from platform `android.preference` to AndroidX Preference; remove the stray `-` text node in `configs.xml` while preserving all preference keys and defaults.
+- [x] Enable and use ViewBinding in `MainActivityFragment`, `DialogNumberPicker`, and `ConfigHRZActivity`; remove synthetic imports from those files and the unused import in `SpeedometerService`; clear fragment binding in `onDestroyView`.
+- [x] Set the speedometer notification `PendingIntent` to immutable; the API 35 main-screen smoke test exposed the Android 12+ runtime crash during service creation.
+- [x] Add AndroidX Test runner/rules and the two smoke tests. `MainActivitySmokeTest` launches the main screen with its required test permissions granted and asserts the speed display and start control are visible. `ConfigScreensSmokeTest` opens settings and heart-rate configuration and checks both toolbars and the heart-rate content root.
+- [x] Run `rg -n 'android\.support|android\.preference|kotlinx\.android\.synthetic' mobile/src/main/java mobile/src/main/res`; expected: no matches.
+- [x] Run `./gradlew :mobile:assembleDebug :mobile:connectedDebugAndroidTest` on the available API 35 emulator. The SDK Manager listed no API 37 system image on 2026-10-14; API 37 compile/platform and manifest validation still pass.
 - [ ] Commit the AndroidX and ViewBinding migration as `refactor: migrate app UI to AndroidX`.
 
-Expected: debug APK assembles and both smoke tests pass without support-library or synthetic-view references on API 37.
+Expected: debug APK assembles and both smoke tests pass without Support Library or synthetic-view references on the available modern emulator; API 37 remains the compile and target platform.
 
 ### Task 3: Make location permission and foreground tracking API-aware
 
@@ -113,7 +116,6 @@ Expected: debug APK assembles and both smoke tests pass without support-library 
 - [ ] Run `./gradlew :mobile:testDebugUnitTest --tests '*RuntimePermissionPolicyTest'` and confirm it fails because the policy type has not been created.
 - [ ] Write `TrackingPermissionFlowTest.locationDeniedDoesNotStartTracking`, `preciseGrantStartsLocationForegroundService`, `approximateOnlyDoesNotStartPrecisionTracking`, `notificationDeniedDoesNotCrashTracking`, and `revokedLocationStopsTracking`; run on API 37 and confirm the current launch-time permission/service behavior violates the expected explicit-start flow.
 - [ ] Implement the policy helper and update the manifest with coarse/fine location, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`, and API-31 Bluetooth permissions; cap legacy Bluetooth permissions at API 30 and mark scan `neverForLocation` only if code review confirms scan results are not used to infer location.
-- [ ] Set explicit `android:exported` values for every manifest component with an intent filter: `MainActivity=true` for the launcher, `ConfigHRZActivity=false` because the app starts it explicitly, and any other filtered components according to their required external entry point; mark internal services `false`.
 - [ ] Set `android:foregroundServiceType="location"` on `SpeedometerService`; keep background-location permission out unless the implementation audit proves it is necessary.
 - [ ] Change `MainActivity` so app launch binds the service without prompting for storage/location or subscribing to GPS. Register permission requests with Activity Result APIs and request precise location only when the user taps Start.
 - [ ] Change `Gps.init` to initialize without updates. Start location updates only after precise permission is granted and tracking begins; stop updates on track stop and service destruction.
@@ -121,7 +123,6 @@ Expected: debug APK assembles and both smoke tests pass without support-library 
 - [ ] Make notification denial non-fatal to GPS tracking while explaining that notification visibility is limited; location denial or approximate-only access must prevent precise speed tracking and offer a retry path.
 - [ ] Make `TrackingPermissionFlowTest` pass: denied location leaves tracking stopped; after granting precise location and tapping Start, the service shows its ongoing notification and receives emulator GPS updates; stopping removes updates and the foreground notification.
 - [ ] On API 37, start tracking while the activity is visible, turn the screen off, and verify location updates and spoken speed alerts continue under the location foreground service; stop tracking and verify both cease.
-- [ ] Add `PendingIntent.FLAG_IMMUTABLE` to the service notification intent on API 23+ while retaining a compatible flags value if API 19 remains the minimum.
 - [ ] Run `./gradlew :mobile:testDebugUnitTest :mobile:connectedDebugAndroidTest` on API 23, API 30, API 31, API 33, API 36, and API 37 emulators where available.
 - [ ] Commit permission and foreground-location changes as `fix: gate GPS tracking on modern permissions`.
 

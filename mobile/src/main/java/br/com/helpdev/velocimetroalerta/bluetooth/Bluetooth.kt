@@ -12,11 +12,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.support.annotation.RequiresPermission
+import androidx.annotation.RequiresPermission
 
 import java.io.IOException
 import java.lang.reflect.Method
 import java.util.ArrayList
+import java.util.Locale
 
 /**
  *
@@ -61,8 +62,8 @@ class Bluetooth private constructor() {
                 @SuppressLint("MissingPermission")
                 override fun onReceive(context: Context, intent: Intent) {
                     if (BluetoothDevice.ACTION_FOUND == intent.action) {
-                        val deviceFound = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
-                        if (deviceFound.address == mac.toUpperCase()) {
+                        val deviceFound = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) ?: return
+                        if (deviceFound.address == mac.uppercase(Locale.ROOT)) {
                             pairDevice(context, deviceFound, passwd)
                             context.unregisterReceiver(this)
                         }
@@ -76,7 +77,7 @@ class Bluetooth private constructor() {
             context.registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     if (BluetoothDevice.ACTION_PAIRING_REQUEST == intent.action) {
-                        val deviceFound = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                        val deviceFound = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) ?: return
                         if (deviceFound.address == device.address) {
                             deviceFound.setPin(passwd.toByteArray())
                             context.unregisterReceiver(this)

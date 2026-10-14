@@ -11,7 +11,7 @@ import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.location.Location
 import android.os.*
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import android.util.Log
 
 import java.math.BigDecimal
@@ -30,7 +30,6 @@ import br.com.helpdev.velocimetroalerta.gpx.objects.Trk
 import br.com.helpdev.velocimetroalerta.gpx.objects.TrkPt
 import br.com.helpdev.velocimetroalerta.sensors.*
 import br.com.helpdev.velocimetroalerta.utils.NotificationUtils
-import kotlinx.android.synthetic.main.content_config_hrz.*
 
 /**
  * Created by Guilherme Biff Zarelli on 04/04/16.
@@ -63,8 +62,8 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
     private var notificationManager: NotificationManager? = null
     private var sensorVelAlertModule: VAMService.SensorsBinder? = null
     private var sensorHMService: HMService.HMBinder? = null
-    private var itServiceVelAlertModule: Intent? = null
-    private var itServiceHM: Intent? = null
+    private lateinit var itServiceVelAlertModule: Intent
+    private lateinit var itServiceHM: Intent
 
     @Volatile
     private var tmpCalculatingAltimetry = false
@@ -142,7 +141,12 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
                 .setOnlyAlertOnce(true)
 
         val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            notificationIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         myNotificationBuilder!!.setContentIntent(pendingIntent)
 
@@ -198,35 +202,36 @@ class SpeedometerService : Service(), Runnable, ServiceConnection, SharedPrefere
         super.onDestroy()
     }
 
-    override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String) {
+    override fun onSharedPreferenceChanged(pref: SharedPreferences, key: String?) {
+        val preferenceKey = key ?: return
         try {
-            if (key == getString(R.string.pref_module_vel_alert)) {
-                if (pref.getBoolean(key, false)) {
+            if (preferenceKey == getString(R.string.pref_module_vel_alert)) {
+                if (pref.getBoolean(preferenceKey, false)) {
                     startService(itServiceVelAlertModule)
                     bindService(itServiceVelAlertModule, this, Context.BIND_AUTO_CREATE)
                 } else {
                     stopService(itServiceVelAlertModule)
                 }
-            } else if (key == getString(R.string.pref_module_vel_alert_address)) {
+            } else if (preferenceKey == getString(R.string.pref_module_vel_alert_address)) {
                 if (sensorVelAlertModule != null) {
-                    val newMacAddress = pref.getString(key, null)
+                    val newMacAddress = pref.getString(preferenceKey, null)
                     if (newMacAddress == null) {
                         stopService(itServiceVelAlertModule)
                     } else {
                         sensorVelAlertModule!!.start(newMacAddress)
                     }
                 }
-            } else if (key == getString(R.string.pref_hr_sensor)) {
-                if (pref.getBoolean(key, false)) {
+            } else if (preferenceKey == getString(R.string.pref_hr_sensor)) {
+                if (pref.getBoolean(preferenceKey, false)) {
                     startService(itServiceHM)
                     bindService(itServiceHM, this, Context.BIND_AUTO_CREATE)
                 } else {
                     sensorHMService?.stop()
                     stopService(itServiceHM)
                 }
-            } else if (key == getString(R.string.pref_hr_sensor_address)) {
+            } else if (preferenceKey == getString(R.string.pref_hr_sensor_address)) {
                 if (sensorHMService != null) {
-                    val newMacAddress = pref.getString(key, null)
+                    val newMacAddress = pref.getString(preferenceKey, null)
                     if (newMacAddress == null) {
                         sensorHMService?.stop()
                         stopService(itServiceHM)
