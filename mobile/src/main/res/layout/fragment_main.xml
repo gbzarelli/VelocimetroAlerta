@@ -24,6 +24,15 @@
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btMap"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/route_map_open"
+                android:minHeight="48dp"
+                android:text="@string/route_map_open"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
