@@ -21,7 +21,10 @@ class RouteMapScreenSmokeTest {
                 assertEquals(android.view.View.VISIBLE, activity.findViewById<android.view.View>(R.id.toolbar).visibility)
                 assertEquals(android.view.View.VISIBLE, activity.findViewById<android.view.View>(R.id.route_map_container).visibility)
                 assertEquals(android.view.View.VISIBLE, activity.findViewById<android.view.View>(R.id.route_map_recenter).visibility)
-                assertTrue("Opening the map must not start a tracking service", activity.speedometerServiceIsNotOwned())
+                assertTrue(
+                    "Opening the map must not start a tracking service: ${activity.speedometerServiceEntries().map { "started=${it.started}, clients=${it.clientCount}, pid=${it.pid}, process=${it.process}" }}",
+                    activity.speedometerServiceIsNotOwned()
+                )
                 activity.onBackPressedDispatcher.onBackPressed()
                 assertTrue("Back should finish only the map host", activity.isFinishing)
             }
@@ -34,15 +37,21 @@ class RouteMapScreenSmokeTest {
             scenario.recreate()
             scenario.onActivity { activity ->
                 assertEquals(android.view.View.VISIBLE, activity.findViewById<android.view.View>(R.id.toolbar).visibility)
-                assertTrue("Recreating the map must not start a tracking service", activity.speedometerServiceIsNotOwned())
+                assertTrue(
+                    "Recreating the map must not start a tracking service: ${activity.speedometerServiceEntries().map { "started=${it.started}, clients=${it.clientCount}, pid=${it.pid}, process=${it.process}" }}",
+                    activity.speedometerServiceIsNotOwned()
+                )
             }
         }
     }
 
     private fun RouteMapActivity.speedometerServiceIsNotOwned(): Boolean =
-        !br.com.helpdev.velocimetroalerta.gps.SpeedometerService::class.java.let { serviceClass ->
+        speedometerServiceEntries().none { it.started || it.pid != 0 }
+
+    private fun RouteMapActivity.speedometerServiceEntries(): List<android.app.ActivityManager.RunningServiceInfo> =
+        br.com.helpdev.velocimetroalerta.gps.SpeedometerService::class.java.let { serviceClass ->
             (getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager)
                 .getRunningServices(Int.MAX_VALUE)
-                .any { it.service.className == serviceClass.name }
+                .filter { it.service.className == serviceClass.name }
         }
 }

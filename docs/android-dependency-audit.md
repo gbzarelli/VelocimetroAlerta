@@ -228,3 +228,30 @@ org.jspecify:jspecify:1.0.0
 ```
 
 The three version-alignment nodes omitted from that artifact list are `org.jetbrains.kotlin:kotlin-bom:1.8.22`, `org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0`, and `org.jetbrains.kotlinx:kotlinx-serialization-bom:1.7.3`.
+
+## Maps SDK addition (2026-10-15)
+
+The graph above is the pre-map release baseline. The active debug and release graphs now also include
+`com.google.android.gms:play-services-maps:20.0.0` and its Google Play services dependencies; the current app
+manifest adds `INTERNET` solely so the Maps SDK can load map content. Confirm the resolved runtime graph with
+`./gradlew :mobile:dependencies --configuration debugRuntimeClasspath` and inspect the merged manifest with
+`./gradlew :mobile:processDebugMainManifest` (repeat with `Release` for a release artifact).
+
+The Maps SDK 20.x Android compatibility floor is API 23; this app's configured `minSdk` is 24, so the dependency
+does not raise the app's existing floor. Maps SDK for Android is a Google Maps Platform service governed by its
+Google Maps Platform terms and policies; it is not an Apache-licensed library that can be treated as a standalone,
+offline map renderer. The API key must remain outside version control and be restricted by package name and signing
+certificate. Google Cloud billing and quota controls must be configured for the production project; review current
+usage and pricing before release.
+
+The SDK's published Play Data Safety guidance states that it automatically collects request metadata (including
+device metadata, SDK version/build, result count, and an internal usage-attribution identifier), SDK crash metrics
+and stack traces, IP address, and a Maps SDK-specific pseudonymous identifier. Map interaction events such as pan
+and zoom may also be collected when the app uses the Maps camera APIs, as this implementation does. The app owner
+must represent the complete app/SDK behavior in Play Data Safety and the public privacy policy. This is SDK-to-Google
+technical collection, separate from the app's local activity recording and from any Help DEV server collection.
+
+Rationale: a native Google map is required to display the live route over geographic map content; the chosen SDK
+provides this without adding a second location owner or route backend. The map remains optional while recording, and
+the activity can continue locally if the map cannot load. Do not describe the app as having no network SDK or as
+having no third-party technical collection while this dependency is shipped.
