@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="route_map_title">Activity route</string>
+    <string name="route_map_waiting">Waiting for an accurate GPS position…</string>
+    <string name="route_map_unavailable">The activity route is unavailable. Return to the speed screen.</string>
+    <string name="route_map_display_error">Map tiles could not load. Check your connection and map setup; recording is unaffected.</string>
+    <string name="route_map_recenter">Recenter</string>
+    <string name="route_map_open">Map</string>
     <string name="app_name">Speedometer Alert</string>
 
     <string name="title_activity_config">Settings</string>

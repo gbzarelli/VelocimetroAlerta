@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="route_map_title">Rota da atividade</string>
+    <string name="route_map_waiting">Aguardando uma posição GPS precisa…</string>
+    <string name="route_map_unavailable">A rota da atividade está indisponível. Volte para a tela de velocidade.</string>
+    <string name="route_map_display_error">Não foi possível carregar o mapa. Verifique a conexão e a configuração; a gravação continua.</string>
+    <string name="route_map_recenter">Recentrar</string>
+    <string name="route_map_open">Mapa</string>
     <string name="app_name">Velocímetro alerta</string>
     <string name="site_helpdev">www.helpdev.com.br</string>
 
