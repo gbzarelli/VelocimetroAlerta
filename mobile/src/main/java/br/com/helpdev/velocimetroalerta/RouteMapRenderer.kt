@@ -16,6 +16,7 @@ import br.com.helpdev.velocimetroalerta.gps.RouteSnapshot
 interface RouteMapRenderer {
     fun showWaiting()
     fun showUnavailable()
+    fun clearRoute()
     fun renderRoute(points: List<RoutePoint>, follow: Boolean, frameRoute: Boolean)
     fun focus(point: RoutePoint)
     fun setOnUserPanListener(listener: () -> Unit)
@@ -44,6 +45,15 @@ class RouteMapState(private val renderer: RouteMapRenderer) {
         lastRevision = revision
         points += point
         render(frameRoute = points.size == 1 && !hasFramedRoute)
+    }
+
+    fun onRouteReset(revision: Long) {
+        if (revision <= lastRevision) return
+        lastRevision = revision
+        points.clear()
+        hasFramedRoute = false
+        renderer.clearRoute()
+        renderer.showWaiting()
     }
 
     fun onUserPan() {
@@ -95,6 +105,13 @@ class GoogleRouteMapRenderer(
     override fun showWaiting() = waiting()
 
     override fun showUnavailable() = unavailable()
+
+    override fun clearRoute() {
+        polyline?.remove()
+        polyline = null
+        currentMarker?.remove()
+        currentMarker = null
+    }
 
     override fun renderRoute(points: List<RoutePoint>, follow: Boolean, frameRoute: Boolean) {
         val coordinates = points.map { LatLng(it.latitude, it.longitude) }

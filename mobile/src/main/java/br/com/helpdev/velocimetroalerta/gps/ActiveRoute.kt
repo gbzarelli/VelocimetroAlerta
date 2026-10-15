@@ -39,10 +39,16 @@ class ActiveRoute {
 
     /** Clears route geometry but keeps revisions monotonic for observers with queued updates. */
     fun reset() {
-        synchronized(lock) {
+        val shouldDrain = synchronized(lock) {
             points.clear()
             revision++
+            pendingNotifications.addLast(Notification(revision, null, observers.toList()))
+            if (dispatching) false else {
+                dispatching = true
+                true
+            }
         }
+        if (shouldDrain) drainNotifications()
     }
 
     private fun snapshotLocked() = RouteSnapshot(
@@ -61,7 +67,9 @@ class ActiveRoute {
             }
             notification.observers.forEach { observer ->
                 try {
-                    observer.onPointAdded(notification.revision, notification.point)
+                    val point = notification.point
+                    if (point == null) observer.onRouteReset(notification.revision)
+                    else observer.onPointAdded(notification.revision, point)
                 } catch (_: Exception) {
                     // A map/UI consumer must never interrupt GPS recording or other consumers.
                 }
@@ -71,7 +79,7 @@ class ActiveRoute {
 
     private data class Notification(
         val revision: Long,
-        val point: RoutePoint,
+        val point: RoutePoint?,
         val observers: List<RouteObserver>
     )
 }

@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import com.google.android.gms.maps.SupportMapFragment
 import br.com.helpdev.velocimetroalerta.databinding.FragmentRouteMapBinding
 import br.com.helpdev.velocimetroalerta.gps.RouteObserver
+import br.com.helpdev.velocimetroalerta.gps.RoutePoint
 import br.com.helpdev.velocimetroalerta.gps.RouteSnapshot
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
 
@@ -136,10 +137,20 @@ class RouteMapFragment : Fragment() {
             return
         }
         val generation = ++subscriptionGeneration
-        val routeObserver = RouteObserver { revision, point ->
-            mainHandler.post {
-                if (generation == subscriptionGeneration && _binding != null && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
-                    routeState?.onPointAdded(revision, point)
+        val routeObserver = object : RouteObserver {
+            override fun onPointAdded(revision: Long, point: RoutePoint) {
+                mainHandler.post {
+                    if (generation == subscriptionGeneration && _binding != null && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                        routeState?.onPointAdded(revision, point)
+                    }
+                }
+            }
+
+            override fun onRouteReset(revision: Long) {
+                mainHandler.post {
+                    if (generation == subscriptionGeneration && _binding != null && lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                        routeState?.onRouteReset(revision)
+                    }
                 }
             }
         }

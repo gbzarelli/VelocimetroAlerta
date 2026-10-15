@@ -1,6 +1,7 @@
 package br.com.helpdev.velocimetroalerta
 
 import android.Manifest
+import android.os.SystemClock
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -104,6 +105,7 @@ class RouteMapNavigationTest {
             val before = captureRide(scenario)
 
             openMapAndReturn()
+            awaitRide(scenario, paused = true)
 
             val after = captureRide(scenario)
             assertRidePreserved(before, after, paused = true)
@@ -160,21 +162,32 @@ class RouteMapNavigationTest {
                 service = service,
                 paused = service.isPause,
                 chronometerBase = activity.findViewById<android.widget.Chronometer>(R.id.chronometer).base,
-                chronometerText = activity.findViewById<android.widget.Chronometer>(R.id.chronometer).text.toString(),
+                elapsedSinceChronometerBase = SystemClock.elapsedRealtime() -
+                    activity.findViewById<android.widget.Chronometer>(R.id.chronometer).base,
                 acceptedPoints = service.gpx.trk.trkseg.trkPts.size
             )
         }
         return requireNotNull(captured)
     }
 
-    private fun assertRidePreserved(before: RideState, after: RideState, paused: Boolean) {
+    private fun assertRidePreserved(
+        before: RideState,
+        after: RideState,
+        paused: Boolean
+    ) {
         assertSame("Map navigation must keep the same service instance", before.service, after.service)
         assertTrue("The ride must remain running", after.service.isRunning)
         assertEquals(paused, after.paused)
-        if (paused) {
-            assertEquals("The displayed chronometer must remain frozen through map navigation", before.chronometerText, after.chronometerText)
-        } else {
+        if (!paused) {
             assertEquals("The running chronometer base must not be reset", before.chronometerBase, after.chronometerBase)
+        } else {
+            val activeElapsedShift = after.elapsedSinceChronometerBase - before.elapsedSinceChronometerBase
+            assertTrue(
+                "Paused chronometer active elapsed time must remain stable through map navigation " +
+                    "(before=${before.elapsedSinceChronometerBase}ms, " +
+                    "after=${after.elapsedSinceChronometerBase}ms)",
+                kotlin.math.abs(activeElapsedShift) < 1_000
+            )
         }
         assertTrue("Accepted GPX points must not be lost", after.acceptedPoints >= before.acceptedPoints)
     }
@@ -183,7 +196,7 @@ class RouteMapNavigationTest {
         val service: SpeedometerService,
         val paused: Boolean,
         val chronometerBase: Long,
-        val chronometerText: String,
+        val elapsedSinceChronometerBase: Long,
         val acceptedPoints: Int
     )
 }

@@ -13,18 +13,16 @@ import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
 
 class RouteMapActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRouteMapBinding
-    private var serviceBound = false
+    private var bindingRegistered = false
     private var bindingRequested = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-            serviceBound = true
             val service = (binder as? SpeedometerService.MyBinder)?.speedometerService
             routeFragment()?.setRouteService(service?.takeIf { it.isRunning })
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
-            serviceBound = false
             routeFragment()?.onRouteServiceDisconnected()
         }
     }
@@ -62,15 +60,15 @@ class RouteMapActivity : AppCompatActivity() {
         } catch (_: RuntimeException) {
             false
         }
-        serviceBound = bound
+        bindingRegistered = bound
         if (!bound) routeFragment()?.showUnavailable()
     }
 
     override fun onStop() {
         routeFragment()?.setRouteService(null)
-        if (serviceBound) {
+        if (bindingRegistered) {
             unbindService(serviceConnection)
-            serviceBound = false
+            bindingRegistered = false
         }
         bindingRequested = false
         super.onStop()

@@ -102,6 +102,34 @@ class ActiveRouteTest {
     }
 
     @Test
+    fun resetNotifiesCurrentSubscribersBeforePublishingTheNextActivityPoint() {
+        val route = ActiveRoute()
+        val oldPoint = RoutePoint(-23.561414, -46.655881)
+        val newPoint = RoutePoint(-23.562010, -46.656300)
+        val events = mutableListOf<String>()
+        val observer = object : RouteObserver {
+            override fun onPointAdded(revision: Long, point: RoutePoint) {
+                events += "point:$revision:$point"
+            }
+
+            override fun onRouteReset(revision: Long) {
+                events += "reset:$revision"
+            }
+        }
+        route.subscribe(observer)
+
+        route.append(oldPoint)
+        route.reset()
+        route.append(newPoint)
+
+        assertEquals(
+            listOf("point:1:$oldPoint", "reset:2", "point:3:$newPoint"),
+            events
+        )
+        assertEquals(listOf(newPoint), route.snapshot().points)
+    }
+
+    @Test
     fun rendererCanDiscardSnapshotWhenBackgroundAppendArrivesFirst() {
         val route = ActiveRoute()
         route.append(RoutePoint(-23.561414, -46.655881))

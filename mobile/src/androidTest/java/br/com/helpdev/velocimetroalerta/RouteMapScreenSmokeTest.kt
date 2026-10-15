@@ -2,7 +2,11 @@ package br.com.helpdev.velocimetroalerta
 
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import br.com.helpdev.velocimetroalerta.test.RuntimePermissionStateRule
+import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
+import android.content.ComponentName
+import android.content.ServiceConnection
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -43,6 +47,24 @@ class RouteMapScreenSmokeTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun serviceDisconnectionStillUnbindsWhenMapStops() {
+        val scenario = ActivityScenario.launch(RouteMapActivity::class.java)
+        scenario.onActivity { activity ->
+            val connectionField = RouteMapActivity::class.java.getDeclaredField("serviceConnection")
+            connectionField.isAccessible = true
+            val connection = connectionField.get(activity) as ServiceConnection
+            connection.onServiceDisconnected(ComponentName(activity, SpeedometerService::class.java))
+        }
+        scenario.close()
+
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val remainingBindings = (context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager)
+            .getRunningServices(Int.MAX_VALUE)
+            .filter { it.service.className == SpeedometerService::class.java.name && it.clientCount > 0 }
+        assertTrue("Stopping the map must release its successful service binding", remainingBindings.isEmpty())
     }
 
     private fun RouteMapActivity.speedometerServiceIsNotOwned(): Boolean =

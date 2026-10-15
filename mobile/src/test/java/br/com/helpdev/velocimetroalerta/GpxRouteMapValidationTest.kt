@@ -63,6 +63,7 @@ class GpxRouteMapValidationTest {
 
         override fun showWaiting() = Unit
         override fun showUnavailable() = Unit
+        override fun clearRoute() = Unit
         override fun renderRoute(points: List<RoutePoint>, follow: Boolean, frameRoute: Boolean) {
             renderCount++
             renderedPoints = points

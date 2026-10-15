@@ -59,6 +59,20 @@ class RouteMapRenderingTest {
     }
 
     @Test
+    fun routeResetClearsPreviousActivityBeforeRenderingTheNextPoint() {
+        val renderer = FakeRenderer()
+        val state = RouteMapState(renderer)
+        state.applySnapshot(RouteSnapshot(1, listOf(point(1), point(2))))
+
+        state.onRouteReset(2)
+        state.onPointAdded(3, point(3))
+
+        assertEquals(listOf(listOf(point(1), point(2)), listOf(point(3))), renderer.renderedRoutes)
+        assertEquals(1, renderer.clearedRouteCount)
+        assertEquals(point(3), renderer.lastPoint)
+    }
+
+    @Test
     fun panStopsFollowAndRecenterRestoresIt() {
         val renderer = FakeRenderer()
         val state = RouteMapState(renderer)
@@ -86,9 +100,11 @@ class RouteMapRenderingTest {
         val frameValues = mutableListOf<Boolean>()
         var lastPoint: RoutePoint? = null
         var focusedPoint: RoutePoint? = null
+        var clearedRouteCount = 0
 
         override fun showWaiting() { waitingShown = true }
         override fun showUnavailable() = Unit
+        override fun clearRoute() { clearedRouteCount++ }
         override fun renderRoute(points: List<RoutePoint>, follow: Boolean, frameRoute: Boolean) {
             renderedRoutes += points.toList()
             lastPoint = points.lastOrNull()

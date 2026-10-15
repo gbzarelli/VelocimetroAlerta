@@ -6,4 +6,6 @@ data class RouteSnapshot(val revision: Long, val points: List<RoutePoint>)
 
 fun interface RouteObserver {
     fun onPointAdded(revision: Long, point: RoutePoint)
+
+    fun onRouteReset(revision: Long) = Unit
 }
