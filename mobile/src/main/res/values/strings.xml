@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="route_map_title">Activity route</string>
     <string name="app_name">Speedometer Alert</string>
 
     <string name="title_activity_config">Settings</string>
