@@ -50,6 +50,7 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
     var gpx: Gpx = Gpx("Velocimetro Alerta Android")
         private set
+    private val activeRoute = ActiveRoute()
     private var obSpeedometerAlert = ObSpeedometerAlert()
 
     private val mySpeechSpeed = MySpeechSpeed()
@@ -101,6 +102,10 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
     val isTracking: Boolean
         get() = gps.isTracking
+
+    fun subscribeRoute(observer: RouteObserver): RouteSnapshot = activeRoute.subscribe(observer)
+
+    fun unsubscribeRoute(observer: RouteObserver) = activeRoute.unsubscribe(observer)
 
     val hasLocationFix: Boolean
         get() = gps.hasLocationFix
@@ -449,6 +454,7 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
     private fun reset() {
         gpx = Gpx("Velocimeter_Alert")
+        activeRoute.reset()
         obSpeedometerAlert = ObSpeedometerAlert(getConfigHR())
         val base = SystemClock.elapsedRealtime()
         firstBase = base
@@ -600,6 +606,7 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
                 } else {
                     gpx.trk.trkseg.addTrkPt(location, trackPointExtension)
                 }
+                activeRoute.append(RoutePoint(location.latitude, location.longitude))
             }
             obSpeedometerAlert.time = chronometerTime
 
