@@ -16,6 +16,11 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import androidx.test.filters.SdkSuppress
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
+import br.com.helpdev.velocimetroalerta.test.RuntimePermissionState
+import br.com.helpdev.velocimetroalerta.test.RuntimePermissionStateRule
+import org.junit.After
+import org.junit.Before
+import org.junit.Rule
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,28 +32,36 @@ class BluetoothPermissionFlowTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val device = UiDevice.getInstance(instrumentation)
+    private val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+    private val sensorPreference = context.getString(R.string.pref_hr_sensor)
+    private var previousSensorEnabled = false
 
+    @get:Rule
+    val permissionState = RuntimePermissionStateRule()
+
+    @Before
+    fun enableHeartRateSensorForScenario() {
+        previousSensorEnabled = preferences.getBoolean(sensorPreference, false)
+        preferences.edit().putBoolean(sensorPreference, true).commit()
+    }
+
+    @After
+    fun restoreHeartRatePreferenceAndStopService() {
+        preferences.edit().putBoolean(sensorPreference, previousSensorEnabled).commit()
+        context.stopService(Intent(context, SpeedometerService::class.java))
+    }
+
+    @RuntimePermissionState(
+        granted = [
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.POST_NOTIFICATIONS
+        ],
+        denied = [Manifest.permission.BLUETOOTH_CONNECT]
+    )
     @Test
     fun deniedBluetoothPermissionLeavesGpsAvailable() {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val sensorPreference = context.getString(R.string.pref_hr_sensor)
-        val previousSensorEnabled = preferences.getBoolean(sensorPreference, false)
-        val locationGranted = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-            context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val bluetoothDenied = context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
-        val notificationsGranted = android.os.Build.VERSION.SDK_INT < 33 ||
-            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        assertTrue("Prepare the emulator with precise location granted", locationGranted)
-        assertTrue("Prepare the emulator with Bluetooth connect denied", bluetoothDenied)
-        assertTrue("Prepare the emulator with notifications granted", notificationsGranted)
-        PreferenceManager.getDefaultSharedPreferences(context)
-            .edit()
-            .remove("location_background_disclosure_accepted")
-            .commit()
-
-        preferences.edit().putBoolean(sensorPreference, true).apply()
-        try {
-            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 onView(androidx.test.espresso.matcher.ViewMatchers.withId(R.id.btStartStop)).perform(click())
                 onView(withText(R.string.location_background_disclosure_message)).check(matches(isDisplayed()))
                 onView(withText(R.string.location_background_disclosure_continue)).perform(click())
@@ -77,10 +90,6 @@ class BluetoothPermissionFlowTest {
                 assertTrue("Bluetooth denial must leave GPS tracking active", tracking)
                 onView(androidx.test.espresso.matcher.ViewMatchers.withId(R.id.search_sensor_hr))
                     .check(matches(withText(context.getString(R.string.bluetooth_sensor_permission_denied))))
-            }
-        } finally {
-            preferences.edit().putBoolean(sensorPreference, previousSensorEnabled).apply()
-            context.stopService(Intent(context, SpeedometerService::class.java))
         }
     }
 }

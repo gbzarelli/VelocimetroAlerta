@@ -23,10 +23,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = 'br.com.helpdev.velocimetroalerta'
-        minSdk = 23
+        applicationId = 'br.com.helpdev.velocimetroalerta.v2'
+        minSdk = 24
         targetSdk = 36
-        versionCode = 13
+        versionCode = 3
         versionName = '4.2'
         testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
     }

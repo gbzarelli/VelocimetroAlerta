@@ -331,12 +331,17 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         val host = activity ?: return
         host.runOnUiThread {
                 if (_binding == null) return@runOnUiThread
-                if (gpsPause == SpeedometerService.CallbackGpsThread.GPS_PAUSADO) {
+                val paused = gpsProcess?.isPause == true ||
+                    gpsPause == SpeedometerService.CallbackGpsThread.GPS_PAUSADO
+                if (paused) {
                     binding.chronometer.stop()
                 }
                 if (!binding.btStartStop.isEnabled) {
                     binding.btStartStop.isEnabled = true
                 }
+                binding.btSave.visibility = if (paused) View.VISIBLE else View.GONE
+                binding.btRefresh.visibility = if (paused) View.VISIBLE else View.GONE
+                binding.btStartStop.setImageResource(if (paused) R.drawable.play else R.drawable.pause)
                 updateValuesText()
             }
     }

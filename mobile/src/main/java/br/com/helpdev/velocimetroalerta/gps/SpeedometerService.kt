@@ -271,6 +271,17 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
         activateHeartRateSensor()
     }
 
+    fun retryConfiguredSensorsAfterPermissionGrant() {
+        if (!gps.isTracking || !hasBluetoothConnectPermission()) return
+
+        if (sensorStates[SensorKind.HEART_RATE] == SensorConnectionState.PERMISSION_DENIED) {
+            activateHeartRateSensor()
+        }
+        if (sensorStates[SensorKind.VAM] == SensorConnectionState.PERMISSION_DENIED) {
+            activateVamSensor()
+        }
+    }
+
     private fun hasBluetoothConnectPermission(): Boolean =
         Build.VERSION.SDK_INT < 31 ||
             checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED

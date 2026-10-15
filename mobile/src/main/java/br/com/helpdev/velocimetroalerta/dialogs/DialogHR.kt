@@ -30,6 +30,7 @@ class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attr
     private val devices = mutableListOf<MyDevice>()
     private var listView: ListView? = null
     private var scanner: BluetoothLeScanner? = null
+    private var scanDialog: AlertDialog? = null
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             addDevice(result.device)
@@ -92,6 +93,7 @@ class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attr
             .setView(view)
                 .setNegativeButton(R.string.bt_disable_module) { _, _ -> saveBoolean(false) }
             .create()
+        scanDialog = dialog
 
         list.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             val selected = devices[position]
@@ -101,11 +103,9 @@ class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attr
             dialog.dismiss()
         }
         dialog.setOnDismissListener {
-            try {
+            cleanupScannerAfterDismiss(dialog) {
                 scanner?.stopScan(scanCallback)
-            } catch (_: SecurityException) {
             }
-            scanner = null
             onPreferenceChangeListener?.onPreferenceChange(this, summary)
         }
         dialog.show()
@@ -124,6 +124,19 @@ class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attr
         }
     }
 
+    internal fun cleanupScannerAfterDismiss(dialog: AlertDialog, stopScan: () -> Unit) {
+        try {
+            stopScan()
+        } catch (_: SecurityException) {
+        } catch (_: IllegalStateException) {
+        } finally {
+            scanner = null
+            listView = null
+            devices.clear()
+            if (scanDialog === dialog) scanDialog = null
+        }
+    }
+
     private fun requestEnableBluetooth() {
         val activity = context as? Activity ?: return
         activity.startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
@@ -133,6 +146,11 @@ class DialogHR(context: Context, attrs: AttributeSet) : Preference(context, attr
         if (devices.any { it.address == device.address }) return
         devices.add(MyDevice(device))
         listView?.post { (listView?.adapter as? BaseAdapter)?.notifyDataSetChanged() }
+    }
+
+    override fun onDetached() {
+        scanDialog?.dismiss()
+        super.onDetached()
     }
 
     override fun getSummary(): CharSequence {

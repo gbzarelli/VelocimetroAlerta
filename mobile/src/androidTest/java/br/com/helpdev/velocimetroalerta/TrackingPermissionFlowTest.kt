@@ -2,8 +2,8 @@ package br.com.helpdev.velocimetroalerta
 
 import android.Manifest
 import android.app.NotificationManager
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
@@ -15,17 +15,17 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
-import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
-import org.junit.After
+import br.com.helpdev.velocimetroalerta.test.RuntimePermissionState
+import br.com.helpdev.velocimetroalerta.test.RuntimePermissionStateRule
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.preference.PreferenceManager
+import androidx.test.filters.SdkSuppress
 
 @RunWith(AndroidJUnit4::class)
 class TrackingPermissionFlowTest {
@@ -33,25 +33,15 @@ class TrackingPermissionFlowTest {
     private val context = instrumentation.targetContext
     private val device = UiDevice.getInstance(instrumentation)
 
-    @Before
-    fun stopPreviousService() {
-        context.stopService(Intent(context, SpeedometerService::class.java))
-        PreferenceManager.getDefaultSharedPreferences(context)
-            .edit()
-            .remove("location_background_disclosure_accepted")
-            .commit()
-    }
+    @get:Rule
+    val permissionState = RuntimePermissionStateRule()
 
-    @After
-    fun stopService() {
-        context.stopService(Intent(context, SpeedometerService::class.java))
-    }
-
+    @RuntimePermissionState(
+        granted = [Manifest.permission.POST_NOTIFICATIONS],
+        denied = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION]
+    )
     @Test
     fun locationDeniedDoesNotStartTracking() {
-        assertTrue("Prepare the emulator with coarse location denied", context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        assertTrue("Prepare the emulator with precise location denied", context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        assertTrue("Prepare the emulator with notifications enabled", context.getSystemService(NotificationManager::class.java)!!.areNotificationsEnabled())
         ActivityScenario.launch(MainActivity::class.java).use {
             onView(withId(R.id.btStartStop)).perform(click())
             confirmLocationDisclosure()
@@ -61,12 +51,20 @@ class TrackingPermissionFlowTest {
         }
     }
 
+    @RuntimePermissionState(
+        granted = [Manifest.permission.POST_NOTIFICATIONS],
+        denied = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION]
+    )
     @Test
     fun locationDisclosureCanBeCancelledBeforePermissionPrompt() {
-        assertTrue("Prepare the emulator with coarse location denied", context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        assertTrue("Prepare the emulator with precise location denied", context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         val disclosure = context.getString(R.string.location_background_disclosure_message).lowercase()
-        val language = context.resources.configuration.locales[0].language
+        val configuration = context.resources.configuration
+        val language = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            configuration.locales[0].language
+        } else {
+            @Suppress("DEPRECATION")
+            configuration.locale.language
+        }
         val locationTerm = if (language == "pt") "localização" else "location"
         val backgroundTerm = if (language == "pt") "segundo plano" else "background"
         assertTrue("The disclosure must identify location use", disclosure.contains(locationTerm))
@@ -87,11 +85,15 @@ class TrackingPermissionFlowTest {
         }
     }
 
+    @RuntimePermissionState(
+        granted = [
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.POST_NOTIFICATIONS
+        ]
+    )
     @Test
     fun preciseGrantStartsLocationForegroundService() {
-        assertTrue("Prepare the emulator with coarse location granted", context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        assertTrue("Prepare the emulator with precise location granted", context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        assertTrue("Prepare the emulator with notifications enabled", context.getSystemService(NotificationManager::class.java)!!.areNotificationsEnabled())
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             onView(withId(R.id.btStartStop)).perform(click())
             confirmLocationDisclosure()
@@ -109,13 +111,13 @@ class TrackingPermissionFlowTest {
         }
     }
 
+    @RuntimePermissionState(
+        granted = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.POST_NOTIFICATIONS],
+        denied = [Manifest.permission.ACCESS_FINE_LOCATION]
+    )
+    @SdkSuppress(minSdkVersion = 31)
     @Test
     fun approximateOnlyDoesNotStartPrecisionTracking() {
-        assertTrue("Prepare the emulator with coarse location granted", context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        assertTrue("Prepare the emulator with precise location denied", context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        assertTrue(context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        assertTrue(context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             onView(withId(R.id.btStartStop)).perform(click())
             confirmLocationDisclosure()
@@ -125,11 +127,13 @@ class TrackingPermissionFlowTest {
         }
     }
 
+    @SdkSuppress(minSdkVersion = 33)
+    @RuntimePermissionState(
+        granted = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION],
+        denied = [Manifest.permission.POST_NOTIFICATIONS]
+    )
     @Test
     fun notificationDeniedDoesNotCrashTracking() {
-        assertTrue("Prepare the emulator with coarse location granted", context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        assertTrue("Prepare the emulator with precise location granted", context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
-        assertFalse("Prepare the emulator with notifications denied", context.getSystemService(NotificationManager::class.java)!!.areNotificationsEnabled())
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             onView(withId(R.id.btStartStop)).perform(click())
             confirmLocationDisclosure()
@@ -156,9 +160,16 @@ class TrackingPermissionFlowTest {
     }
 
     private fun findPermissionButton(resourceName: String) = device.wait(
-            Until.findObject(By.res("com.android.permissioncontroller", resourceName)),
-            5_000
-        )
+        Until.findObject(By.res(permissionControllerPackage(), resourceName)),
+        5_000
+    )
+
+    private fun permissionControllerPackage(): String =
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            "com.android.packageinstaller"
+        } else {
+            "com.android.permissioncontroller"
+        }
 
     private fun waitForTrackingState(scenario: ActivityScenario<MainActivity>, expected: Boolean) {
         val deadline = System.currentTimeMillis() + 8_000

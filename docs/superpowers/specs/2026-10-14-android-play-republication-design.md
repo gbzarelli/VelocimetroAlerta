@@ -1,5 +1,7 @@
 # Android Modernization and Play Store Republication Design
 
+> **Superseded for package identity and republication:** The owner approved a new listing at `br.com.helpdev.velocimetroalerta.v2`; follow [`2026-10-15-new-package-play-republication-design.md`](2026-10-15-new-package-play-republication-design.md) and [`2026-10-15-new-package-android-play-republication.md`](../plans/2026-10-15-new-package-android-play-republication.md). This document remains historical; its Android modernization requirements continue through the active Android and new-package plans.
+
 ## Goal
 
 Restore and republish Velocímetro Alerta as a functional Android application compatible with current Android releases and Google Play requirements, while preserving the existing package identity and avoiding unverified signing-key changes.

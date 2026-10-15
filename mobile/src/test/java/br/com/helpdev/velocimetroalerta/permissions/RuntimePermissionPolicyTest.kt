@@ -15,6 +15,18 @@ class RuntimePermissionPolicyTest {
     }
 
     @Test
+    fun approximateLocationGrantKeepsBothPermissionsInPreciseUpgradeRequest() {
+        assertEquals(
+            setOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION),
+            RuntimePermissionPolicy.permissionsToRequest(
+                RuntimePermissionPolicy.Feature.LOCATION,
+                31,
+                setOf(Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
+        )
+    }
+
+    @Test
     fun bluetoothScanUsesLocationBeforeAndroid12AndScanAfter() {
         assertEquals(
             setOf(Manifest.permission.ACCESS_FINE_LOCATION),

@@ -3,6 +3,7 @@ package br.com.helpdev.velocimetroalerta
 import android.app.Activity
 import android.app.Instrumentation
 import android.content.Intent
+import android.view.View
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.test.core.app.ActivityScenario
@@ -16,15 +17,21 @@ import androidx.test.espresso.intent.matcher.IntentMatchers.hasData
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import br.com.helpdev.velocimetroalerta.test.RuntimePermissionStateRule
 import org.hamcrest.Matchers.allOf
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class PrivacyPolicyNavigationTest {
+    @get:Rule
+    val permissionState = RuntimePermissionStateRule()
+
     @Test
     fun navigationDrawerOpensThePrivacyPolicyUrl() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -40,6 +47,7 @@ class PrivacyPolicyNavigationTest {
                 Instrumentation.ActivityResult(Activity.RESULT_OK, null)
             )
             var privacyMenuItemId = 0
+            val drawerOpened = CountDownLatch(1)
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 scenario.onActivity { activity ->
                     privacyMenuItemId = activity.resources.getIdentifier(
@@ -48,9 +56,18 @@ class PrivacyPolicyNavigationTest {
                         activity.packageName
                     )
                     assertNotEquals("The drawer must contain a privacy policy item", 0, privacyMenuItemId)
-                    activity.findViewById<DrawerLayout>(R.id.drawer_layout)
-                        .openDrawer(GravityCompat.START)
+                    val drawer = activity.findViewById<DrawerLayout>(R.id.drawer_layout)
+                    val listener = object : DrawerLayout.SimpleDrawerListener() {
+                        override fun onDrawerOpened(drawerView: View) {
+                            drawer.removeDrawerListener(this)
+                            drawerOpened.countDown()
+                        }
+                    }
+                    drawer.addDrawerListener(listener)
+                    drawer.openDrawer(GravityCompat.START)
                 }
+
+                assertTrue("The navigation drawer should finish opening", drawerOpened.await(5, TimeUnit.SECONDS))
 
                 onView(withId(privacyMenuItemId)).perform(click())
             }

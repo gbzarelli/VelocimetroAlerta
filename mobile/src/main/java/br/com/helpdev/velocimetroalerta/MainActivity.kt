@@ -104,7 +104,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (drawer.isDrawerOpen(GravityCompat.START)) {
+                if (drawer.isDrawerVisible(GravityCompat.START)) {
                     drawer.closeDrawer(GravityCompat.START)
                 } else if (speedometerService?.isRunning == true) {
                     if (supportFragmentManager.findFragmentByTag(BACK_CONFIRMATION_TAG) == null) {
@@ -148,28 +148,35 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             Build.VERSION.SDK_INT
         )
         val requestedPermissions = mutableSetOf<String>()
-        if (locationPermissions.any { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) {
-            // Android 12+ requires coarse and fine to be requested in the same request.
-            requestedPermissions += locationPermissions
+        val grantedLocationPermissions = locationPermissions.filterTo(mutableSetOf()) {
+            checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
         }
-        requestedPermissions += RuntimePermissionPolicy.permissionsFor(
+        requestedPermissions += RuntimePermissionPolicy.permissionsToRequest(
+            RuntimePermissionPolicy.Feature.LOCATION,
+            Build.VERSION.SDK_INT,
+            grantedLocationPermissions
+        )
+        val notificationPermissions = RuntimePermissionPolicy.permissionsFor(
             RuntimePermissionPolicy.Feature.POST_NOTIFICATIONS,
             Build.VERSION.SDK_INT
         )
+        requestedPermissions += notificationPermissions.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
         if (hasConfiguredBluetoothSensors()) {
-            requestedPermissions += RuntimePermissionPolicy.permissionsFor(
+            val bluetoothPermissions = RuntimePermissionPolicy.permissionsFor(
                 RuntimePermissionPolicy.Feature.BLUETOOTH_CONNECT,
                 Build.VERSION.SDK_INT
             )
+            requestedPermissions += bluetoothPermissions.filter {
+                checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+            }
         }
 
-        val missingPermissions = requestedPermissions.filter {
-            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (missingPermissions.isEmpty()) {
+        if (requestedPermissions.isEmpty()) {
             startTrackingService()
         } else {
-            trackingPermissionLauncher.launch(missingPermissions.toTypedArray())
+            trackingPermissionLauncher.launch(requestedPermissions.toTypedArray())
         }
     }
 
@@ -342,6 +349,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             stopTrackingIfLocationPermissionWasRevoked()
             reloadPreferences()
             if (callbackNotify != null) callbackNotify!!.onServiceConnected(speedometerService)
+            speedometerService?.retryConfiguredSensorsAfterPermissionGrant()
         }
     }
 

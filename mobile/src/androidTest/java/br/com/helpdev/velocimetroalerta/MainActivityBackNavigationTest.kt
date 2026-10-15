@@ -1,6 +1,6 @@
 package br.com.helpdev.velocimetroalerta
 
-import android.content.Intent
+import android.Manifest
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.test.core.app.ActivityScenario
@@ -11,24 +11,19 @@ import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
-import androidx.preference.PreferenceManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
-import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
-import org.junit.After
+import br.com.helpdev.velocimetroalerta.test.RuntimePermissionState
+import br.com.helpdev.velocimetroalerta.test.RuntimePermissionStateRule
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class MainActivityBackNavigationTest {
-    private val context = InstrumentationRegistry.getInstrumentation().targetContext
-
-    @After
-    fun stopTrackingService() {
-        context.stopService(Intent(context, SpeedometerService::class.java))
-    }
+    @get:Rule
+    val permissionState = RuntimePermissionStateRule()
 
     @Test
     fun backClosesDrawerBeforeActivity() {
@@ -46,12 +41,15 @@ class MainActivityBackNavigationTest {
         }
     }
 
+    @RuntimePermissionState(
+        granted = [
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.POST_NOTIFICATIONS
+        ]
+    )
     @Test
     fun backDuringRideRequiresConfirmation() {
-        PreferenceManager.getDefaultSharedPreferences(context)
-            .edit()
-            .remove("location_background_disclosure_accepted")
-            .commit()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity -> activity.requestTrackingStart() }
             onView(withText(R.string.location_background_disclosure_message)).check(matches(isDisplayed()))

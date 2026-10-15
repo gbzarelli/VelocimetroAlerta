@@ -35,4 +35,15 @@ object RuntimePermissionPolicy {
             emptySet()
         }
     }
+
+    fun permissionsToRequest(feature: Feature, sdkInt: Int, grantedPermissions: Set<String>): Set<String> {
+        val requiredPermissions = permissionsFor(feature, sdkInt)
+        if (feature == Feature.LOCATION && sdkInt >= 31 &&
+            Manifest.permission.ACCESS_FINE_LOCATION !in grantedPermissions
+        ) {
+            // Android 12+ requires coarse and fine to be requested together to upgrade precision.
+            return requiredPermissions
+        }
+        return requiredPermissions - grantedPermissions
+    }
 }

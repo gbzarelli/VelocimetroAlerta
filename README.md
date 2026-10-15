@@ -22,7 +22,7 @@ Temos um projeto independente desenvolvido no Arduino para monitorar a cadência
 
 Use the Play Store: 
 
-[Speedometer Alert](https://play.google.com/store/apps/details?id=br.com.helpdev.velocimetroalerta)
+[Speedometer Alert](https://play.google.com/store/apps/details?id=br.com.helpdev.velocimetroalerta.v2)
 
 ## Contributing
 

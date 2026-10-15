@@ -21,9 +21,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import br.com.helpdev.velocimetroalerta.test.RuntimePermissionStateRule
 
 @RunWith(AndroidJUnit4::class)
 class MainActivitySmokeTest {
+    @get:Rule
+    val permissionState = RuntimePermissionStateRule()
+
     @Test
     fun mainScreenShowsSpeedAndStartControls() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->

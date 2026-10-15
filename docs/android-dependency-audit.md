@@ -1,5 +1,7 @@
 # Android dependency audit
 
+> **Release configuration update (2026-10-15):** This audit established that Material Components requires API 23. The new Play listing uses `minSdk` 24 because Play automatic protection rejects bundles below API 24; the owner approved this minimum. The dependency compatibility findings remain valid at the higher floor.
+
 ## Task 1 baseline graph
 
 Resolved `:mobile:debugRuntimeClasspath` and `:mobile:releaseRuntimeClasspath` with Gradle 9.6.0 and AGP 9.4.1 after restoring the wrapper. Both configurations resolve the same 27 unique coordinates. `minSdk` remains 19: every resolved Android AAR that declares a minimum requires API 14 or less, and the Java archives have no Android manifest minimum. `:mobile:checkDebugAarMetadata` passed with compile API 37.
