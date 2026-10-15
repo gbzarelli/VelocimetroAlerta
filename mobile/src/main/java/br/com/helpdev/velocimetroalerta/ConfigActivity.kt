@@ -1,14 +1,27 @@
 package br.com.helpdev.velocimetroalerta
 
+import android.content.pm.PackageManager
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.Toolbar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 
 class ConfigActivity : AppCompatActivity() {
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == br.com.helpdev.velocimetroalerta.dialogs.DialogHR.REQUEST_BLUETOOTH_PERMISSIONS ||
+            requestCode == br.com.helpdev.velocimetroalerta.dialogs.DialogPrefVelAlertBLModule.REQUEST_BLUETOOTH_PERMISSIONS) {
+            val granted = grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            supportFragmentManager.fragments.filterIsInstance<ConfigActivityFragment>()
+                .forEach { it.onBluetoothPermissionResult(requestCode, granted) }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdge.enable(window)
         setContentView(R.layout.activity_config)
+        EdgeToEdge.applySystemBarInsets(window, findViewById(R.id.config_root))
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         if (supportActionBar != null) supportActionBar!!.setDisplayHomeAsUpEnabled(true)

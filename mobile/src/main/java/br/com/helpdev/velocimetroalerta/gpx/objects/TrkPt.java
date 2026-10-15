@@ -5,25 +5,16 @@
  */
 package br.com.helpdev.velocimetroalerta.gpx.objects;
 
-import org.simpleframework.xml.Attribute;
-import org.simpleframework.xml.Element;
-import org.simpleframework.xml.Root;
 
 /**
  * @author Guilherme
  */
-@Root(name = "trkpt", strict = false)
 public class TrkPt {
 
-    @Attribute(name = "lat")
     private String lat;
-    @Attribute(name = "lon")
     private String lon;
-    @Element(name = "ele")
     private double ele;
-    @Element(name = "time")
     private String time;
-    @Element(name = "extensions", type = Extensions.class, required = false)
     private Extensions extensions;
 
     private double latitude;

@@ -2,11 +2,11 @@ package br.com.helpdev.velocimetroalerta
 
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.preference.EditTextPreference
-import android.preference.ListPreference
-import android.preference.Preference
-import android.preference.PreferenceFragment
-import android.preference.PreferenceManager
+import androidx.preference.EditTextPreference
+import androidx.preference.ListPreference
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import br.com.helpdev.velocimetroalerta.dialogs.DialogHR
 
 import br.com.helpdev.velocimetroalerta.dialogs.DialogPrefVelAlertBLModule
@@ -14,15 +14,23 @@ import br.com.helpdev.velocimetroalerta.dialogs.DialogPrefVelAlertBLModule
 /**
  * Created by Guilherme Biff Zarelli on 05/04/16.
  */
-class ConfigActivityFragment : PreferenceFragment(), Preference.OnPreferenceChangeListener {
+class ConfigActivityFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChangeListener {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        addPreferencesFromResource(R.xml.configs)
-        val listPreference = findPreference(getString(R.string.pref_intervalo)) as ListPreference
-        val editTextPreference = findPreference(getString(R.string.pref_intervalo_valor)) as EditTextPreference
-        val dialogPrefVelAlertModule = findPreference(getString(R.string.pref_module_vel_alert)) as DialogPrefVelAlertBLModule
-        val dialogPrefHr = findPreference(getString(R.string.pref_hr_sensor)) as DialogHR
+    fun onBluetoothPermissionResult(requestCode: Int, granted: Boolean) {
+        when (requestCode) {
+            DialogHR.REQUEST_BLUETOOTH_PERMISSIONS -> findPreference<DialogHR>(getString(R.string.pref_hr_sensor))
+                ?.onBluetoothPermissionResult(granted)
+            DialogPrefVelAlertBLModule.REQUEST_BLUETOOTH_PERMISSIONS -> findPreference<DialogPrefVelAlertBLModule>(getString(R.string.pref_module_vel_alert))
+                ?.onBluetoothPermissionResult(granted)
+        }
+    }
+
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        setPreferencesFromResource(R.xml.configs, rootKey)
+        val listPreference = requireNotNull(findPreference<ListPreference>(getString(R.string.pref_intervalo)))
+        val editTextPreference = requireNotNull(findPreference<EditTextPreference>(getString(R.string.pref_intervalo_valor)))
+        val dialogPrefVelAlertModule = requireNotNull(findPreference<DialogPrefVelAlertBLModule>(getString(R.string.pref_module_vel_alert)))
+        val dialogPrefHr = requireNotNull(findPreference<DialogHR>(getString(R.string.pref_hr_sensor)))
         editSummary(listPreference)
         editSummary(editTextPreference)
         editSummary(dialogPrefVelAlertModule)
@@ -32,7 +40,7 @@ class ConfigActivityFragment : PreferenceFragment(), Preference.OnPreferenceChan
 
     private fun editSummary(preference: Preference) {
         preference.onPreferenceChangeListener = this
-        val pref = PreferenceManager.getDefaultSharedPreferences(activity)
+        val pref = PreferenceManager.getDefaultSharedPreferences(requireContext())
         val value = pref.getString(preference.key, "")
         onPreferenceChange(preference, value)
     }
@@ -47,7 +55,7 @@ class ConfigActivityFragment : PreferenceFragment(), Preference.OnPreferenceChan
         onPreferenceChange(preference, preference.summary)
     }
 
-    override fun onPreferenceChange(preference: Preference, newValue: Any): Boolean {
+    override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean {
         preference.summary = newValue.toString()
         return true
     }

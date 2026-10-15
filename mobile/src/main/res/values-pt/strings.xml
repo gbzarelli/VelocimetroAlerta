@@ -7,6 +7,23 @@
 
     <string name="bt_ok">OK</string>
     <string name="bt_cancel">Cancelar</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="open_settings">Abrir configurações</string>
+    <string name="precise_location_required">A localização precisa é necessária para calcular a velocidade e gravar o percurso. Permita o acesso preciso e tente novamente.</string>
+    <string name="location_background_disclosure_title">Localização durante a atividade</string>
+    <string name="location_background_disclosure_message">Quando você inicia uma atividade, o Velocímetro Alerta usa sua localização precisa para calcular velocidade, distância e altimetria, registrar o percurso e gerar alertas de velocidade por voz, mesmo quando o app está em segundo plano ou a tela apagada. O Android mantém uma notificação de rastreamento, conforme as configurações de notificação. A localização não é usada antes de iniciar nem após encerrar a atividade. Os percursos ficam neste dispositivo; o GPX só é exportado quando você escolhe o destino.</string>
+    <string name="location_background_disclosure_continue">Continuar</string>
+    <string name="location_background_disclosure_cancel">Cancelar</string>
+    <string name="notification_permission_limited">O rastreamento continuará, mas o Android pode ocultar a notificação permanente.</string>
+    <string name="bluetooth_permission_limited">O rastreamento continuará sem o sensor Bluetooth configurado. Permita o acesso ao Bluetooth nas configurações para usá-lo.</string>
+    <string name="bluetooth_not_supported">Este dispositivo não oferece suporte a sensores Bluetooth.</string>
+    <string name="bluetooth_sensor_unsupported">O Bluetooth não está disponível neste dispositivo.</string>
+    <string name="bluetooth_sensor_permission_denied">A permissão do Bluetooth foi negada. O GPS continuará sem este sensor.</string>
+    <string name="bluetooth_sensor_disabled">O Bluetooth está desligado. Ative-o para usar este sensor.</string>
+    <string name="bluetooth_sensor_connecting">Conectando ao sensor…</string>
+    <string name="bluetooth_sensor_connected">Sensor conectado; aguardando dados…</string>
+    <string name="bluetooth_sensor_reconnecting">Sensor desconectado. Reconectando…</string>
+    <string name="bluetooth_sensor_connection_failed">Não foi possível conectar ao sensor. Tentando novamente…</string>
 
     <string name="velocidade_atual">Velocidade atual</string>
     <string name="avg">Média</string>
@@ -51,12 +68,15 @@
     <string name="avaliar">Avaliar</string>
     <string name="compartilhar">Compartilhar</string>
     <string name="publico">Público</string>
+    <string name="privacy_policy">Política de privacidade</string>
+    <string name="privacy_policy_url">https://helpdev.com.br/apps/velocimetro-alerta/privacidade/#portugues</string>
+    <string name="privacy_policy_unavailable">Não há um navegador disponível para abrir a política de privacidade.</string>
     <string name="minhas_atividades">Minhas atividades (em breve)</string>
     <string name="configs">Configurações</string>
     <string name="pause_automatico">Pause automático</string>
     <string name="atividades_sem_dados">ATIVIDADE SEM DADOS SUFICIENTES PARA A GRAVAÇÃO.</string>
     <string name="aguarde_salvando">AGUARDE, SALVANDO...</string>
-    <string name="arquivo_gravado_sucesso">Arquivo GPX gravado com sucesso em: \n\n%s\n\n </string>
+    <string name="arquivo_gravado_sucesso">Arquivo GPX salvo com sucesso.</string>
     <string name="erro_gravar_gpx">Erro ao gravar arquivo GPX. {%s}</string>
 
     <string name="bloqueio_desativado">BLOQUEIO DE TELA: DESATIVADO.</string>

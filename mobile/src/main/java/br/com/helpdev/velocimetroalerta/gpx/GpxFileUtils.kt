@@ -1,89 +1,87 @@
 package br.com.helpdev.velocimetroalerta.gpx
 
 import android.location.Location
-
-import org.simpleframework.xml.core.Persister
-import org.simpleframework.xml.stream.Format
-
-import java.io.File
-import java.io.FileOutputStream
-
+import android.util.Xml
 import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx
-import br.com.helpdev.velocimetroalerta.gpx.objects.MetaData
-import br.com.helpdev.velocimetroalerta.gpx.objects.Trk
-import br.com.helpdev.velocimetroalerta.gpx.objects.TrkSeg
-
-/**
- * Created by gbzarelli on 11/14/17.
- */
+import java.io.OutputStream
 
 class GpxFileUtils {
-
+    /** Writes GPX 1.1 to [output] and leaves ownership of the stream with the caller. */
     @Throws(Exception::class)
-    fun writeGpx(gpx: Gpx, base: File, nameFile: String): File {
-        var nFile = nameFile
-        if (!base.exists()) {
-            base.mkdir()
+    fun writeGpx(gpx: Gpx, output: OutputStream) {
+        val points = gpx.trk?.trkseg?.trkPts.orEmpty()
+        require(points.isNotEmpty()) { "A GPX track must contain at least one point" }
+
+        val serializer = Xml.newSerializer()
+        serializer.setOutput(output, "UTF-8")
+        serializer.startDocument("UTF-8", true)
+        serializer.setPrefix("", GPX_NAMESPACE)
+        serializer.setPrefix("xsi", XSI_NAMESPACE)
+        serializer.setPrefix("gpxtpx", TRACK_POINT_NAMESPACE)
+        serializer.startTag(GPX_NAMESPACE, "gpx")
+        serializer.attribute(null, "version", "1.1")
+        serializer.attribute(null, "creator", gpx.creator ?: "Velocimetro Alerta")
+        serializer.attribute(
+            XSI_NAMESPACE,
+            "schemaLocation",
+            "$GPX_NAMESPACE http://www.topografix.com/GPX/1/1/gpx.xsd " +
+                "$TRACK_POINT_NAMESPACE http://www.garmin.com/xmlschemas/TrackPointExtensionv1.xsd"
+        )
+
+        gpx.metaData?.time?.let { time ->
+            serializer.startTag(GPX_NAMESPACE, "metadata")
+            serializer.startTag(GPX_NAMESPACE, "time").text(time).endTag(GPX_NAMESPACE, "time")
+            serializer.endTag(GPX_NAMESPACE, "metadata")
         }
 
-        var file: File
-        var i = 1
-
-        do {
-            file = File(base, "$nFile.gpx")
-            nFile = nameFile + "(" + i++ + ")"
-        } while (file.exists())
-
-        file.createNewFile()
-
-        val persister = Persister(Format("<?xml version=\"1.0\" encoding= \"UTF-8\" ?>"))
-        persister.write(gpx, file)
-
-        return file
-
-    }
-
-    @Throws(Exception::class)
-    fun writeGpxOnlyLocation(tempLocation: List<Location>?, base: File, nomeArquivo: String, gpxCreator: String): File? {
-        if (tempLocation != null && !tempLocation.isEmpty()) {
-            val gpx = Gpx(gpxCreator)
-            val metaData = MetaData()
-            metaData.time = Gpx.getUtcGpxTime(tempLocation[0].time)
-            val trk = Trk()
-            trk.name = nomeArquivo
-            val trkSeg = TrkSeg()
-            trkSeg.addTrkPts(tempLocation)
-            trk.trkseg = trkSeg
-            gpx.trk = trk
-            gpx.metaData = metaData
-
-            return writeGpx(gpx, base, nomeArquivo)
-        }
-        return null
-    }
-
-    private fun writeAltitudeDebugFile(tempLocation: List<Location>, nomeArquivo: String, base: File) {
-        try {
-            var sb: StringBuilder? = null
-            for (lc in tempLocation) {
-                if (sb == null) {
-                    sb = StringBuilder("{")
-                } else {
-                    sb.append(",")
+        val track = gpx.trk
+        if (track != null) {
+            serializer.startTag(GPX_NAMESPACE, "trk")
+            track.name?.let { name ->
+                serializer.startTag(GPX_NAMESPACE, "name").text(name).endTag(GPX_NAMESPACE, "name")
+            }
+            serializer.startTag(GPX_NAMESPACE, "trkseg")
+            points.forEach { point ->
+                val latitude = requireNotNull(point.lat) { "A GPX track point must have latitude" }
+                val longitude = requireNotNull(point.lon) { "A GPX track point must have longitude" }
+                serializer.startTag(GPX_NAMESPACE, "trkpt")
+                serializer.attribute(null, "lat", latitude)
+                serializer.attribute(null, "lon", longitude)
+                serializer.startTag(GPX_NAMESPACE, "ele").text(point.ele.toString()).endTag(GPX_NAMESPACE, "ele")
+                point.time?.let { time ->
+                    serializer.startTag(GPX_NAMESPACE, "time").text(time).endTag(GPX_NAMESPACE, "time")
                 }
-                sb.append(lc.altitude)
+                point.extensions?.trackPointExtension?.let { extension ->
+                    val values = listOf(
+                        "atemp" to extension.atemp,
+                        "hr" to extension.hr,
+                        "cad" to extension.cad,
+                        "rhu" to extension.rhu
+                    ).filter { (_, value) -> value != null }
+                    if (values.isNotEmpty()) {
+                        serializer.startTag(GPX_NAMESPACE, "extensions")
+                        serializer.startTag(TRACK_POINT_NAMESPACE, "TrackPointExtension")
+                        values.forEach { (element, value) ->
+                            serializer.startTag(TRACK_POINT_NAMESPACE, element).text(value).endTag(TRACK_POINT_NAMESPACE, element)
+                        }
+                        serializer.endTag(TRACK_POINT_NAMESPACE, "TrackPointExtension")
+                        serializer.endTag(GPX_NAMESPACE, "extensions")
+                    }
+                }
+                serializer.endTag(GPX_NAMESPACE, "trkpt")
             }
-            if (sb != null) {
-                sb.append("}")
-                val fileAlt = File(base, "$nomeArquivo.alt")
-                val fos = FileOutputStream(fileAlt)
-                fos.write(sb.toString().toByteArray())
-                fos.flush()
-                fos.close()
-            }
-        } catch (t: Throwable) {
+            serializer.endTag(GPX_NAMESPACE, "trkseg")
+            serializer.endTag(GPX_NAMESPACE, "trk")
         }
 
+        serializer.endTag(GPX_NAMESPACE, "gpx")
+        serializer.endDocument()
+        serializer.flush()
     }
 
+    private companion object {
+        const val GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
+        const val TRACK_POINT_NAMESPACE = "http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+        const val XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
+    }
 }

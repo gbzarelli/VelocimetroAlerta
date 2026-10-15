@@ -5,16 +5,12 @@
  */
 package br.com.helpdev.velocimetroalerta.gpx.objects;
 
-import org.simpleframework.xml.Element;
-import org.simpleframework.xml.Root;
 
 /**
  * @author Guilherme
  */
-@Root(name = "metadata")
 public class MetaData {
 
-    @Element(name = "time")
     private String time;
 
     public String getTime() {

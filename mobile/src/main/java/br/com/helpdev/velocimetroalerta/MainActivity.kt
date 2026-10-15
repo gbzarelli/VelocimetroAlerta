@@ -8,16 +8,19 @@ import android.content.ServiceConnection
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.support.design.widget.NavigationView
-import android.support.v4.app.ActivityCompat
-import android.support.v4.view.GravityCompat
-import android.support.v4.widget.DrawerLayout
-import android.support.v7.app.ActionBarDrawerToggle
-import android.support.v7.app.AlertDialog
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.Toolbar
+import android.provider.Settings
+import com.google.android.material.navigation.NavigationView
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -26,15 +29,49 @@ import android.widget.Toast
 
 import br.com.helpdev.velocimetroalerta.dialogs.ConfirmDialogFrag
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
+import br.com.helpdev.velocimetroalerta.permissions.RuntimePermissionPolicy
+import br.com.helpdev.velocimetroalerta.sensors.SensorConnectionState
+import br.com.helpdev.velocimetroalerta.sensors.SensorKind
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, ServiceConnection {
 
     private var callbackNotify: CallbackNotify? = null
+    private var isServiceBound = false
     var speedometerService: SpeedometerService? = null
         private set
 
-    private val isPermissionsGranted: Boolean
-        get() = ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    private val configActivityLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { reloadPreferences() }
+    private val activitiesLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { }
+
+    private val trackingPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (hasPreciseLocationPermission()) {
+            if (Build.VERSION.SDK_INT >= 33 && results[Manifest.permission.POST_NOTIFICATIONS] == false) {
+                Toast.makeText(this, R.string.notification_permission_limited, Toast.LENGTH_LONG).show()
+            }
+            if (hasConfiguredBluetoothSensors() && Build.VERSION.SDK_INT >= 31 &&
+                results[Manifest.permission.BLUETOOTH_CONNECT] == false) {
+                Toast.makeText(this, R.string.bluetooth_permission_limited, Toast.LENGTH_LONG).show()
+                val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+                speedometerService?.let { service ->
+                    if (preferences.getBoolean(getString(R.string.pref_hr_sensor), false)) {
+                        service.reportSensorStatus(SensorKind.HEART_RATE, SensorConnectionState.PERMISSION_DENIED)
+                    }
+                    if (preferences.getBoolean(getString(R.string.pref_module_vel_alert), false)) {
+                        service.reportSensorStatus(SensorKind.VAM, SensorConnectionState.PERMISSION_DENIED)
+                    }
+                }
+            }
+            startTrackingService()
+        } else {
+            showPreciseLocationRequired()
+        }
+    }
 
     private val sharePref: SharedPreferences
         get() = getSharedPreferences("sp_main_activity", MODE_PRIVATE)
@@ -49,15 +86,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdge.enable(window)
         setContentView(R.layout.activity_main)
+        val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
+        EdgeToEdge.applySystemBarInsets(window, findViewById(R.id.app_bar_main))
+        EdgeToEdge.applySystemBarInsets(window, findViewById(R.id.nav_view))
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-        if (savedInstanceState == null) {
-            loadPermissions()
-        }
-
-        val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         val toggle = ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
         drawer.addDrawerListener(toggle)
@@ -65,16 +101,119 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
         navigationView.setNavigationItemSelectedListener(this)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (drawer.isDrawerVisible(GravityCompat.START)) {
+                    drawer.closeDrawer(GravityCompat.START)
+                } else if (speedometerService?.isRunning == true) {
+                    if (supportFragmentManager.findFragmentByTag(BACK_CONFIRMATION_TAG) == null) {
+                        ConfirmDialogFrag.getInstance(
+                            getString(R.string.confirme_sair),
+                            true,
+                            DialogInterface.OnClickListener { _, which ->
+                                if (which == DialogInterface.BUTTON_POSITIVE) {
+                                    stopService()
+                                    finish()
+                                }
+                            }
+                        ).show(supportFragmentManager, BACK_CONFIRMATION_TAG)
+                    }
+                } else {
+                    stopService()
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
 
-    private fun loadPermissions() {
-        if (isPermissionsGranted) {
-            val service = Intent(this, SpeedometerService::class.java)
-            startService(service)
-            bindService(service, this, BIND_AUTO_CREATE)
-        } else {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.ACCESS_FINE_LOCATION), 12)
+    fun requestTrackingStart() {
+        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        if (!preferences.getBoolean(LOCATION_BACKGROUND_DISCLOSURE_ACCEPTED, false)) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.location_background_disclosure_title)
+                .setMessage(R.string.location_background_disclosure_message)
+                .setPositiveButton(R.string.location_background_disclosure_continue) { _, _ ->
+                    preferences.edit().putBoolean(LOCATION_BACKGROUND_DISCLOSURE_ACCEPTED, true).apply()
+                    requestTrackingStart()
+                }
+                .setNegativeButton(R.string.location_background_disclosure_cancel, null)
+                .show()
+            return
         }
+
+        val locationPermissions = RuntimePermissionPolicy.permissionsFor(
+            RuntimePermissionPolicy.Feature.LOCATION,
+            Build.VERSION.SDK_INT
+        )
+        val requestedPermissions = mutableSetOf<String>()
+        val grantedLocationPermissions = locationPermissions.filterTo(mutableSetOf()) {
+            checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+        }
+        requestedPermissions += RuntimePermissionPolicy.permissionsToRequest(
+            RuntimePermissionPolicy.Feature.LOCATION,
+            Build.VERSION.SDK_INT,
+            grantedLocationPermissions
+        )
+        val notificationPermissions = RuntimePermissionPolicy.permissionsFor(
+            RuntimePermissionPolicy.Feature.POST_NOTIFICATIONS,
+            Build.VERSION.SDK_INT
+        )
+        requestedPermissions += notificationPermissions.filter {
+            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (hasConfiguredBluetoothSensors()) {
+            val bluetoothPermissions = RuntimePermissionPolicy.permissionsFor(
+                RuntimePermissionPolicy.Feature.BLUETOOTH_CONNECT,
+                Build.VERSION.SDK_INT
+            )
+            requestedPermissions += bluetoothPermissions.filter {
+                checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+            }
+        }
+
+        if (requestedPermissions.isEmpty()) {
+            startTrackingService()
+        } else {
+            trackingPermissionLauncher.launch(requestedPermissions.toTypedArray())
+        }
+    }
+
+    private fun hasPreciseLocationPermission(): Boolean =
+        checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    internal fun stopTrackingIfLocationPermissionWasRevoked() {
+        if (speedometerService?.isTracking == true && !hasPreciseLocationPermission()) {
+            speedometerService?.stop()
+        }
+    }
+
+    private fun hasConfiguredBluetoothSensors(): Boolean {
+        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        return preferences.getBoolean(getString(R.string.pref_hr_sensor), false) ||
+            preferences.getBoolean(getString(R.string.pref_module_vel_alert), false)
+    }
+
+    private fun startTrackingService() {
+        val intent = Intent(this, SpeedometerService::class.java).setAction(SpeedometerService.ACTION_START_TRACKING)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
+
+    private fun showPreciseLocationRequired() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.app_name)
+            .setMessage(R.string.precise_location_required)
+            .setPositiveButton(R.string.retry) { _, _ -> requestTrackingStart() }
+            .setNegativeButton(R.string.open_settings) { _, _ ->
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            }
+            .setNeutralButton(R.string.bt_cancel, null)
+            .show()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -83,14 +222,24 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         when (id) {
             R.id.nav_star -> openAppInGooglePlay()
-            R.id.nav_atividades -> startActivityForResult(Intent(this, MyActivities::class.java), REQUEST_MY_ACTIVITIES)
-            R.id.nav_config -> startActivityForResult(Intent(this, ConfigActivity::class.java), REQUEST_CONFIG_AUDIO)
+            R.id.nav_privacy_policy -> openPrivacyPolicy()
+            R.id.nav_atividades -> activitiesLauncher.launch(Intent(this, MyActivities::class.java))
+            R.id.nav_config -> configActivityLauncher.launch(Intent(this, ConfigActivity::class.java))
             R.id.nav_share -> shareApp()
         }
 
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
         drawer.closeDrawer(GravityCompat.START)
         return false
+    }
+
+    private fun openPrivacyPolicy() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.privacy_policy_url)))
+        try {
+            startActivity(intent)
+        } catch (_: android.content.ActivityNotFoundException) {
+            Toast.makeText(this, R.string.privacy_policy_unavailable, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun openAppInGooglePlay() {
@@ -111,43 +260,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         startActivity(sendIntent)
     }
 
-    override fun onBackPressed() {
-        val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START)
-            return
-        }
-
-        if (speedometerService != null && speedometerService!!.isRunning) {
-            if (supportFragmentManager.findFragmentByTag("DIALOG") == null) {
-                ConfirmDialogFrag.getInstance(getString(R.string.confirme_sair), true, DialogInterface.OnClickListener { dialog, which ->
-                    if (which == DialogInterface.BUTTON_POSITIVE) {
-                        stopService()
-                        this@MainActivity.finish()
-                    }
-                }).show(supportFragmentManager, "DIALOG")
-            }
-            return
-        } else {
-            stopService()
-        }
-
-        super.onBackPressed()
-    }
-
     private fun stopService() {
         if (callbackNotify != null) callbackNotify!!.onCloseProgram()
         stopService(Intent(this, SpeedometerService::class.java))
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        for (i in grantResults) {
-            if (i != PackageManager.PERMISSION_GRANTED) {
-                loadPermissions()
-                break
-            }
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -170,7 +285,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val id = item.itemId
         if (id == R.id.action_settings) {
             if (speedometerService == null || !speedometerService!!.isRunning || speedometerService!!.isPause) {
-                startActivityForResult(Intent(this, ConfigActivity::class.java), REQUEST_CONFIG_AUDIO)
+                configActivityLauncher.launch(Intent(this, ConfigActivity::class.java))
             }else{
                 val dialog = AlertDialog.Builder(this)
                 dialog.setTitle(R.string.app_name)
@@ -195,33 +310,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onResume() {
         super.onResume()
-        if (isPermissionsGranted) {
-            bindService(Intent(this, SpeedometerService::class.java), this, BIND_AUTO_CREATE)
-        }
+        isServiceBound = bindService(Intent(this, SpeedometerService::class.java), this, BIND_AUTO_CREATE)
     }
 
     override fun onPause() {
         super.onPause()
-        if (speedometerService != null) {
+        if (isServiceBound) {
             try {
-                if (callbackNotify != null) callbackNotify!!.onBeforeDisconnect(speedometerService!!)
+                speedometerService?.let { service -> callbackNotify?.onBeforeDisconnect(service) }
             } catch (t: Throwable) {
                 Log.e(LOG, "onBeforeDisconnect")
             }
 
             try {
                 unbindService(this)
+                isServiceBound = false
             } catch (t: Throwable) {
                 Log.e(LOG, "unbindService")
             }
 
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CONFIG_AUDIO) {
-            reloadPreferences()
         }
     }
 
@@ -239,8 +346,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onServiceConnected(componentName: ComponentName, iBinder: IBinder) {
         if (iBinder is SpeedometerService.MyBinder) {
             speedometerService = iBinder.speedometerService
+            stopTrackingIfLocationPermissionWasRevoked()
             reloadPreferences()
             if (callbackNotify != null) callbackNotify!!.onServiceConnected(speedometerService)
+            speedometerService?.retryConfiguredSensorsAfterPermissionGrant()
         }
     }
 
@@ -249,8 +358,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     companion object {
-        private const val REQUEST_CONFIG_AUDIO = 2
-        private const val REQUEST_MY_ACTIVITIES = 29
+        private const val BACK_CONFIRMATION_TAG = "back-confirmation"
+        private const val LOCATION_BACKGROUND_DISCLOSURE_ACCEPTED = "location_background_disclosure_accepted"
         private const val SP_KEEP_ALIVE = "keep_alive"
         private const val LOG = "MainActivity"
     }

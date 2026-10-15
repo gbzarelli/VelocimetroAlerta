@@ -5,24 +5,17 @@
  */
 package br.com.helpdev.velocimetroalerta.gpx.objects;
 
-import org.simpleframework.xml.Element;
-import org.simpleframework.xml.Root;
 
 import java.io.Serializable;
 
 /**
  * @author Guilherme
  */
-@Root(name = "gpxtpx:TrackPointExtension")
 public class TrackPointExtension implements Serializable {
 
-    @Element(name = "gpxtpx:atemp", required = false)
     private String atemp;
-    @Element(name = "gpxtpx:hr", required = false)
     private String hr;
-    @Element(name = "gpxtpx:cad", required = false)
     private String cad;
-    @Element(name = "gpxtpx:rhu", required = false)
     private String rhu;
 
     public String getRhu() {

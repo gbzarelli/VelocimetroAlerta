@@ -3,14 +3,14 @@ package br.com.helpdev.velocimetroalerta.dialogs
 import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
-import android.support.v7.app.AlertDialog
+import androidx.appcompat.app.AlertDialog
 
 import br.com.helpdev.velocimetroalerta.R
 
 /**
  * Created by Guilherme Biff Zarelli on 06/04/16.
  */
-class ConfirmDialogFrag : android.support.v4.app.DialogFragment() {
+class ConfirmDialogFrag : androidx.fragment.app.DialogFragment() {
 
     private var onClickListener: DialogInterface.OnClickListener? = null
 

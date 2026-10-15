@@ -9,6 +9,23 @@
 
     <string name="bt_ok">OK</string>
     <string name="bt_cancel">Cancel</string>
+    <string name="retry">Try again</string>
+    <string name="open_settings">Open settings</string>
+    <string name="precise_location_required">Precise location is required to calculate speed and record a route. Grant precise location and try again.</string>
+    <string name="location_background_disclosure_title">Location during an active activity</string>
+    <string name="location_background_disclosure_message">When you start an activity, Velocímetro Alerta uses your precise location to calculate speed, distance, and elevation, record your route, and provide spoken speed alerts, even while the app is in the background or the screen is off. Android maintains a tracking notification, subject to your notification settings. Location is not used before you start or after you stop the activity. Routes stay on this device; a GPX file is exported only when you choose a destination.</string>
+    <string name="location_background_disclosure_continue">Continue</string>
+    <string name="location_background_disclosure_cancel">Cancel</string>
+    <string name="notification_permission_limited">Tracking will continue, but Android may hide the ongoing notification.</string>
+    <string name="bluetooth_permission_limited">Tracking will continue without the configured Bluetooth sensor. Allow Bluetooth access in Settings to use it.</string>
+    <string name="bluetooth_not_supported">This device does not support Bluetooth sensors.</string>
+    <string name="bluetooth_sensor_unsupported">Bluetooth is not available on this device.</string>
+    <string name="bluetooth_sensor_permission_denied">Bluetooth permission is denied. GPS tracking continues without this sensor.</string>
+    <string name="bluetooth_sensor_disabled">Bluetooth is off. Turn it on to use this sensor.</string>
+    <string name="bluetooth_sensor_connecting">Connecting to sensor…</string>
+    <string name="bluetooth_sensor_connected">Sensor connected; waiting for data…</string>
+    <string name="bluetooth_sensor_reconnecting">Sensor disconnected. Reconnecting…</string>
+    <string name="bluetooth_sensor_connection_failed">Could not connect to sensor. Retrying…</string>
 
     <string name="velocidade_atual">Current speed</string>
     <string name="avg">Average</string>
@@ -50,12 +67,15 @@
     <string name="avaliar">Rating</string>
     <string name="compartilhar">Share</string>
     <string name="publico">Public</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="privacy_policy_url">https://helpdev.com.br/apps/velocimetro-alerta/privacidade/#english</string>
+    <string name="privacy_policy_unavailable">No browser is available to open the privacy policy.</string>
     <string name="minhas_atividades">My activities (coming soon)</string>
     <string name="pause_automatico">Automatic Pause</string>
     <string name="site_helpdev">www.helpdev.com.br</string>
     <string name="atividades_sem_dados">ACTIVITY WITHOUT ENOUGH DATA FOR RECORDING.</string>
     <string name="aguarde_salvando">AWAIT, SAVING ...</string>
-    <string name="arquivo_gravado_sucesso">GPX file successfully saved in: \n\n%s\n\n </string>
+    <string name="arquivo_gravado_sucesso">GPX file saved successfully.</string>
     <string name="erro_gravar_gpx">Error writing GPX file. {%s}</string>
 
     <string name="bloqueio_desativado">SCREEN LOCK: OFF</string>

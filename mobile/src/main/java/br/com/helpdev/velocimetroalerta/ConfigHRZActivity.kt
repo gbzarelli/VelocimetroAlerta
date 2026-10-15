@@ -1,60 +1,64 @@
 package br.com.helpdev.velocimetroalerta
 
 import android.os.Bundle
-import android.preference.PreferenceManager.getDefaultSharedPreferences
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.Toolbar
+import androidx.preference.PreferenceManager.getDefaultSharedPreferences
+import androidx.appcompat.app.AppCompatActivity
 import android.widget.TextView
 import br.com.helpdev.velocimetroalerta.dialogs.DialogNumberPicker
-import kotlinx.android.synthetic.main.content_config_hrz.*
+import br.com.helpdev.velocimetroalerta.databinding.ActivityConfigHrzBinding
 
 class ConfigHRZActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityConfigHrzBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_config_hrz)
-        val toolbar = findViewById<Toolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
+        EdgeToEdge.enable(window)
+        binding = ActivityConfigHrzBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdge.applySystemBarInsets(window, binding.root)
+        val content = binding.contentConfigHrz
+        setSupportActionBar(binding.toolbar)
         if (supportActionBar != null) supportActionBar!!.setDisplayHomeAsUpEnabled(true)
 
         val sp = getDefaultSharedPreferences(this)
-        tv_max_hr.text = sp.getInt(getString(R.string.pref_hr_max_value), resources.getInteger(R.integer.default_max_hr)).toString()
-        tv_rest_hr.text = sp.getInt(getString(R.string.pref_hr_rest_value), resources.getInteger(R.integer.default_rest_hr)).toString()
-        tv_z5_hr.text = sp.getInt(getString(R.string.pref_hr_z5_value), resources.getInteger(R.integer.default_z5)).toString()
-        tv_z4_hr.text = sp.getInt(getString(R.string.pref_hr_z4_value), resources.getInteger(R.integer.default_z4)).toString()
-        tv_z3_hr.text = sp.getInt(getString(R.string.pref_hr_z3_value), resources.getInteger(R.integer.default_z3)).toString()
-        tv_z2_hr.text = sp.getInt(getString(R.string.pref_hr_z2_value), resources.getInteger(R.integer.default_z2)).toString()
-        tv_z1_hr.text = sp.getInt(getString(R.string.pref_hr_z1_value), resources.getInteger(R.integer.default_z1)).toString()
+        content.tvMaxHr.text = sp.getInt(getString(R.string.pref_hr_max_value), resources.getInteger(R.integer.default_max_hr)).toString()
+        content.tvRestHr.text = sp.getInt(getString(R.string.pref_hr_rest_value), resources.getInteger(R.integer.default_rest_hr)).toString()
+        content.tvZ5Hr.text = sp.getInt(getString(R.string.pref_hr_z5_value), resources.getInteger(R.integer.default_z5)).toString()
+        content.tvZ4Hr.text = sp.getInt(getString(R.string.pref_hr_z4_value), resources.getInteger(R.integer.default_z4)).toString()
+        content.tvZ3Hr.text = sp.getInt(getString(R.string.pref_hr_z3_value), resources.getInteger(R.integer.default_z3)).toString()
+        content.tvZ2Hr.text = sp.getInt(getString(R.string.pref_hr_z2_value), resources.getInteger(R.integer.default_z2)).toString()
+        content.tvZ1Hr.text = sp.getInt(getString(R.string.pref_hr_z1_value), resources.getInteger(R.integer.default_z1)).toString()
 
-        layout_max_hr.setOnClickListener { showDialog(getString(R.string.pref_hr_max_value), resources.getInteger(R.integer.default_max_hr), getString(R.string.max_heart_rate), tv_max_hr, 50, 220) }
-        layout_rest_hr.setOnClickListener { showDialog(getString(R.string.pref_hr_rest_value), resources.getInteger(R.integer.default_rest_hr), getString(R.string.resting_heart_rate), tv_rest_hr, 30, 120) }
-        layout_z5_hr.setOnClickListener {
+        content.layoutMaxHr.setOnClickListener { showDialog(getString(R.string.pref_hr_max_value), resources.getInteger(R.integer.default_max_hr), getString(R.string.max_heart_rate), content.tvMaxHr, 50, 220) }
+        content.layoutRestHr.setOnClickListener { showDialog(getString(R.string.pref_hr_rest_value), resources.getInteger(R.integer.default_rest_hr), getString(R.string.resting_heart_rate), content.tvRestHr, 30, 120) }
+        content.layoutZ5Hr.setOnClickListener {
             // max 100 / min z4+1
             val min = sp.getInt(getString(R.string.pref_hr_z4_value), resources.getInteger(R.integer.default_z4)) + 1
-            showDialog(getString(R.string.pref_hr_z5_value), resources.getInteger(R.integer.default_z5), getString(R.string.z5_anaerobic), tv_z5_hr, min, 100)
+            showDialog(getString(R.string.pref_hr_z5_value), resources.getInteger(R.integer.default_z5), getString(R.string.z5_anaerobic), content.tvZ5Hr, min, 100)
         }
-        layout_z4_hr.setOnClickListener {
+        content.layoutZ4Hr.setOnClickListener {
             // max z5-1 / min z3+1
             val min = sp.getInt(getString(R.string.pref_hr_z3_value), resources.getInteger(R.integer.default_z3)) + 1
             val max = sp.getInt(getString(R.string.pref_hr_z5_value), resources.getInteger(R.integer.default_z5)) - 1
-            showDialog(getString(R.string.pref_hr_z4_value), resources.getInteger(R.integer.default_z4), getString(R.string.z4_threshold), tv_z4_hr, min, max)
+            showDialog(getString(R.string.pref_hr_z4_value), resources.getInteger(R.integer.default_z4), getString(R.string.z4_threshold), content.tvZ4Hr, min, max)
         }
-        layout_z3_hr.setOnClickListener {
+        content.layoutZ3Hr.setOnClickListener {
             // max z4-1 / min z2+1
             val min = sp.getInt(getString(R.string.pref_hr_z2_value), resources.getInteger(R.integer.default_z2)) + 1
             val max = sp.getInt(getString(R.string.pref_hr_z4_value), resources.getInteger(R.integer.default_z4)) - 1
-            showDialog(getString(R.string.pref_hr_z3_value), resources.getInteger(R.integer.default_z3), getString(R.string.z3_time), tv_z3_hr, min, max)
+            showDialog(getString(R.string.pref_hr_z3_value), resources.getInteger(R.integer.default_z3), getString(R.string.z3_time), content.tvZ3Hr, min, max)
         }
-        layout_z2_hr.setOnClickListener {
+        content.layoutZ2Hr.setOnClickListener {
             // max z3-1 / min z1+1
             val min = sp.getInt(getString(R.string.pref_hr_z1_value), resources.getInteger(R.integer.default_z1)) + 1
             val max = sp.getInt(getString(R.string.pref_hr_z3_value), resources.getInteger(R.integer.default_z3)) - 1
-            showDialog(getString(R.string.pref_hr_z2_value), resources.getInteger(R.integer.default_z2), getString(R.string.z2_moderate), tv_z2_hr, min, max)
+            showDialog(getString(R.string.pref_hr_z2_value), resources.getInteger(R.integer.default_z2), getString(R.string.z2_moderate), content.tvZ2Hr, min, max)
         }
-        layout_z1_hr.setOnClickListener {
+        content.layoutZ1Hr.setOnClickListener {
             // max z2-1 / min 1
             val max = sp.getInt(getString(R.string.pref_hr_z2_value), resources.getInteger(R.integer.default_z2)) - 1
-            showDialog(getString(R.string.pref_hr_z1_value), resources.getInteger(R.integer.default_z1), getString(R.string.z1_endurance), tv_z1_hr, 1, max)
+            showDialog(getString(R.string.pref_hr_z1_value), resources.getInteger(R.integer.default_z1), getString(R.string.z1_endurance), content.tvZ1Hr, 1, max)
         }
     }
 

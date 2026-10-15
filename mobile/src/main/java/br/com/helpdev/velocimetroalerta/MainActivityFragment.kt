@@ -1,21 +1,19 @@
 package br.com.helpdev.velocimetroalerta
 
-import android.Manifest
 import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
+import android.content.ClipData
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.os.SystemClock
-import android.preference.PreferenceManager
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.Fragment
-import android.support.v7.app.AlertDialog
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.preference.PreferenceManager
+import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AlertDialog
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -23,11 +21,15 @@ import android.view.ViewGroup
 import br.com.helpdev.velocimetroalerta.gps.ObSpeedometerAlert
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
 import br.com.helpdev.velocimetroalerta.gpx.GpxFileUtils
-import kotlinx.android.synthetic.main.fragment_main.*
-import java.io.File
+import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx
+import br.com.helpdev.velocimetroalerta.databinding.FragmentMainBinding
+import br.com.helpdev.velocimetroalerta.sensors.SensorConnectionState
+import br.com.helpdev.velocimetroalerta.sensors.SensorKind
+import java.io.IOException
 import java.lang.String.format
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /**
@@ -35,8 +37,24 @@ import java.util.concurrent.TimeUnit
  */
 class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerService.CallbackGpsThread, SharedPreferences.OnSharedPreferenceChangeListener {
 
+    private var _binding: FragmentMainBinding? = null
+    private val binding: FragmentMainBinding
+        get() = _binding ?: error("FragmentMainBinding is only available between onCreateView and onDestroyView")
+
     private var progressDialog: ProgressDialog? = null
     private var obSpeedometerAlert: ObSpeedometerAlert? = null
+    private val sensorStates = mutableMapOf<SensorKind, SensorConnectionState>()
+    private var pendingExport: PendingExport? = null
+    private val exportExecutor = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "gpx-export").apply { isDaemon = true }
+    }
+    private val createGpxDocument = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/gpx+xml")
+    ) { uri ->
+        val export = pendingExport
+        pendingExport = null
+        if (uri != null && export != null) writeGpxToDocument(uri, export)
+    }
 
     private val gpsProcess: SpeedometerService?
         get() = if (myActivity == null) null else myActivity!!.speedometerService
@@ -52,15 +70,16 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_main, container, false)
+        _binding = FragmentMainBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        if (view == null) return
-        btStartStop!!.setOnClickListener(this)
-        btSave!!.setOnClickListener(this)
-        btRefresh!!.setOnClickListener(this)
+        if (_binding == null) return
+        binding.btStartStop!!.setOnClickListener(this)
+        binding.btSave!!.setOnClickListener(this)
+        binding.btRefresh!!.setOnClickListener(this)
 
 
         val onClickGanho = View.OnClickListener {
@@ -70,10 +89,10 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
             dialog.setPositiveButton(R.string.bt_ok, null)
             dialog.create().show()
         }
-        layout_ganho_vl.setOnClickListener(onClickGanho)
-        layout_ganho_tx.setOnClickListener(onClickGanho)
+        binding.layoutGanhoVl.setOnClickListener(onClickGanho)
+        binding.layoutGanhoTx.setOnClickListener(onClickGanho)
 
-        val sp = PreferenceManager.getDefaultSharedPreferences(activity)
+        val sp = PreferenceManager.getDefaultSharedPreferences(requireContext())
         sp.registerOnSharedPreferenceChangeListener(this)
         onSharedPreferenceChanged(sp, getString(R.string.pref_module_vel_alert))
         onSharedPreferenceChanged(sp, getString(R.string.pref_hr_sensor))
@@ -90,107 +109,110 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
     }
 
     private fun save() {
-        if (activity == null) return
-
-        if (ActivityCompat.checkSelfPermission(activity!!, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(myActivity!!, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 12)
-            return
-        }
-
-        if (gpsProcess == null || obSpeedometerAlert == null || obSpeedometerAlert!!.time < TimeUnit.MINUTES.toMillis(1)) {
-            val builder = AlertDialog.Builder(activity!!)
+        val host = activity ?: return
+        val service = gpsProcess
+        val alert = obSpeedometerAlert
+        val startDate = alert?.dateTimeStart
+        val points = service?.gpx?.trk?.trkseg?.trkPts.orEmpty()
+        if (service == null || alert == null || startDate == null || alert.time < TimeUnit.MINUTES.toMillis(1) || points.isEmpty()) {
+            val builder = AlertDialog.Builder(host)
             builder.setTitle(R.string.app_name)
             builder.setMessage(R.string.atividades_sem_dados)
             builder.setCancelable(false)
             builder.setPositiveButton(R.string.bt_ok, null)
             builder.create().show()
         } else {
-            progressDialog = ProgressDialog(context)
-            progressDialog!!.setMessage(getString(R.string.aguarde_salvando))
-            progressDialog!!.setCancelable(false)
-            progressDialog!!.show()
-
-            object : Thread() {
-                override fun run() {
-                    var mensagem: String
-                    val builder = AlertDialog.Builder(activity!!)
-                    try {
-                        val gpxFileUtils = GpxFileUtils()
-                        val file = gpxFileUtils.writeGpx(
-                                gpsProcess!!.gpx,
-                                File(Environment.getExternalStorageDirectory(), "/velocimetro_alerta/"),
-                                "VEL_ALERTA_" + SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault())
-                                        .format(obSpeedometerAlert!!.dateTimeStart)
-                        )
-
-                        mensagem = getString(R.string.arquivo_gravado_sucesso, file.absolutePath)
-                        builder.setNeutralButton(R.string.share) { _, _ ->
-                            val intent = Intent(Intent.ACTION_SEND)
-                            intent.type = "text/*"
-                            intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file.absolutePath))
-                            startActivity(Intent.createChooser(intent, getString(R.string.title_share)))
-                        }
-
-                    } catch (t: Throwable) {
-                        t.printStackTrace()
-                        mensagem = getString(R.string.erro_gravar_gpx, t.message)
-                    }
-
-                    activity!!.runOnUiThread {
-                        try {
-                            if (progressDialog != null) progressDialog!!.dismiss()
-                        } catch (t: Throwable) {
-                            t.printStackTrace()
-                        }
-
-                        builder.setTitle(R.string.app_name)
-                        builder.setMessage(mensagem)
-                        builder.setCancelable(false)
-                        builder.setPositiveButton(R.string.bt_ok, null)
-                        builder.create().show()
-                    }
-                }
-            }.start()
+            val filenameTimestamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US)
+                .format(startDate)
+            val filename = "VEL_ALERTA_${filenameTimestamp}_${UUID.randomUUID().toString().take(8)}.gpx"
+            pendingExport = PendingExport(service.gpx, filename)
+            createGpxDocument.launch(filename)
         }
     }
 
+    private fun writeGpxToDocument(uri: Uri, export: PendingExport) {
+        val host = activity ?: return
+        val appContext = host.applicationContext
+        progressDialog = ProgressDialog(host).apply {
+            setMessage(getString(R.string.aguarde_salvando))
+            setCancelable(false)
+            show()
+        }
+
+        exportExecutor.execute {
+            val result = runCatching {
+                val output = appContext.contentResolver.openOutputStream(uri, "w")
+                    ?: throw IOException("The document provider did not open an output stream")
+                output.use { GpxFileUtils().writeGpx(export.gpx, it) }
+            }
+            activity?.runOnUiThread {
+                progressDialog?.dismiss()
+                progressDialog = null
+                val currentActivity = activity ?: return@runOnUiThread
+                val dialog = AlertDialog.Builder(currentActivity)
+                    .setTitle(R.string.app_name)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.bt_ok, null)
+                result.onSuccess {
+                    dialog.setMessage(R.string.arquivo_gravado_sucesso)
+                    dialog.setNeutralButton(R.string.share) { _, _ -> shareGpx(uri, export.filename) }
+                }.onFailure { error ->
+                    dialog.setMessage(getString(R.string.erro_gravar_gpx, error.message ?: ""))
+                }
+                dialog.show()
+            }
+        }
+    }
+
+    private fun shareGpx(uri: Uri, filename: String) {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/gpx+xml"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            clipData = ClipData.newUri(requireContext().contentResolver, filename, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.title_share)))
+    }
+
+    private data class PendingExport(val gpx: Gpx, val filename: String)
+
     private fun clear() {
         try {
-            btStartStop!!.isEnabled = true
+            binding.btStartStop!!.isEnabled = true
 
-            btSave!!.visibility = View.GONE
-            btRefresh!!.visibility = View.GONE
+            binding.btSave!!.visibility = View.GONE
+            binding.btRefresh!!.visibility = View.GONE
 
             if (gpsProcess != null) {
                 gpsProcess!!.stop()
             }
-            gpsDesatualizado.visibility = View.INVISIBLE
-            pausadoAutomaticamente.visibility = View.INVISIBLE
-            search_sensor_vam.visibility = View.INVISIBLE
-            search_sensor_hr.visibility = View.INVISIBLE
+            binding.gpsDesatualizado.visibility = View.INVISIBLE
+            binding.pausadoAutomaticamente.visibility = View.INVISIBLE
+            binding.searchSensorVam.visibility = View.INVISIBLE
+            binding.searchSensorHr.visibility = View.INVISIBLE
 
-            velocidadeAtual.setText(R.string.text_null_value)
-            velocidadeMedia.setText(R.string.text_null_value)
-            velocidadeMaxima.setText(R.string.text_null_value)
+            binding.velocidadeAtual.setText(R.string.text_null_value)
+            binding.velocidadeMedia.setText(R.string.text_null_value)
+            binding.velocidadeMaxima.setText(R.string.text_null_value)
 
-            distancia.setText(R.string.text_null_value)
-            altitude.setText(R.string.text_null_value)
-            precision.setText(R.string.text_null_value)
-            ganhoAltitude.setText(R.string.text_null_value)
-            perdaAltitude.setText(R.string.text_null_value)
+            binding.distancia.setText(R.string.text_null_value)
+            binding.altitude.setText(R.string.text_null_value)
+            binding.precision.setText(R.string.text_null_value)
+            binding.ganhoAltitude.setText(R.string.text_null_value)
+            binding.perdaAltitude.setText(R.string.text_null_value)
 
-            cadence.setText(R.string.text_null_value)
-            temperature.setText(R.string.text_null_value)
-            humidity.setText(R.string.text_null_value)
-            hm.setText(R.string.text_null_value)
+            binding.cadence.setText(R.string.text_null_value)
+            binding.temperature.setText(R.string.text_null_value)
+            binding.humidity.setText(R.string.text_null_value)
+            binding.hm.setText(R.string.text_null_value)
 
-            maxHm.setText(R.string.text_null_value)
-            avgHm.setText(R.string.text_null_value)
-            avgCadence.setText(R.string.text_null_value)
-            zone.setText(R.string.text_null_value)
+            binding.maxHm.setText(R.string.text_null_value)
+            binding.avgHm.setText(R.string.text_null_value)
+            binding.avgCadence.setText(R.string.text_null_value)
+            binding.zone.setText(R.string.text_null_value)
 
-            chronometer.base = SystemClock.elapsedRealtime()
-            chronometer.stop()
+            binding.chronometer.base = SystemClock.elapsedRealtime()
+            binding.chronometer.stop()
         } catch (t: Throwable) {
             Log.e(LOG, "clear", t)
         }
@@ -201,73 +223,77 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         if (gpsProcess == null) return
 
         if (gpsProcess!!.isRunning) {
-            if (pausadoAutomaticamente.visibility == View.VISIBLE) {
-                pausadoAutomaticamente.visibility = View.INVISIBLE
+            if (binding.pausadoAutomaticamente.visibility == View.VISIBLE) {
+                binding.pausadoAutomaticamente.visibility = View.INVISIBLE
             }
 
             if (gpsProcess!!.isRunning) {
-                btStartStop!!.isEnabled = false
+                binding.btStartStop!!.isEnabled = false
             }
 
             if (gpsProcess!!.isPause) {
                 gpsProcess!!.pause(false)
-                btRefresh!!.visibility = View.GONE
+                binding.btRefresh!!.visibility = View.GONE
             } else {
                 gpsProcess!!.pause(true)
-                btRefresh!!.visibility = View.VISIBLE
+                binding.btRefresh!!.visibility = View.VISIBLE
             }
 
 
         } else {
-            gpsProcess!!.start(this)
+            myActivity?.requestTrackingStart()
+            return
         }
-        btSave.visibility = if (gpsProcess!!.isPause) View.VISIBLE else View.GONE
-        btStartStop.setImageResource(if (gpsProcess!!.isPause) R.drawable.play else R.drawable.pause)
+        binding.btSave.visibility = if (gpsProcess!!.isPause) View.VISIBLE else View.GONE
+        binding.btStartStop.setImageResource(if (gpsProcess!!.isPause) R.drawable.play else R.drawable.pause)
     }
 
     private fun updateValuesText() {
+        if (_binding == null) return
         if (gpsProcess != null) {
             if (obSpeedometerAlert != null) {
                 try {
-                    velocidadeAtual.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.speed)
-                    velocidadeMaxima.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.speedMax)
-                    velocidadeMedia.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.speedAvg)
+                    binding.velocidadeAtual.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.speed)
+                    binding.velocidadeMaxima.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.speedMax)
+                    binding.velocidadeMedia.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.speedAvg)
 
-                    distancia.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.distance)
-                    altitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.altitude)
-                    ganhoAltitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.gainAlt)
-                    perdaAltitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.lostAlt)
-                    precision.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.accuracyGPS)
+                    binding.distancia.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.distance)
+                    binding.altitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.altitude)
+                    binding.ganhoAltitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.gainAlt)
+                    binding.perdaAltitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.lostAlt)
+                    binding.precision.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.accuracyGPS)
 
                     if (obSpeedometerAlert!!.cadence < 0) {
-                        cadence.setText(R.string.text_null_value)
-                        search_sensor_vam.visibility = View.VISIBLE
+                        binding.cadence.setText(R.string.text_null_value)
+                        binding.searchSensorVam.text = sensorStatusText(sensorStates[SensorKind.VAM])
+                        binding.searchSensorVam.visibility = View.VISIBLE
                     } else {
-                        search_sensor_vam.visibility = View.INVISIBLE
-                        cadence.text = obSpeedometerAlert!!.cadence.toString()
-                        avgCadence.text = obSpeedometerAlert!!.cadenceAvg.toString()
+                        binding.searchSensorVam.visibility = View.INVISIBLE
+                        binding.cadence.text = obSpeedometerAlert!!.cadence.toString()
+                        binding.avgCadence.text = obSpeedometerAlert!!.cadenceAvg.toString()
                     }
                     if (obSpeedometerAlert!!.temperature < 0) {
-                        temperature.setText(R.string.text_null_value)
+                        binding.temperature.setText(R.string.text_null_value)
                     } else {
-                        temperature.text = obSpeedometerAlert!!.temperature.toString()
+                        binding.temperature.text = obSpeedometerAlert!!.temperature.toString()
                     }
                     if (obSpeedometerAlert!!.humidity < 0) {
-                        humidity.setText(R.string.text_null_value)
+                        binding.humidity.setText(R.string.text_null_value)
                     } else {
-                        humidity.text = obSpeedometerAlert!!.humidity.toString()
+                        binding.humidity.text = obSpeedometerAlert!!.humidity.toString()
                     }
 
                     if (obSpeedometerAlert!!.bpm <= 0) {
-                        search_sensor_hr.visibility = View.VISIBLE
-                        hm.setText(R.string.text_null_value)
-                        zone.setText(R.string.text_null_value)
+                        binding.searchSensorHr.text = sensorStatusText(sensorStates[SensorKind.HEART_RATE])
+                        binding.searchSensorHr.visibility = View.VISIBLE
+                        binding.hm.setText(R.string.text_null_value)
+                        binding.zone.setText(R.string.text_null_value)
                     } else {
-                        search_sensor_hr.visibility = View.INVISIBLE
-                        hm.text = obSpeedometerAlert!!.bpm.toString()
-                        zone.text = obSpeedometerAlert!!.bpmZoneString
-                        avgHm.text = obSpeedometerAlert!!.bpmAvgZoneString
-                        maxHm.text = obSpeedometerAlert!!.bpmMax.toString()
+                        binding.searchSensorHr.visibility = View.INVISIBLE
+                        binding.hm.text = obSpeedometerAlert!!.bpm.toString()
+                        binding.zone.text = obSpeedometerAlert!!.bpmZoneString
+                        binding.avgHm.text = obSpeedometerAlert!!.bpmAvgZoneString
+                        binding.maxHm.text = obSpeedometerAlert!!.bpmMax.toString()
                     }
 
                 } catch (t: Throwable) {
@@ -285,15 +311,16 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
 
     @Synchronized
     override fun setGpsSituation(gpsSituation: Int) {
-        if (activity != null)
-            activity!!.runOnUiThread {
-                if (gpsSituation == SpeedometerService.CallbackGpsThread.GPS_ATUALIZADO && gpsDesatualizado!!.visibility == View.VISIBLE) {
-                    gpsDesatualizado.visibility = View.INVISIBLE
-                } else if (gpsSituation == SpeedometerService.CallbackGpsThread.GPS_DESATUALIZADO && gpsDesatualizado!!.visibility == View.INVISIBLE) {
-                    if (tvPrecisionInfo.visibility == View.VISIBLE) {
-                        tvPrecisionInfo.visibility = View.GONE
+        val host = activity ?: return
+        host.runOnUiThread {
+                if (_binding == null) return@runOnUiThread
+                if (gpsSituation == SpeedometerService.CallbackGpsThread.GPS_ATUALIZADO && binding.gpsDesatualizado!!.visibility == View.VISIBLE) {
+                    binding.gpsDesatualizado.visibility = View.INVISIBLE
+                } else if (gpsSituation == SpeedometerService.CallbackGpsThread.GPS_DESATUALIZADO && binding.gpsDesatualizado!!.visibility == View.INVISIBLE) {
+                    if (binding.tvPrecisionInfo.visibility == View.VISIBLE) {
+                        binding.tvPrecisionInfo.visibility = View.GONE
                     }
-                    gpsDesatualizado.visibility = View.VISIBLE
+                    binding.gpsDesatualizado.visibility = View.VISIBLE
                 }
                 updateValuesText()
             }
@@ -301,40 +328,47 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
 
     @Synchronized
     override fun setGpsPause(gpsPause: Int) {
-        if (activity != null)
-            activity!!.runOnUiThread {
-                if (gpsPause == SpeedometerService.CallbackGpsThread.GPS_PAUSADO) {
-                    chronometer.stop()
+        val host = activity ?: return
+        host.runOnUiThread {
+                if (_binding == null) return@runOnUiThread
+                val paused = gpsProcess?.isPause == true ||
+                    gpsPause == SpeedometerService.CallbackGpsThread.GPS_PAUSADO
+                if (paused) {
+                    binding.chronometer.stop()
                 }
-                if (!btStartStop.isEnabled) {
-                    btStartStop.isEnabled = true
+                if (!binding.btStartStop.isEnabled) {
+                    binding.btStartStop.isEnabled = true
                 }
+                binding.btSave.visibility = if (paused) View.VISIBLE else View.GONE
+                binding.btRefresh.visibility = if (paused) View.VISIBLE else View.GONE
+                binding.btStartStop.setImageResource(if (paused) R.drawable.play else R.drawable.pause)
                 updateValuesText()
             }
     }
 
     @Synchronized
-    override fun setGpsPrecision(precision: Int) {
-        if (activity == null) return
+    override fun setGpsPrecision(gpsPrecision: Int) {
+        val host = activity ?: return
 
-        activity!!.runOnUiThread {
-            if (precision == SpeedometerService.CallbackGpsThread.GPS_SEM_PRECISAO && this.precision!!.tag == null) {
-                this.precision!!.setTextColor(Color.RED)
-                this.precision!!.setTypeface(this.precision!!.typeface, Typeface.BOLD)
-                if (gpsDesatualizado.visibility == View.INVISIBLE) {
-                    tvPrecisionInfo.visibility = View.VISIBLE
-                    this.precision!!.tag = 1
+        host.runOnUiThread {
+            if (_binding == null) return@runOnUiThread
+            if (gpsPrecision == SpeedometerService.CallbackGpsThread.GPS_SEM_PRECISAO && binding.precision!!.tag == null) {
+                binding.precision!!.setTextColor(Color.RED)
+                binding.precision!!.setTypeface(binding.precision!!.typeface, Typeface.BOLD)
+                if (binding.gpsDesatualizado.visibility == View.INVISIBLE) {
+                    binding.tvPrecisionInfo.visibility = View.VISIBLE
+                    binding.precision!!.tag = 1
                 }
-            } else if (precision == SpeedometerService.CallbackGpsThread.GPS_PRECISAO_OK && this.precision!!.tag != null) {
-                this.precision.setTextColor(Color.BLACK)
-                this.precision.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-                tvPrecisionInfo.visibility = View.GONE
-                this.precision.tag = null
+            } else if (gpsPrecision == SpeedometerService.CallbackGpsThread.GPS_PRECISAO_OK && binding.precision!!.tag != null) {
+                binding.precision.setTextColor(Color.BLACK)
+                binding.precision.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
+                binding.tvPrecisionInfo.visibility = View.GONE
+                binding.precision.tag = null
             }
         }
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
         myActivity!!.setCallbackNotify(object : MainActivity.CallbackNotify {
             override fun onServiceConnected(speedometerService: SpeedometerService?) {
@@ -353,14 +387,16 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
 
     @Synchronized
     override fun setPauseAutomatic(pause: Boolean) {
-        if (!gpsProcess!!.isPause) {
-            if (activity != null)
-                activity!!.runOnUiThread {
+        val service = gpsProcess ?: return
+        val host = activity ?: return
+        if (!service.isPause) {
+            host.runOnUiThread {
+                    if (_binding == null) return@runOnUiThread
                     if (pause) {
-                        pausadoAutomaticamente.visibility = View.VISIBLE
-                        chronometer!!.stop()
+                        binding.pausadoAutomaticamente.visibility = View.VISIBLE
+                        binding.chronometer!!.stop()
                     } else {
-                        pausadoAutomaticamente.visibility = View.INVISIBLE
+                        binding.pausadoAutomaticamente.visibility = View.INVISIBLE
                     }
                     updateValuesText()
                 }
@@ -368,38 +404,85 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
     }
 
     override fun setBaseChronometer(base: Long, resume: Boolean) {
-        if (activity != null)
-            activity!!.runOnUiThread {
-                chronometer.base = base
+        val host = activity ?: return
+        host.runOnUiThread {
+                if (_binding == null) return@runOnUiThread
+                binding.chronometer.base = base
                 if (resume) {
-                    chronometer.start()
+                    binding.chronometer.start()
+                    binding.btStartStop.setImageResource(R.drawable.pause)
                 }
             }
     }
 
     override fun onErrorProcessingData(t: Throwable) {
-
+        if (t is SecurityException) {
+            activity?.runOnUiThread {
+                clear()
+                android.widget.Toast.makeText(requireContext(), R.string.precise_location_required, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
-        if (view == null) return
-
-        if (key == getString(R.string.pref_module_vel_alert)) {
-            if (sharedPreferences.getBoolean(key, false)) {
-                layout_sensors_vam.visibility = View.VISIBLE
-            } else {
-                layout_sensors_vam.visibility = View.GONE
+    override fun setSensorStatus(sensor: SensorKind, state: SensorConnectionState) {
+        sensorStates[sensor] = state
+        val host = activity ?: return
+        host.runOnUiThread {
+            if (_binding == null) return@runOnUiThread
+            when (sensor) {
+                SensorKind.HEART_RATE -> binding.searchSensorHr.text = sensorStatusText(state)
+                SensorKind.VAM -> binding.searchSensorVam.text = sensorStatusText(state)
             }
-        } else if (key == getString(R.string.pref_hr_sensor)) {
-            if (sharedPreferences.getBoolean(key, false)) {
-                layout_sensors_hm.visibility = View.VISIBLE
+        }
+    }
+
+    private fun sensorStatusText(state: SensorConnectionState?): String = getString(
+        when (state) {
+            SensorConnectionState.UNSUPPORTED -> R.string.bluetooth_sensor_unsupported
+            SensorConnectionState.PERMISSION_DENIED -> R.string.bluetooth_sensor_permission_denied
+            SensorConnectionState.BLUETOOTH_DISABLED -> R.string.bluetooth_sensor_disabled
+            SensorConnectionState.CONNECTING -> R.string.bluetooth_sensor_connecting
+            SensorConnectionState.CONNECTED -> R.string.bluetooth_sensor_connected
+            SensorConnectionState.RECONNECTING -> R.string.bluetooth_sensor_reconnecting
+            SensorConnectionState.CONNECTION_FAILED -> R.string.bluetooth_sensor_connection_failed
+            null -> R.string.search_sensor
+        }
+    )
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+        if (_binding == null) return
+        val preferenceKey = key ?: return
+
+        if (preferenceKey == getString(R.string.pref_module_vel_alert)) {
+            if (sharedPreferences.getBoolean(preferenceKey, false)) {
+                binding.layoutSensorsVam.visibility = View.VISIBLE
             } else {
-                layout_sensors_hm.visibility = View.GONE
+                binding.layoutSensorsVam.visibility = View.GONE
+            }
+        } else if (preferenceKey == getString(R.string.pref_hr_sensor)) {
+            if (sharedPreferences.getBoolean(preferenceKey, false)) {
+                binding.layoutSensorsHm.visibility = View.VISIBLE
+            } else {
+                binding.layoutSensorsHm.visibility = View.GONE
             }
         }
     }
 
     companion object {
         private const val LOG = "MainFragment"
+    }
+
+    override fun onDestroyView() {
+        activity?.let { PreferenceManager.getDefaultSharedPreferences(it).unregisterOnSharedPreferenceChangeListener(this) }
+        gpsProcess?.setCallbackGpsThread(null)
+        progressDialog?.dismiss()
+        progressDialog = null
+        _binding = null
+        super.onDestroyView()
+    }
+
+    override fun onDestroy() {
+        exportExecutor.shutdown()
+        super.onDestroy()
     }
 }

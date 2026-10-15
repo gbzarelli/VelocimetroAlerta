@@ -1,74 +1,123 @@
 package br.com.helpdev.velocimetroalerta.dialogs
 
-import android.app.AlertDialog
-import android.bluetooth.BluetoothDevice
+import android.app.Activity
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
 import android.content.Context
-import android.content.DialogInterface
-import android.os.Bundle
-import android.preference.DialogPreference
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.AttributeSet
 import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ListView
-
-import java.io.IOException
-import java.util.ArrayList
-
+import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
+import androidx.preference.Preference
+import androidx.preference.PreferenceManager
 import br.com.helpdev.velocimetroalerta.R
 import br.com.helpdev.velocimetroalerta.bluetooth.Bluetooth
+import br.com.helpdev.velocimetroalerta.permissions.RuntimePermissionPolicy
+import java.io.IOException
 
-class DialogPrefVelAlertBLModule(context: Context, attrs: AttributeSet) : DialogPreference(context, attrs) {
+class DialogPrefVelAlertBLModule(context: Context, attrs: AttributeSet) : Preference(context, attrs) {
 
-    override fun onPrepareDialogBuilder(builder: AlertDialog.Builder) {
-        if (Bluetooth.isAdapterEnabled) {
-            val view = LayoutInflater.from(context).inflate(R.layout.dialog_velalert_bluetooth, null)
-            builder.setView(view)
-            builder.setNegativeButton(R.string.bt_disable_module) { _, _ -> editor.putBoolean(key, false).apply() }
+    override fun onClick() {
+        val activity = context as? Activity ?: return
+        val requiredPermissions = RuntimePermissionPolicy.permissionsFor(
+            RuntimePermissionPolicy.Feature.BLUETOOTH_CONNECT,
+            Build.VERSION.SDK_INT
+        )
+        val missingPermissions = requiredPermissions.filter {
+            ActivityCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missingPermissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(activity, missingPermissions.toTypedArray(), REQUEST_BLUETOOTH_PERMISSIONS)
+            return
+        }
+        openDevicePicker()
+    }
 
-            try {
-                val listView = view.findViewById<ListView>(R.id.listView)
-                val bondedDevices = Bluetooth.bondedDevices
-                val names = ArrayList<String>()
-                for (bd in bondedDevices) {
-                    names.add(bd.name)
-                }
-                listView.adapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, names)
-                listView.emptyView = view.findViewById(R.id.emptyView)
-                listView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, id ->
-                    editor.putBoolean(key, true).apply()
-                    editor.putString(
-                            context.getString(R.string.pref_module_vel_alert_name),
-                            bondedDevices[position].name).apply()
-                    editor.putString(
-                            context.getString(R.string.pref_module_vel_alert_address),
-                            bondedDevices[position].address).apply()
-                    dialog.dismiss()
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-
+    fun onBluetoothPermissionResult(granted: Boolean) {
+        if (granted) {
+            openDevicePicker()
         } else {
-            builder.setMessage(R.string.disabled_bluetooth)
-            builder.setPositiveButton(R.string.bt_enable) { _, _ -> Bluetooth.enableAdapter() }
+            android.widget.Toast.makeText(context, R.string.bluetooth_permission_limited, android.widget.Toast.LENGTH_LONG).show()
         }
     }
 
-    override fun onDismiss(dialog: DialogInterface) {
-        onPreferenceChangeListener?.onPreferenceChange(this, summary)
-        super.onDismiss(dialog)
+    @SuppressLint("MissingPermission")
+    private fun openDevicePicker() {
+        if (!Bluetooth.isSupported(context)) {
+            android.widget.Toast.makeText(context, R.string.bluetooth_not_supported, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        if (!Bluetooth.isAdapterEnabled(context)) {
+            AlertDialog.Builder(context)
+                .setMessage(R.string.disabled_bluetooth)
+                .setPositiveButton(R.string.bt_enable) { _, _ -> requestEnableBluetooth() }
+                .show()
+            return
+        }
+
+        val view = LayoutInflater.from(context).inflate(R.layout.dialog_velalert_bluetooth, null)
+        val list = view.findViewById<ListView>(R.id.listView)
+        val bondedDevices = try {
+            Bluetooth.bondedDevices(context)
+        } catch (_: IOException) {
+            emptyList()
+        } catch (_: SecurityException) {
+            emptyList()
+        }
+        val names = bondedDevices.map { it.name.orEmpty() }
+        list.adapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, names)
+        list.emptyView = view.findViewById(R.id.emptyView)
+
+        val dialog = AlertDialog.Builder(context)
+            .setTitle(title)
+            .setView(view)
+            .setNegativeButton(R.string.bt_disable_module) { _, _ -> saveBoolean(false) }
+            .create()
+        list.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
+            val selected = bondedDevices[position]
+            saveBoolean(true)
+            persistString(context.getString(R.string.pref_module_vel_alert_name), selected.name)
+            persistString(context.getString(R.string.pref_module_vel_alert_address), selected.address)
+            dialog.dismiss()
+        }
+        dialog.setOnDismissListener {
+            onPreferenceChangeListener?.onPreferenceChange(this, summary)
+        }
+        dialog.show()
+    }
+
+    private fun requestEnableBluetooth() {
+        val activity = context as? Activity ?: return
+        activity.startActivity(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
     }
 
     override fun getSummary(): CharSequence {
-        val status = sharedPreferences.getBoolean(key, false)
-        var valueToSummary: String? = context.getString(R.string.disable)
-        if (status) {
-            valueToSummary = sharedPreferences.getString(context.getString(R.string.pref_module_vel_alert_name), context.getString(R.string.disable))
+        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        return if (preferences.getBoolean(key, false)) {
+            preferences.getString(
+                context.getString(R.string.pref_module_vel_alert_name),
+                context.getString(R.string.disable)
+            ).orEmpty()
+        } else {
+            context.getString(R.string.disable)
         }
-        return valueToSummary.toString()
     }
 
+    private fun saveBoolean(value: Boolean) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(key, value).apply()
+    }
+
+    private fun persistString(key: String, value: String?) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, value).apply()
+    }
+
+    companion object {
+        const val REQUEST_BLUETOOTH_PERMISSIONS = 302
+    }
 }

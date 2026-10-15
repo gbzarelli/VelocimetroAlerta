@@ -2,10 +2,11 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:title="@string/group_personal">
         <PreferenceScreen android:title="@string/edit_heartrate_zones">
-            <intent android:action="br.com.helpdev.velocimetroalerta.CONFIG_HR_ACTIVITY" />
+            <intent
+                android:targetClass="br.com.helpdev.velocimetroalerta.ConfigHRZActivity"
+                android:targetPackage="br.com.helpdev.velocimetroalerta.v2" />
         </PreferenceScreen>
     </PreferenceCategory>
-    -
 
     <PreferenceCategory android:title="@string/grupo_informacoes_audio">
         <CheckBoxPreference
