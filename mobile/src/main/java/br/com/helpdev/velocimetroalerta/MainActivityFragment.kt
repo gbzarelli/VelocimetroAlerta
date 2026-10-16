@@ -1,13 +1,12 @@
 package br.com.helpdev.velocimetroalerta
 
 import android.app.ProgressDialog
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.ClipData
 import android.graphics.Color
 import android.graphics.Typeface
-import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,12 +19,12 @@ import android.view.View
 import android.view.ViewGroup
 import br.com.helpdev.velocimetroalerta.gps.ObSpeedometerAlert
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
-import br.com.helpdev.velocimetroalerta.gpx.GpxFileUtils
-import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx
+import br.com.helpdev.velocimetroalerta.activities.ActivityDraft
+import br.com.helpdev.velocimetroalerta.activities.ActivityDraftFactory
+import br.com.helpdev.velocimetroalerta.activities.ActivityRepository
 import br.com.helpdev.velocimetroalerta.databinding.FragmentMainBinding
 import br.com.helpdev.velocimetroalerta.sensors.SensorConnectionState
 import br.com.helpdev.velocimetroalerta.sensors.SensorKind
-import java.io.IOException
 import java.lang.String.format
 import java.text.SimpleDateFormat
 import java.util.*
@@ -44,16 +43,25 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
     private var progressDialog: ProgressDialog? = null
     private var obSpeedometerAlert: ObSpeedometerAlert? = null
     private val sensorStates = mutableMapOf<SensorKind, SensorConnectionState>()
-    private var pendingExport: PendingExport? = null
-    private val exportExecutor = Executors.newSingleThreadExecutor { task ->
-        Thread(task, "gpx-export").apply { isDaemon = true }
+    private var pendingActivityDraft: ActivityDraft? = null
+    private val saveExecutor = Executors.newSingleThreadExecutor { task ->
+        Thread(task, "activity-save").apply { isDaemon = true }
     }
-    private val createGpxDocument = registerForActivityResult(
-        ActivityResultContracts.CreateDocument("application/gpx+xml")
-    ) { uri ->
-        val export = pendingExport
-        pendingExport = null
-        if (uri != null && export != null) writeGpxToDocument(uri, export)
+    private val saveActivityLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+        when (result.data?.getStringExtra(ActivitySaveActivity.EXTRA_ACTION)) {
+            ActivitySaveActivity.ACTION_CONFIRM -> {
+                val draft = pendingActivityDraft ?: return@registerForActivityResult
+                val name = result.data?.getStringExtra(ActivitySaveActivity.EXTRA_NAME).orEmpty()
+                saveActivity(draft, name)
+            }
+            ActivitySaveActivity.ACTION_DISCARD -> {
+                pendingActivityDraft = null
+                clear()
+            }
+        }
     }
 
     private val gpsProcess: SpeedometerService?
@@ -125,15 +133,14 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
             builder.setPositiveButton(R.string.bt_ok, null)
             builder.create().show()
         } else {
-            val filenameTimestamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US)
+            val suggestedName = SimpleDateFormat("'Atividade' dd MMM, HH:mm", Locale.getDefault())
                 .format(startDate)
-            val filename = "VEL_ALERTA_${filenameTimestamp}_${UUID.randomUUID().toString().take(8)}.gpx"
-            pendingExport = PendingExport(service.gpx, filename)
-            createGpxDocument.launch(filename)
+            pendingActivityDraft = ActivityDraftFactory.from(service.gpx, alert, suggestedName)
+            saveActivityLauncher.launch(ActivitySaveActivity.newIntent(requireContext(), suggestedName))
         }
     }
 
-    private fun writeGpxToDocument(uri: Uri, export: PendingExport) {
+    private fun saveActivity(draft: ActivityDraft, name: String) {
         val host = activity ?: return
         val appContext = host.applicationContext
         progressDialog = ProgressDialog(host).apply {
@@ -142,42 +149,31 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
             show()
         }
 
-        exportExecutor.execute {
-            val result = runCatching {
-                val output = appContext.contentResolver.openOutputStream(uri, "w")
-                    ?: throw IOException("The document provider did not open an output stream")
-                output.use { GpxFileUtils().writeGpx(export.gpx, it) }
-            }
+        saveExecutor.execute {
+            val result = runCatching { ActivityRepository(appContext.filesDir).save(draft, name) }
             activity?.runOnUiThread {
                 progressDialog?.dismiss()
                 progressDialog = null
                 val currentActivity = activity ?: return@runOnUiThread
-                val dialog = AlertDialog.Builder(currentActivity)
-                    .setTitle(R.string.app_name)
-                    .setCancelable(false)
-                    .setPositiveButton(R.string.bt_ok, null)
-                result.onSuccess {
-                    dialog.setMessage(R.string.arquivo_gravado_sucesso)
-                    dialog.setNeutralButton(R.string.share) { _, _ -> shareGpx(uri, export.filename) }
+                result.onSuccess { summary ->
+                    pendingActivityDraft = null
+                    clear()
+                    startActivity(ActivityDetailActivity.newIntent(currentActivity, summary.id))
                 }.onFailure { error ->
-                    dialog.setMessage(getString(R.string.erro_gravar_gpx, error.message ?: ""))
+                    AlertDialog.Builder(currentActivity)
+                        .setTitle(R.string.app_name)
+                        .setMessage(getString(R.string.activity_save_error, error.message ?: ""))
+                        .setCancelable(false)
+                        .setPositiveButton(R.string.retry) { _, _ -> saveActivity(draft, name) }
+                        .setNegativeButton(R.string.discard_activity) { _, _ ->
+                            pendingActivityDraft = null
+                            clear()
+                        }
+                        .show()
                 }
-                dialog.show()
             }
         }
     }
-
-    private fun shareGpx(uri: Uri, filename: String) {
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/gpx+xml"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            clipData = ClipData.newUri(requireContext().contentResolver, filename, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        startActivity(Intent.createChooser(shareIntent, getString(R.string.title_share)))
-    }
-
-    private data class PendingExport(val gpx: Gpx, val filename: String)
 
     private fun clear() {
         try {
@@ -500,7 +496,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
     }
 
     override fun onDestroy() {
-        exportExecutor.shutdown()
+        saveExecutor.shutdown()
         super.onDestroy()
     }
 }

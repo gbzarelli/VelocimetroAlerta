@@ -19,6 +19,9 @@ interface RouteMapRenderer {
     fun clearRoute()
     fun renderRoute(points: List<RoutePoint>, follow: Boolean, frameRoute: Boolean)
     fun frame(point: RoutePoint, zoom: Float)
+    fun frameRoute(points: List<RoutePoint>, padding: Int) {
+        points.lastOrNull()?.let { frame(it, RouteMapState.NEARBY_ZOOM) }
+    }
     fun focus(point: RoutePoint, zoom: Float)
     fun setOnUserPanListener(listener: () -> Unit)
     fun zoomIn()
@@ -73,7 +76,10 @@ class RouteMapState(private val renderer: RouteMapRenderer) {
     }
 
     fun onMapViewportReady() {
-        if (!cameraChangedByUser) points.lastOrNull()?.let { renderer.frame(it, NEARBY_ZOOM) }
+        if (!cameraChangedByUser) {
+            if (points.size > 1) renderer.frameRoute(points.toList(), ROUTE_PADDING_PX)
+            else points.lastOrNull()?.let { renderer.frame(it, NEARBY_ZOOM) }
+        }
     }
 
     fun zoomIn() {
@@ -102,6 +108,7 @@ class RouteMapState(private val renderer: RouteMapRenderer) {
 
     companion object {
         const val NEARBY_ZOOM = 17f
+        const val ROUTE_PADDING_PX = 64
     }
 }
 
@@ -146,7 +153,7 @@ class GoogleRouteMapRenderer(
         val line = polyline
         if (line == null) {
             polyline = map.addPolyline(
-                PolylineOptions().addAll(coordinates).color(Color.rgb(25, 118, 210)).width(10f)
+                PolylineOptions().addAll(coordinates).color(Color.rgb(0, 150, 136)).width(10f)
             )
         } else {
             line.points = coordinates
@@ -164,13 +171,30 @@ class GoogleRouteMapRenderer(
         }
 
         when {
-            frameRoute -> map.moveCamera(CameraUpdateFactory.newLatLngZoom(final, RouteMapState.NEARBY_ZOOM))
+            frameRoute -> this.frameRoute(points, RouteMapState.ROUTE_PADDING_PX)
             follow -> map.animateCamera(CameraUpdateFactory.newLatLng(final))
         }
     }
 
     override fun frame(point: RoutePoint, zoom: Float) {
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(point.latitude, point.longitude), zoom))
+    }
+
+    override fun frameRoute(points: List<RoutePoint>, padding: Int) {
+        if (points.isEmpty()) return
+        if (points.size == 1) {
+            frame(points.single(), RouteMapState.NEARBY_ZOOM)
+            return
+        }
+        val bounds = com.google.android.gms.maps.model.LatLngBounds.builder()
+            .apply { points.forEach { include(LatLng(it.latitude, it.longitude)) } }
+            .build()
+        try {
+            map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
+        } catch (_: IllegalStateException) {
+            val last = points.last()
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(last.latitude, last.longitude), RouteMapState.NEARBY_ZOOM))
+        }
     }
 
     override fun focus(point: RoutePoint, zoom: Float) {

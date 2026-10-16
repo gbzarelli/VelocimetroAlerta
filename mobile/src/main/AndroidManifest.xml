@@ -76,6 +76,23 @@
 
         </activity>
         <activity
+            android:name=".ActivitySaveActivity"
+            android:exported="false"
+            android:label="@string/save_activity_title"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".ActivityDetailActivity"
+            android:exported="false"
+            android:label="@string/minhas_atividades"
+            android:parentActivityName=".MyActivities"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".SavedRouteMapActivity"
+            android:exported="false"
+            android:label="@string/activity_detail_map_title"
+            android:parentActivityName=".ActivityDetailActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
             android:name=".ConfigHRZActivity"
             android:exported="false"
             android:label="@string/heart_hate"

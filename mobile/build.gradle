@@ -72,6 +72,8 @@ dependencies {
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.coordinatorlayout)
     implementation(libs.androidx.drawerlayout)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.cardview)
     implementation(libs.material)
     implementation(libs.gson)
     implementation(libs.play.services.maps)

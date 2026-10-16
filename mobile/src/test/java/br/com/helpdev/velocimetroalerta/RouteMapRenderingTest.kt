@@ -94,7 +94,7 @@ class RouteMapRenderingTest {
     }
 
     @Test
-    fun mapViewportReadyFramesLatestRoutePointWhenCameraHasNotBeenChangedByUser() {
+    fun mapViewportReadyFramesAllRoutePointsWhenCameraHasNotBeenChangedByUser() {
         val renderer = FakeRenderer()
         val state = RouteMapState(renderer)
         state.applySnapshot(RouteSnapshot(1, listOf(point(1))))
@@ -102,8 +102,21 @@ class RouteMapRenderingTest {
 
         state.onMapViewportReady()
 
-        assertEquals(point(2), renderer.framedPoint)
-        assertEquals(RouteMapState.NEARBY_ZOOM, renderer.framedZoom)
+        assertEquals(listOf(point(1), point(2)), renderer.framedRoute)
+        assertEquals(RouteMapState.ROUTE_PADDING_PX, renderer.frameRoutePadding)
+    }
+
+    @Test
+    fun mapViewportReadyFramesTheFullHistoricalRoute() {
+        val renderer = FakeRenderer()
+        val state = RouteMapState(renderer)
+        val route = listOf(point(1), point(2), point(3))
+        state.applySnapshot(RouteSnapshot(3, route))
+
+        state.onMapViewportReady()
+
+        assertEquals(route, renderer.framedRoute)
+        assertEquals(RouteMapState.ROUTE_PADDING_PX, renderer.frameRoutePadding)
     }
 
     @Test
@@ -150,6 +163,8 @@ class RouteMapRenderingTest {
         var focusedZoom: Float? = null
         var framedPoint: RoutePoint? = null
         var framedZoom: Float? = null
+        var framedRoute: List<RoutePoint>? = null
+        var frameRoutePadding: Int? = null
         var clearedRouteCount = 0
         var zoomInCount = 0
         var zoomOutCount = 0
@@ -172,6 +187,10 @@ class RouteMapRenderingTest {
         override fun frame(point: RoutePoint, zoom: Float) {
             framedPoint = point
             framedZoom = zoom
+        }
+        override fun frameRoute(points: List<RoutePoint>, padding: Int) {
+            framedRoute = points
+            frameRoutePadding = padding
         }
         override fun setOnUserPanListener(listener: () -> Unit) = Unit
         override fun zoomIn() { zoomInCount++ }
