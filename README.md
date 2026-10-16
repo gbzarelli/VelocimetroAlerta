@@ -34,6 +34,30 @@ MAPS_API_KEY=your-development-key
 
 The tracked `local.defaults.properties` contains only a placeholder so builds can run without a key; map tiles require a valid key. Use a separate release key restricted to application ID `br.com.helpdev.velocimetroalerta.v2` and the release signing certificate SHA-1. Never commit keys. Review the Maps SDK's current Google Play Data Safety disclosure and update the app's Data Safety declaration and privacy policy before releasing a build with Maps.
 
+## Local Android development
+
+Run `make help` for the available commands. Common workflows:
+
+```sh
+make build             # assemble the debug APK
+make run               # open/wait for emulator-5564, install, and launch the app
+make test              # GPX simulator tests and JVM unit tests
+make test-e2e          # full instrumentation suite on API 24 and API 36
+make verify            # unit tests plus emulator instrumentation
+```
+
+### Simulate a GPX route
+
+The simulator injects track coordinates and altitude through the Android Emulator GPS console. Put a GPX file at `tools/gpx/Pedalada_vespertina.gpx` (or set `GPX=/path/to/ride.gpx`). GPX files in `tools/gpx/` are ignored by Git because they can contain private location history; the local `Pedalada_vespertina.gpx` is copied from `~/Downloads` when available.
+
+```sh
+make gpx-realtime   # recorded timestamps; repeats until Ctrl+C
+make gpx-fast       # 12x faster by default; repeats until Ctrl+C
+make gpx-fast GPX_FAST_FACTOR=20
+```
+
+Both targets build, install, and open the app on `emulator-5564` before sending locations. Change `DEVICE`, `PORT`, or `AVD` to use another emulator. During accelerated playback, the app observes the corresponding faster apparent speed. Start or pause tracking in the app as usual; stop the simulator with Ctrl+C.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
