@@ -1,6 +1,6 @@
 # Minhas atividades Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Save completed GPS activities locally, list and inspect them later, view their historical route, and export their canonical GPX on demand.
 
@@ -55,27 +55,27 @@
 - Produces: `data class ActivityDraft(val summary: ActivitySummary, val gpx: Gpx)` and `object ActivityDraftFactory { fun from(gpx: Gpx, alert: ObSpeedometerAlert, suggestedName: String, id: String = UUID.randomUUID().toString()): ActivityDraft }`.
 - Produces: `object RoutePreviewSampler { fun sample(points: List<TrkPt>, maximumPoints: Int = 120): List<ActivityPreviewPoint> }`.
 
-- [ ] **Step 1: Write failing `ActivityDraftFactoryTest` cases for a complete snapshot, absent sensors, total duration, and preview sampling**
+- [x] **Step 1: Write failing `ActivityDraftFactoryTest` cases for a complete snapshot, absent sensors, total duration, and preview sampling**
 
 Assert that factory output copies `ObSpeedometerAlert` aggregates, uses `moving + paused` as total duration, derives availability from actual samples, produces a suggested name/ID, and that a 400-point route produces at most 120 ordered coordinates retaining endpoints.
 
-- [ ] **Step 2: Run the focused model test to verify it fails**
+- [x] **Step 2: Run the focused model test to verify it fails**
 
 Run: `./gradlew :mobile:testDebugUnitTest --tests br.com.helpdev.velocimetroalerta.activities.ActivityDraftFactoryTest`
 
 Expected: FAIL because activity persistence models do not exist.
 
-- [ ] **Step 3: Implement immutable activity models, deep GPX snapshotting, and deterministic preview sampling**
+- [x] **Step 3: Implement immutable activity models, deep GPX snapshotting, and deterministic preview sampling**
 
 `ActivityDraftFactory.from` must duplicate the incoming GPX/points and point extensions before returning so a later service mutation cannot alter a confirmed draft. Sample coordinates evenly, preserve original order, and always retain first/last when points exist.
 
-- [ ] **Step 4: Re-run the focused model test**
+- [x] **Step 4: Re-run the focused model test**
 
 Run: `./gradlew :mobile:testDebugUnitTest --tests br.com.helpdev.velocimetroalerta.activities.ActivityDraftFactoryTest`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit the model boundary**
+- [x] **Step 5: Commit the model boundary**
 
 ```bash
 git add mobile/src/main/java/br/com/helpdev/velocimetroalerta/activities/ActivityModels.kt mobile/src/test/java/br/com/helpdev/velocimetroalerta/activities/ActivityDraftFactoryTest.kt
@@ -95,27 +95,27 @@ git commit -m "feat: model saved activity snapshots"
 - Produces: `class ActivityRepository(filesDir: File, gson: Gson = Gson(), gpxFileUtils: GpxFileUtils = GpxFileUtils())` with `fun save(draft: ActivityDraft, confirmedName: String): ActivitySummary`, `fun list(): List<ActivitySummary>`, `fun loadSummary(id: String): ActivitySummary?`, `fun loadRoute(id: String): List<RoutePoint>?`, and `fun gpxFile(id: String): File?`.
 - Produces: `fun GpxFileUtils.readGpx(input: InputStream): Gpx` for the writer-compatible GPX 1.1 subset, including point extensions.
 
-- [ ] **Step 1: Write failing repository and GPX-reader tests**
+- [x] **Step 1: Write failing repository and GPX-reader tests**
 
 Use a temporary directory to assert final two-file layout, newest-first list ordering, round-trip route coordinates/extensions, missing sensor representation, malformed-entry skipping, and cleanup when a test double fails while writing GPX or JSON. Extend Android GPX instrumentation to prove the reader accepts the writer's output.
 
-- [ ] **Step 2: Run focused repository and GPX tests to verify they fail**
+- [x] **Step 2: Run focused repository and GPX tests to verify they fail**
 
 Run: `./gradlew :mobile:testDebugUnitTest --tests br.com.helpdev.velocimetroalerta.activities.ActivityRepositoryTest :mobile:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=br.com.helpdev.velocimetroalerta.gpx.GpxFileUtilsTest`
 
 Expected: repository tests fail until storage exists; instrumentation fails until `readGpx` exists.
 
-- [ ] **Step 3: Implement repository atomic promotion and streaming GPX reader**
+- [x] **Step 3: Implement repository atomic promotion and streaming GPX reader**
 
 Write `activity.gpx` and `summary.json` inside `<id>.tmp`, validate both, then atomically rename the directory to `<id>`; remove only `<id>.tmp` on failure. Set the track name from the trimmed confirmed name before GPX write. List only complete directories with a valid summary and log/skip corrupt ones. Parse GPX using Android `XmlPullParser`; reject a route with no valid coordinates.
 
-- [ ] **Step 4: Re-run repository and GPX tests**
+- [x] **Step 4: Re-run repository and GPX tests**
 
 Run: `./gradlew :mobile:testDebugUnitTest --tests br.com.helpdev.velocimetroalerta.activities.ActivityRepositoryTest :mobile:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=br.com.helpdev.velocimetroalerta.gpx.GpxFileUtilsTest`
 
 Expected: PASS, including malformed/failed-write cases.
 
-- [ ] **Step 5: Commit private persistence**
+- [x] **Step 5: Commit private persistence**
 
 ```bash
 git add mobile/src/main/java/br/com/helpdev/velocimetroalerta/activities/ActivityRepository.kt mobile/src/main/java/br/com/helpdev/velocimetroalerta/gpx/GpxFileUtils.kt mobile/src/test/java/br/com/helpdev/velocimetroalerta/activities/ActivityRepositoryTest.kt mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/gpx/GpxFileUtilsTest.kt
@@ -138,27 +138,27 @@ git commit -m "feat: persist activities as GPX and summary"
 - Produces: `ActivitySaveActivity.newIntent(context: Context, suggestedName: String): Intent`; result extras `EXTRA_ACTION` (`"confirm" | "discard"`) and `EXTRA_NAME`.
 - Produces: `MainActivityFragment` handling the result by `save(draft, name)`, `clear()` only on success/discard, and starting `ActivityDetailActivity` with `EXTRA_ACTIVITY_ID` on success.
 
-- [ ] **Step 1: Write failing instrumentation coverage for confirm, blank name, discard, and repository failure**
+- [x] **Step 1: Write failing instrumentation coverage for confirm, blank name, discard, and repository failure**
 
 Seed a paused, valid route through the existing service test hooks. Assert Save opens the name screen rather than a document picker; assert a blank trimmed name cannot confirm; assert discard clears without repository files; assert confirmed save opens detail and failure leaves the Save/Refresh controls and service state intact.
 
-- [ ] **Step 2: Run the focused save-flow test to verify it fails**
+- [x] **Step 2: Run the focused save-flow test to verify it fails**
 
 Run: `python3 tools/run-hermetic-android-tests.py --sdk 24,36 --test ActivitySaveFlowTest`
 
 Expected: FAIL because saving currently launches `CreateDocument`.
 
-- [ ] **Step 3: Implement the confirmation Activity and replace `pendingExport` flow**
+- [x] **Step 3: Implement the confirmation Activity and replace `pendingExport` flow**
 
 Keep only the current valid-session guard in `MainActivityFragment`; create an `ActivityDraft` once valid. `ActivitySaveActivity` owns validation and returns an action/name, never writes files. On confirmation, run repository work on the fragment’s background executor, present non-cancelable progress, clear the service only after success, then open the saved detail. On error leave the draft/session intact and offer retry/discard.
 
-- [ ] **Step 4: Re-run the focused save-flow test**
+- [x] **Step 4: Re-run the focused save-flow test**
 
 Run: `python3 tools/run-hermetic-android-tests.py --sdk 24,36 --test ActivitySaveFlowTest`
 
 Expected: PASS on both APIs; no document-picker intent is observed before confirmation.
 
-- [ ] **Step 5: Commit the save/discard flow**
+- [x] **Step 5: Commit the save/discard flow**
 
 ```bash
 git add mobile/src/main/java/br/com/helpdev/velocimetroalerta/ActivitySaveActivity.kt mobile/src/main/java/br/com/helpdev/velocimetroalerta/MainActivityFragment.kt mobile/src/main/res/layout/activity_save_activity.xml mobile/src/main/AndroidManifest.xml mobile/src/main/res/values/strings.xml mobile/src/main/res/values-pt/strings.xml mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/ActivitySaveFlowTest.kt
@@ -182,27 +182,27 @@ git commit -m "feat: confirm activity before saving"
 - Produces: `RoutePreviewView.submit(points: List<ActivityPreviewPoint>)` and a `RecyclerView` adapter whose click launches `ActivityDetailActivity.EXTRA_ACTIVITY_ID`.
 - Produces: `MyActivities` states `loading`, `empty`, and `content`, sorted/grouped by the local start date.
 
-- [ ] **Step 1: Write failing feed tests and preview geometry tests**
+- [x] **Step 1: Write failing feed tests and preview geometry tests**
 
 Assert an empty repository renders the explanatory state; seed summaries across two months and assert newest-first sections/card labels; click a card and assert its ID is passed to the detail Activity. Unit-test preview normalization for vertical, horizontal, and repeated-coordinate routes so drawing remains inside bounds.
 
-- [ ] **Step 2: Run focused feed tests to verify they fail**
+- [x] **Step 2: Run focused feed tests to verify they fail**
 
 Run: `./gradlew :mobile:testDebugUnitTest --tests br.com.helpdev.velocimetroalerta.activities.RoutePreviewViewTest && python3 tools/run-hermetic-android-tests.py --sdk 24,36 --test MyActivitiesTest`
 
 Expected: FAIL because `MyActivities` is still a development placeholder.
 
-- [ ] **Step 3: Implement the list, card and route-preview view**
+- [x] **Step 3: Implement the list, card and route-preview view**
 
 Add the AndroidX RecyclerView catalog/module dependency. Draw preview polylines locally in `RoutePreviewView`, with normalized bounds/padding, `colorPrimary` stroke and no map/network dependency. Load repository work off the main thread; show only month headers and cards approved in the visual design. Keep all measurements locale-aware and use `ActivitySummary` data only.
 
-- [ ] **Step 4: Re-run focused feed tests**
+- [x] **Step 4: Re-run focused feed tests**
 
 Run: `./gradlew :mobile:testDebugUnitTest --tests br.com.helpdev.velocimetroalerta.activities.RoutePreviewViewTest && python3 tools/run-hermetic-android-tests.py --sdk 24,36 --test MyActivitiesTest`
 
 Expected: PASS with empty and multi-month content states.
 
-- [ ] **Step 5: Commit feed UI**
+- [x] **Step 5: Commit feed UI**
 
 ```bash
 git add gradle/libs.versions.toml mobile/build.gradle mobile/src/main/java/br/com/helpdev/velocimetroalerta/activities/RoutePreviewView.kt mobile/src/main/java/br/com/helpdev/velocimetroalerta/MyActivities.kt mobile/src/main/res/layout/content_my_activities.xml mobile/src/main/res/layout/item_activity_summary.xml mobile/src/main/res/drawable/activity_card_background.xml mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/MyActivitiesTest.kt mobile/src/test/java/br/com/helpdev/velocimetroalerta/activities/RoutePreviewViewTest.kt
@@ -228,27 +228,27 @@ git commit -m "feat: list saved activities"
 - Produces: `ActivityDetailActivity.EXTRA_ACTIVITY_ID`, `SavedRouteMapActivity.EXTRA_ACTIVITY_ID`, and a `RouteMapFragment.showStaticRoute(points: List<RoutePoint>)` input that never subscribes to `SpeedometerService`.
 - Produces: detail GPX export via `ActivityResultContracts.CreateDocument("application/gpx+xml")` and stream copy from the repository’s canonical file.
 
-- [ ] **Step 1: Write failing detail/map/export tests**
+- [x] **Step 1: Write failing detail/map/export tests**
 
 Seed an activity with and without sensor data. Assert all applicable metric values render, unavailable sensor rows are hidden, preview click opens `SavedRouteMapActivity`, static map receives ordered points, and Back returns to detail. Assert export cancellation and forced destination-stream failure preserve the internal GPX. Extend live-map regression to assert opening a saved route never changes a currently running/paused service.
 
-- [ ] **Step 2: Run focused detail and map tests to verify they fail**
+- [x] **Step 2: Run focused detail and map tests to verify they fail**
 
 Run: `python3 tools/run-hermetic-android-tests.py --sdk 24,36 --test ActivityDetailTest --test RouteMapNavigationTest`
 
 Expected: FAIL because no detail/static-map activity or deferred export exists.
 
-- [ ] **Step 3: Implement detail rendering, static map source and copy-based export**
+- [x] **Step 3: Implement detail rendering, static map source and copy-based export**
 
 Load summary asynchronously by required ID; finish with a user-visible unavailable state for missing/corrupt data. Bind the top `RoutePreviewView` to the stored preview and make it the only map navigation affordance. Reuse `RouteMapFragment` renderer/state for `showStaticRoute`, but isolate that mode from service binding/subscription. Render rows conditionally for each optional sensor. Export on a background executor using `inputStream.copyTo(outputStream)` with a unique default `VEL_ALERTA_<started-at>_<id>.gpx` filename.
 
-- [ ] **Step 4: Re-run focused detail and map tests**
+- [x] **Step 4: Re-run focused detail and map tests**
 
 Run: `python3 tools/run-hermetic-android-tests.py --sdk 24,36 --test ActivityDetailTest --test RouteMapNavigationTest`
 
 Expected: PASS; live ride state/point count is unchanged by historical map navigation.
 
-- [ ] **Step 5: Commit historical detail and export**
+- [x] **Step 5: Commit historical detail and export**
 
 ```bash
 git add mobile/src/main/java/br/com/helpdev/velocimetroalerta/ActivityDetailActivity.kt mobile/src/main/java/br/com/helpdev/velocimetroalerta/SavedRouteMapActivity.kt mobile/src/main/java/br/com/helpdev/velocimetroalerta/RouteMapFragment.kt mobile/src/main/res/layout/activity_activity_detail.xml mobile/src/main/res/layout/activity_saved_route_map.xml mobile/src/main/AndroidManifest.xml mobile/src/main/res/values/strings.xml mobile/src/main/res/values-pt/strings.xml mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/ActivityDetailTest.kt mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/RouteMapNavigationTest.kt
@@ -264,27 +264,27 @@ git commit -m "feat: show saved activity details"
 - Consumes: all feature and regression tests from Tasks 1–5.
 - Produces: reproducible validation evidence and a concise manual-check list for device-only route, sensor and document-provider behavior.
 
-- [ ] **Step 1: Add a validation checklist before broad execution**
+- [x] **Step 1: Add a validation checklist before broad execution**
 
 Document the required manual checks: name suggestion/edit/discard, persistence through app restart, long GPX preview/map, each optional sensor state, cancelled/failed export, and live-vs-historical map separation.
 
-- [ ] **Step 2: Run JVM and debug build regression**
+- [x] **Step 2: Run JVM and debug build regression**
 
 Run: `./gradlew :mobile:assembleDebug :mobile:testDebugUnitTest --rerun-tasks`
 
 Expected: PASS with all persistence, GPX, preview and map-state unit tests.
 
-- [ ] **Step 3: Run hermetic instrumentation regression**
+- [x] **Step 3: Run hermetic instrumentation regression**
 
 Run: `python3 tools/run-hermetic-android-tests.py --sdk 24,36`
 
 Expected: all API-applicable cases pass independently, including the new activity flow; any unavailable emulator is recorded as an environment limitation rather than masked.
 
-- [ ] **Step 4: Check staged changes and update validation evidence with actual results**
+- [x] **Step 4: Check staged changes and update validation evidence with actual results**
 
 Run: `git diff --check` and record exact command outcomes, device APIs, skipped cases, and manual checks still required in `docs/minhas-atividades-validation.md`.
 
-- [ ] **Step 5: Commit verification evidence**
+- [x] **Step 5: Commit verification evidence**
 
 ```bash
 git add docs/minhas-atividades-validation.md
