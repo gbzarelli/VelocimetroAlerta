@@ -7,6 +7,10 @@
     <string name="route_map_recenter">Centralizar</string>
     <string name="route_map_zoom_in">Aumentar zoom</string>
     <string name="route_map_zoom_out">Diminuir zoom</string>
+    <string name="route_map_type_normal">Normal</string>
+    <string name="route_map_type_satellite">Satélite</string>
+    <string name="route_map_change_to_normal">Mudar para mapa normal</string>
+    <string name="route_map_change_to_satellite">Mudar para mapa de satélite</string>
     <string name="route_map_open">Mapa</string>
     <string name="app_name">Velocímetro alerta</string>
     <string name="site_helpdev">www.helpdev.com.br</string>

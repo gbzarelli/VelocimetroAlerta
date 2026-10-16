@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
+import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import br.com.helpdev.velocimetroalerta.databinding.FragmentRouteMapBinding
 import br.com.helpdev.velocimetroalerta.gps.RouteObserver
@@ -33,6 +34,18 @@ class RouteMapFragment : Fragment() {
     private var mapReady = false
     private var mapTilesReady = false
     private var serviceUnavailable = true
+    private var googleMap: GoogleMap? = null
+    private var mapType = RouteMapType.NORMAL
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        mapType = RouteMapType.fromSavedValue(savedInstanceState?.getString(STATE_MAP_TYPE))
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(STATE_MAP_TYPE, mapType.name)
+        super.onSaveInstanceState(outState)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         viewGeneration++
@@ -46,6 +59,8 @@ class RouteMapFragment : Fragment() {
         binding.routeMapRecenter.setOnClickListener { routeState?.recenter() }
         binding.routeMapZoomIn.setOnClickListener { routeState?.zoomIn() }
         binding.routeMapZoomOut.setOnClickListener { routeState?.zoomOut() }
+        binding.routeMapType.setOnClickListener { toggleMapType() }
+        updateMapTypeControl()
         val mapFragment = childFragmentManager.findFragmentById(R.id.google_map) as? SupportMapFragment
         if (mapFragment == null) {
             showUnavailable()
@@ -57,9 +72,11 @@ class RouteMapFragment : Fragment() {
         }
     }
 
-    private fun onMapReady(map: com.google.android.gms.maps.GoogleMap) {
+    private fun onMapReady(map: GoogleMap) {
         if (_binding == null) return
         try {
+            googleMap = map
+            applyMapType()
             renderer = GoogleRouteMapRenderer(
                 map,
                 waiting = { showStatus(R.string.route_map_waiting) },
@@ -151,6 +168,7 @@ class RouteMapFragment : Fragment() {
         viewGeneration++
         renderer = null
         routeState = null
+        googleMap = null
         mapReady = false
         mapTilesReady = false
         _binding = null
@@ -201,7 +219,35 @@ class RouteMapFragment : Fragment() {
         currentBinding.routeMapStatus.visibility = View.VISIBLE
     }
 
+    private fun toggleMapType() {
+        mapType = mapType.toggle()
+        applyMapType()
+        updateMapTypeControl()
+    }
+
+    private fun applyMapType() {
+        googleMap?.mapType = when (mapType) {
+            RouteMapType.NORMAL -> GoogleMap.MAP_TYPE_NORMAL
+            RouteMapType.SATELLITE -> GoogleMap.MAP_TYPE_SATELLITE
+        }
+    }
+
+    private fun updateMapTypeControl() {
+        val currentBinding = _binding ?: return
+        when (mapType) {
+            RouteMapType.NORMAL -> {
+                currentBinding.routeMapType.setText(R.string.route_map_type_satellite)
+                currentBinding.routeMapType.contentDescription = getString(R.string.route_map_change_to_satellite)
+            }
+            RouteMapType.SATELLITE -> {
+                currentBinding.routeMapType.setText(R.string.route_map_type_normal)
+                currentBinding.routeMapType.contentDescription = getString(R.string.route_map_change_to_normal)
+            }
+        }
+    }
+
     private companion object {
         const val MAP_LOAD_TIMEOUT_MS = 12_000L
+        const val STATE_MAP_TYPE = "route_map.type"
     }
 }
