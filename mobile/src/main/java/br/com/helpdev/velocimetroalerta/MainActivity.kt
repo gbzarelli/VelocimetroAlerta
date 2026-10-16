@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
 import com.google.android.material.navigation.NavigationView
+import com.google.android.play.core.review.ReviewManagerFactory
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.GravityCompat
@@ -39,6 +40,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private var isServiceBound = false
     var speedometerService: SpeedometerService? = null
         private set
+    internal lateinit var inAppReviewRequester: InAppReviewRequester
 
     private val configActivityLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -86,6 +88,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        inAppReviewRequester = InAppReviewLauncher(ReviewManagerFactory.create(this)) {
+            openAppInGooglePlay()
+        }
         EdgeToEdge.enable(window)
         setContentView(R.layout.activity_main)
         val drawer = findViewById<DrawerLayout>(R.id.drawer_layout)
@@ -221,7 +226,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val id = item.itemId
 
         when (id) {
-            R.id.nav_star -> openAppInGooglePlay()
+            R.id.nav_star -> inAppReviewRequester.request(this)
             R.id.nav_privacy_policy -> openPrivacyPolicy()
             R.id.nav_atividades -> activitiesLauncher.launch(Intent(this, MyActivities::class.java))
             R.id.nav_config -> openConfigIfAllowed()
@@ -246,10 +251,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val appPackageName = packageName
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$appPackageName")))
-        } catch (e: android.content.ActivityNotFoundException) { // if there is no Google Play on device
+        } catch (_: android.content.ActivityNotFoundException) {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$appPackageName")))
         }
-
     }
 
     private fun shareApp() {
