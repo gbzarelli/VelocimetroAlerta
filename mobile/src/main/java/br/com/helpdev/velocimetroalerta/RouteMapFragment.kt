@@ -23,6 +23,8 @@ class RouteMapFragment : Fragment() {
         if (!mapTilesReady && _binding != null) showStatus(R.string.route_map_display_error)
     }
     private var service: SpeedometerService? = null
+    private var staticRouteMode = false
+    private var staticRoutePoints: List<RoutePoint>? = null
     private var renderer: RouteMapRenderer? = null
     private var routeState: RouteMapState? = null
     private var observer: RouteObserver? = null
@@ -81,6 +83,7 @@ class RouteMapFragment : Fragment() {
             }
             mainHandler.postDelayed(mapLoadTimeout, MAP_LOAD_TIMEOUT_MS)
             routeState?.applySnapshot(RouteSnapshot(0, emptyList()))
+            staticRoutePoints?.let { points -> routeState?.applySnapshot(RouteSnapshot(1, points)) }
             if (serviceUnavailable) routeState?.showUnavailable()
             maybeSubscribe()
             (childFragmentManager.findFragmentById(R.id.google_map) as? SupportMapFragment)
@@ -96,6 +99,7 @@ class RouteMapFragment : Fragment() {
     }
 
     fun setRouteService(routeService: SpeedometerService?) {
+        if (staticRouteMode) return
         if (service === routeService) {
             maybeSubscribe()
             return
@@ -107,6 +111,7 @@ class RouteMapFragment : Fragment() {
     }
 
     fun onRouteServiceDisconnected() {
+        if (staticRouteMode) return
         unsubscribe()
         service = null
         serviceUnavailable = true
@@ -115,6 +120,19 @@ class RouteMapFragment : Fragment() {
 
     fun showUnavailable() {
         routeState?.showUnavailable() ?: showStatus(R.string.route_map_unavailable)
+    }
+
+    /** Displays an immutable saved track without binding to or observing the live tracking service. */
+    fun showStaticRoute(points: List<RoutePoint>) {
+        unsubscribe()
+        service = null
+        staticRouteMode = true
+        staticRoutePoints = points.toList()
+        serviceUnavailable = points.isEmpty()
+        if (mapReady) {
+            routeState?.applySnapshot(RouteSnapshot(1, staticRoutePoints.orEmpty()))
+            if (points.isEmpty()) routeState?.showUnavailable()
+        }
     }
 
     override fun onStart() {
@@ -140,6 +158,7 @@ class RouteMapFragment : Fragment() {
     }
 
     private fun maybeSubscribe() {
+        if (staticRouteMode) return
         val currentService = service ?: return
         if (!mapReady || _binding == null || !lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED) || observer != null) return
         if (!currentService.isRunning) {

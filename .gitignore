@@ -13,3 +13,4 @@
 keystore.properties
 release-signing.properties
 secrets.properties
+tools/gpx/*.gpx

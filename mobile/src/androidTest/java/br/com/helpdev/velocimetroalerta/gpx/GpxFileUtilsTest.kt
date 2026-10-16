@@ -27,8 +27,10 @@ class GpxFileUtilsTest {
                 name = "Ride & Route"
                 trkseg.addTrkPt(point(-23.55, -46.63, 760.25, "2026-10-14T12:00:01Z").apply {
                     extensions = Extensions(TrackPointExtension().apply {
+                        atemp = "26"
                         cad = "82"
                         hr = "144"
+                        rhu = "63"
                     })
                 })
                 trkseg.addTrkPt(point(-23.56, -46.64, 761.5, "2026-10-14T12:00:02Z"))
@@ -97,6 +99,43 @@ class GpxFileUtilsTest {
         assertEquals("760.25", elevation)
         assertEquals("82", cadence)
         assertEquals("144", heartRate)
+    }
+
+    @Test
+    fun readsWriterOutputAndPreservesRouteMetadataAndSensorExtensions() {
+        val source = Gpx("Velocimetro Alerta").apply {
+            metaData = MetaData().apply { time = "2026-10-14T12:00:00Z" }
+            trk.name = "Ride & Route"
+            trk.trkseg.addTrkPt(point(-23.55, -46.63, 760.25, "2026-10-14T12:00:01Z").apply {
+                extensions = Extensions(TrackPointExtension().apply {
+                    atemp = "26"
+                    cad = "82"
+                    hr = "144"
+                    rhu = "63"
+                })
+            })
+            trk.trkseg.addTrkPt(point(-23.56, -46.64, 761.5, "2026-10-14T12:00:02Z"))
+        }
+        val output = ByteArrayOutputStream()
+        val utils = GpxFileUtils()
+        utils.writeGpx(source, output)
+
+        val restored = utils.readGpx(ByteArrayInputStream(output.toByteArray()))
+        val firstPoint = restored.trk.trkseg.trkPts.first()
+        val extension = firstPoint.extensions.trackPointExtension
+
+        assertEquals("Velocimetro Alerta", restored.creator)
+        assertEquals("2026-10-14T12:00:00Z", restored.metaData.time)
+        assertEquals("Ride & Route", restored.trk.name)
+        assertEquals(2, restored.trk.trkseg.trkPts.size)
+        assertEquals(-23.55, firstPoint.latitude, 0.0)
+        assertEquals(-46.63, firstPoint.longitude, 0.0)
+        assertEquals(760.25, firstPoint.ele, 0.0)
+        assertEquals("2026-10-14T12:00:01Z", firstPoint.time)
+        assertEquals("26", extension.atemp)
+        assertEquals("82", extension.cad)
+        assertEquals("144", extension.hr)
+        assertEquals("63", extension.rhu)
     }
 
     @Test
