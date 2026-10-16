@@ -2,13 +2,21 @@ package br.com.helpdev.velocimetroalerta.gpx
 
 import android.location.Location
 import android.util.Xml
+import br.com.helpdev.velocimetroalerta.gpx.objects.Extensions
 import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx
+import br.com.helpdev.velocimetroalerta.gpx.objects.MetaData
+import br.com.helpdev.velocimetroalerta.gpx.objects.TrackPointExtension
+import br.com.helpdev.velocimetroalerta.gpx.objects.Trk
+import br.com.helpdev.velocimetroalerta.gpx.objects.TrkPt
 import java.io.OutputStream
+import java.io.InputStream
+import java.io.IOException
+import org.xmlpull.v1.XmlPullParser
 
-class GpxFileUtils {
+open class GpxFileUtils {
     /** Writes GPX 1.1 to [output] and leaves ownership of the stream with the caller. */
     @Throws(Exception::class)
-    fun writeGpx(gpx: Gpx, output: OutputStream) {
+    open fun writeGpx(gpx: Gpx, output: OutputStream) {
         val points = gpx.trk?.trkseg?.trkPts.orEmpty()
         require(points.isNotEmpty()) { "A GPX track must contain at least one point" }
 
@@ -77,6 +85,89 @@ class GpxFileUtils {
         serializer.endTag(GPX_NAMESPACE, "gpx")
         serializer.endDocument()
         serializer.flush()
+    }
+
+    /** Reads the GPX 1.1 track subset written by this app without closing [input]. */
+    @Throws(IOException::class)
+    open fun readGpx(input: InputStream): Gpx {
+        try {
+            val parser = Xml.newPullParser().apply {
+                setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
+                setFeature(XmlPullParser.FEATURE_PROCESS_DOCDECL, false)
+                setInput(input, "UTF-8")
+            }
+            val gpx = Gpx()
+            val track = Trk()
+            var currentPoint: TrkPt? = null
+            var inTrack = false
+            var inMetadata = false
+            var metadataTime: String? = null
+            val points = mutableListOf<TrkPt>()
+
+            while (parser.next() != XmlPullParser.END_DOCUMENT) {
+                when (parser.eventType) {
+                    XmlPullParser.START_TAG -> when (parser.name) {
+                        "gpx" -> {
+                            gpx.creator = parser.getAttributeValue(null, "creator")
+                            gpx.version = parser.getAttributeValue(null, "version") ?: "1.1"
+                        }
+                        "metadata" -> inMetadata = true
+                        "trk" -> inTrack = true
+                        "trkpt" -> {
+                            val latitude = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
+                                ?: throw IOException("GPX track point has invalid latitude")
+                            val longitude = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
+                                ?: throw IOException("GPX track point has invalid longitude")
+                            if (!latitude.isFinite() || latitude !in -90.0..90.0 ||
+                                !longitude.isFinite() || longitude !in -180.0..180.0
+                            ) throw IOException("GPX track point coordinates are out of range")
+                            currentPoint = TrkPt().apply {
+                                setLat(latitude)
+                                setLon(longitude)
+                            }
+                        }
+                        "name" -> if (inTrack && currentPoint == null) track.name = parser.nextText()
+                        "ele" -> {
+                            val elevation = parser.nextText().toDoubleOrNull()
+                                ?: throw IOException("GPX track point has invalid elevation")
+                            currentPoint?.ele = elevation
+                        }
+                        "time" -> {
+                            val value = parser.nextText()
+                            if (currentPoint != null) currentPoint.time = value
+                            else if (inMetadata) metadataTime = value
+                        }
+                        "atemp", "hr", "cad", "rhu" -> {
+                            if (currentPoint != null && parser.namespace == TRACK_POINT_NAMESPACE) {
+                                val value = parser.nextText()
+                                val extension = currentPoint.extensions?.trackPointExtension
+                                    ?: TrackPointExtension().also { currentPoint.extensions = Extensions(it) }
+                                when (parser.name) {
+                                    "atemp" -> extension.atemp = value
+                                    "hr" -> extension.hr = value
+                                    "cad" -> extension.cad = value
+                                    "rhu" -> extension.rhu = value
+                                }
+                            }
+                        }
+                    }
+                    XmlPullParser.END_TAG -> when (parser.name) {
+                        "trkpt" -> currentPoint?.let { points += it; currentPoint = null }
+                        "trk" -> inTrack = false
+                        "metadata" -> inMetadata = false
+                    }
+                }
+            }
+            if (points.isEmpty()) throw IOException("GPX track has no route points")
+            track.trkseg.trkPts.addAll(points)
+            gpx.trk = track
+            if (metadataTime != null) gpx.metaData = MetaData().apply { time = metadataTime }
+            return gpx
+        } catch (error: IOException) {
+            throw error
+        } catch (error: Exception) {
+            throw IOException("Invalid GPX document", error)
+        }
     }
 
     private companion object {

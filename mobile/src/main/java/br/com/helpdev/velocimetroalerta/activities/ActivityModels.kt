@@ -86,10 +86,10 @@ object ActivityDraftFactory {
             hasHumidityData = hasHumidity,
             routePreview = RoutePreviewSampler.sample(routePoints)
         )
-        return ActivityDraft(summary, deepCopy(gpx))
+        return ActivityDraft(summary, snapshotGpx(gpx))
     }
 
-    private fun deepCopy(gpx: Gpx): Gpx {
+    internal fun snapshotGpx(gpx: Gpx): Gpx {
         val points = gpx.trk?.trkseg?.trkPts.orEmpty().map { point ->
             TrkPt().apply {
                 setLat(point.latitude)
