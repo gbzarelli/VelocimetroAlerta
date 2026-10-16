@@ -63,13 +63,17 @@ class GpxRouteMapValidationTest {
 
         override fun showWaiting() = Unit
         override fun showUnavailable() = Unit
+        override fun showRouteAvailable() = Unit
         override fun clearRoute() = Unit
         override fun renderRoute(points: List<RoutePoint>, follow: Boolean, frameRoute: Boolean) {
             renderCount++
             renderedPoints = points
             finalPoint = points.lastOrNull()
         }
-        override fun focus(point: RoutePoint) = Unit
+        override fun frame(point: RoutePoint, zoom: Float) = Unit
+        override fun focus(point: RoutePoint, zoom: Float) = Unit
         override fun setOnUserPanListener(listener: () -> Unit) = Unit
+        override fun zoomIn() = Unit
+        override fun zoomOut() = Unit
     }
 }

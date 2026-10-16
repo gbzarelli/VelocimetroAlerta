@@ -6,6 +6,7 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import com.google.android.gms.maps.SupportMapFragment
 import br.com.helpdev.velocimetroalerta.databinding.FragmentRouteMapBinding
@@ -41,6 +42,8 @@ class RouteMapFragment : Fragment() {
         binding.routeMapStatus.visibility = View.VISIBLE
         binding.routeMapStatus.setText(R.string.route_map_waiting)
         binding.routeMapRecenter.setOnClickListener { routeState?.recenter() }
+        binding.routeMapZoomIn.setOnClickListener { routeState?.zoomIn() }
+        binding.routeMapZoomOut.setOnClickListener { routeState?.zoomOut() }
         val mapFragment = childFragmentManager.findFragmentById(R.id.google_map) as? SupportMapFragment
         if (mapFragment == null) {
             showUnavailable()
@@ -59,7 +62,7 @@ class RouteMapFragment : Fragment() {
                 map,
                 waiting = { showStatus(R.string.route_map_waiting) },
                 unavailable = { showStatus(R.string.route_map_unavailable) },
-                routeAvailable = { if (mapTilesReady) _binding?.routeMapStatus?.visibility = View.GONE }
+                routeAvailable = { _binding?.routeMapStatus?.visibility = View.GONE }
             )
             routeState = RouteMapState(renderer!!).also { state ->
                 renderer!!.setOnUserPanListener(state::onUserPan)
@@ -80,6 +83,13 @@ class RouteMapFragment : Fragment() {
             routeState?.applySnapshot(RouteSnapshot(0, emptyList()))
             if (serviceUnavailable) routeState?.showUnavailable()
             maybeSubscribe()
+            (childFragmentManager.findFragmentById(R.id.google_map) as? SupportMapFragment)
+                ?.view
+                ?.doOnLayout {
+                    if (generation == viewGeneration && _binding != null) {
+                        routeState?.onMapViewportReady()
+                    }
+                }
         } catch (_: RuntimeException) {
             showUnavailable()
         }

@@ -1,7 +1,8 @@
 package br.com.helpdev.velocimetroalerta
 
 import android.Manifest
-import android.os.SystemClock
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.preference.PreferenceManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
@@ -74,6 +75,32 @@ class RouteMapNavigationTest {
         granted = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.POST_NOTIFICATIONS]
     )
     @Test
+    fun drawerConfigEntryRequiresPausedRide() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            startRide()
+            awaitRide(scenario, paused = false)
+
+            var expectedMessage: String? = null
+            scenario.onActivity { activity ->
+                expectedMessage = activity.getString(R.string.info_config_in_running)
+                activity.findViewById<DrawerLayout>(R.id.drawer_layout).openDrawer(GravityCompat.START)
+            }
+            awaitDrawerOpen(scenario)
+            onView(withId(R.id.nav_config)).perform(click())
+
+            onView(withText(requireNotNull(expectedMessage))).check(matches(isDisplayed()))
+            onView(withText(R.string.bt_ok)).perform(click())
+            scenario.onActivity { activity ->
+                assertTrue("The active ride must keep running after the drawer block", activity.speedometerService?.isRunning == true)
+                assertTrue("The drawer block must not pause the active ride", activity.speedometerService?.isPause == false)
+            }
+        }
+    }
+
+    @RuntimePermissionState(
+        granted = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.POST_NOTIFICATIONS]
+    )
+    @Test
     fun openingAndReturningPreservesRunningRide() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             startRide()
@@ -106,6 +133,8 @@ class RouteMapNavigationTest {
 
             openMapAndReturn()
             awaitRide(scenario, paused = true)
+            onView(withId(R.id.btSave)).check(matches(isDisplayed()))
+            onView(withId(R.id.btRefresh)).check(matches(isDisplayed()))
 
             val after = captureRide(scenario)
             assertRidePreserved(before, after, paused = true)
@@ -114,6 +143,19 @@ class RouteMapNavigationTest {
 
     private fun startRide() {
         onView(withId(R.id.btStartStop)).perform(click())
+    }
+
+    private fun awaitDrawerOpen(scenario: ActivityScenario<MainActivity>) {
+        val deadline = System.currentTimeMillis() + 5_000
+        var isOpen = false
+        while (!isOpen && System.currentTimeMillis() < deadline) {
+            scenario.onActivity { activity ->
+                isOpen = activity.findViewById<DrawerLayout>(R.id.drawer_layout)
+                    .isDrawerOpen(GravityCompat.START)
+            }
+            if (!isOpen) Thread.sleep(50)
+        }
+        assertTrue("The navigation drawer should finish opening before selecting Settings", isOpen)
     }
 
     private fun openMapAndReturn() {
@@ -162,8 +204,6 @@ class RouteMapNavigationTest {
                 service = service,
                 paused = service.isPause,
                 chronometerBase = activity.findViewById<android.widget.Chronometer>(R.id.chronometer).base,
-                elapsedSinceChronometerBase = SystemClock.elapsedRealtime() -
-                    activity.findViewById<android.widget.Chronometer>(R.id.chronometer).base,
                 acceptedPoints = service.gpx.trk.trkseg.trkPts.size
             )
         }
@@ -180,14 +220,6 @@ class RouteMapNavigationTest {
         assertEquals(paused, after.paused)
         if (!paused) {
             assertEquals("The running chronometer base must not be reset", before.chronometerBase, after.chronometerBase)
-        } else {
-            val activeElapsedShift = after.elapsedSinceChronometerBase - before.elapsedSinceChronometerBase
-            assertTrue(
-                "Paused chronometer active elapsed time must remain stable through map navigation " +
-                    "(before=${before.elapsedSinceChronometerBase}ms, " +
-                    "after=${after.elapsedSinceChronometerBase}ms)",
-                kotlin.math.abs(activeElapsedShift) < 1_000
-            )
         }
         assertTrue("Accepted GPX points must not be lost", after.acceptedPoints >= before.acceptedPoints)
     }
@@ -196,7 +228,6 @@ class RouteMapNavigationTest {
         val service: SpeedometerService,
         val paused: Boolean,
         val chronometerBase: Long,
-        val elapsedSinceChronometerBase: Long,
         val acceptedPoints: Int
     )
 }

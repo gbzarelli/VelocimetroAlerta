@@ -5,7 +5,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
@@ -16,10 +15,14 @@ import br.com.helpdev.velocimetroalerta.gps.RouteSnapshot
 interface RouteMapRenderer {
     fun showWaiting()
     fun showUnavailable()
+    fun showRouteAvailable()
     fun clearRoute()
     fun renderRoute(points: List<RoutePoint>, follow: Boolean, frameRoute: Boolean)
-    fun focus(point: RoutePoint)
+    fun frame(point: RoutePoint, zoom: Float)
+    fun focus(point: RoutePoint, zoom: Float)
     fun setOnUserPanListener(listener: () -> Unit)
+    fun zoomIn()
+    fun zoomOut()
 }
 
 /** Provider-neutral display state, deliberately kept simple enough for JVM tests. */
@@ -27,6 +30,7 @@ class RouteMapState(private val renderer: RouteMapRenderer) {
     private val points = mutableListOf<RoutePoint>()
     private var lastRevision = -1L
     private var hasFramedRoute = false
+    private var cameraChangedByUser = false
 
     var isFollowing: Boolean = true
         private set
@@ -52,17 +56,34 @@ class RouteMapState(private val renderer: RouteMapRenderer) {
         lastRevision = revision
         points.clear()
         hasFramedRoute = false
+        cameraChangedByUser = false
         renderer.clearRoute()
         renderer.showWaiting()
     }
 
     fun onUserPan() {
         isFollowing = false
+        cameraChangedByUser = true
     }
 
     fun recenter() {
         isFollowing = true
-        points.lastOrNull()?.let(renderer::focus)
+        cameraChangedByUser = false
+        points.lastOrNull()?.let { renderer.focus(it, NEARBY_ZOOM) }
+    }
+
+    fun onMapViewportReady() {
+        if (!cameraChangedByUser) points.lastOrNull()?.let { renderer.frame(it, NEARBY_ZOOM) }
+    }
+
+    fun zoomIn() {
+        cameraChangedByUser = true
+        renderer.zoomIn()
+    }
+
+    fun zoomOut() {
+        cameraChangedByUser = true
+        renderer.zoomOut()
     }
 
     fun showUnavailable() {
@@ -75,7 +96,12 @@ class RouteMapState(private val renderer: RouteMapRenderer) {
             return
         }
         renderer.renderRoute(points.toList(), isFollowing, frameRoute)
+        renderer.showRouteAvailable()
         if (frameRoute) hasFramedRoute = true
+    }
+
+    companion object {
+        const val NEARBY_ZOOM = 17f
     }
 }
 
@@ -105,6 +131,8 @@ class GoogleRouteMapRenderer(
     override fun showWaiting() = waiting()
 
     override fun showUnavailable() = unavailable()
+
+    override fun showRouteAvailable() = routeAvailable()
 
     override fun clearRoute() {
         polyline?.remove()
@@ -136,17 +164,20 @@ class GoogleRouteMapRenderer(
         }
 
         when {
-            frameRoute && coordinates.size > 1 -> {
-                val bounds = LatLngBounds.builder().apply { coordinates.forEach(::include) }.build()
-                map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 72))
-            }
-            frameRoute -> map.animateCamera(CameraUpdateFactory.newLatLngZoom(final, 16f))
+            frameRoute -> map.moveCamera(CameraUpdateFactory.newLatLngZoom(final, RouteMapState.NEARBY_ZOOM))
             follow -> map.animateCamera(CameraUpdateFactory.newLatLng(final))
         }
-        routeAvailable()
     }
 
-    override fun focus(point: RoutePoint) {
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(point.latitude, point.longitude), 16f))
+    override fun frame(point: RoutePoint, zoom: Float) {
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(point.latitude, point.longitude), zoom))
     }
+
+    override fun focus(point: RoutePoint, zoom: Float) {
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(point.latitude, point.longitude), zoom))
+    }
+
+    override fun zoomIn() = map.animateCamera(CameraUpdateFactory.zoomIn())
+
+    override fun zoomOut() = map.animateCamera(CameraUpdateFactory.zoomOut())
 }

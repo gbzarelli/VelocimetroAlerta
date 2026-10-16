@@ -24,15 +24,6 @@
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btMap"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:contentDescription="@string/route_map_open"
-                android:minHeight="48dp"
-                android:text="@string/route_map_open"
-                android:visibility="gone" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -888,13 +879,25 @@
         android:src="@drawable/play" />
 
     <ImageButton
+        android:id="@+id/btMap"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignBottom="@+id/btStartStop"
+        android:layout_marginStart="20dp"
+        android:layout_toEndOf="@+id/btStartStop"
+        android:background="@drawable/button_play_pause"
+        android:contentDescription="@string/route_map_open"
+        android:padding="12dp"
+        android:src="@drawable/ic_map"
+        android:visibility="gone" />
+
+    <ImageButton
         android:id="@+id/btRefresh"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_alignBottom="@+id/btStartStop"
-        android:layout_marginLeft="@dimen/activity_vertical_margin"
-        android:layout_toEndOf="@+id/btStartStop"
-        android:layout_toRightOf="@+id/btStartStop"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="0dp"
         android:background="@drawable/button_play_pause"
         android:src="@drawable/refresh"
         android:visibility="gone" />

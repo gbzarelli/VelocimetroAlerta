@@ -31,6 +31,7 @@ class RouteMapRenderingTest {
         assertEquals(route.last(), renderer.lastPoint)
         assertEquals(listOf(true), renderer.followValues)
         assertEquals(listOf(true), renderer.frameValues)
+        assertEquals(1, renderer.routeAvailableCount)
     }
 
     @Test
@@ -86,9 +87,55 @@ class RouteMapRenderingTest {
         state.recenter()
         assertTrue(state.isFollowing)
         assertEquals(point(2), renderer.focusedPoint)
+        assertEquals(RouteMapState.NEARBY_ZOOM, renderer.focusedZoom)
 
         state.onPointAdded(3, point(3))
         assertEquals(true, renderer.followValues.last())
+    }
+
+    @Test
+    fun mapViewportReadyFramesLatestRoutePointWhenCameraHasNotBeenChangedByUser() {
+        val renderer = FakeRenderer()
+        val state = RouteMapState(renderer)
+        state.applySnapshot(RouteSnapshot(1, listOf(point(1))))
+        state.onPointAdded(2, point(2))
+
+        state.onMapViewportReady()
+
+        assertEquals(point(2), renderer.framedPoint)
+        assertEquals(RouteMapState.NEARBY_ZOOM, renderer.framedZoom)
+    }
+
+    @Test
+    fun mapViewportReadyDoesNotOverrideUserCameraChanges() {
+        val renderer = FakeRenderer()
+        val state = RouteMapState(renderer)
+        state.applySnapshot(RouteSnapshot(1, listOf(point(1))))
+
+        state.zoomIn()
+        state.onMapViewportReady()
+        assertEquals(null, renderer.framedPoint)
+
+        state.recenter()
+        state.onUserPan()
+        renderer.framedPoint = null
+        renderer.framedZoom = null
+
+        state.onMapViewportReady()
+
+        assertEquals(null, renderer.framedPoint)
+    }
+
+    @Test
+    fun zoomControlsDelegateToTheMapRenderer() {
+        val renderer = FakeRenderer()
+        val state = RouteMapState(renderer)
+
+        state.zoomIn()
+        state.zoomOut()
+
+        assertEquals(1, renderer.zoomInCount)
+        assertEquals(1, renderer.zoomOutCount)
     }
 
     private fun point(index: Int) = RoutePoint(-23.5 - index / 1000.0, -46.6 - index / 1000.0)
@@ -100,10 +147,17 @@ class RouteMapRenderingTest {
         val frameValues = mutableListOf<Boolean>()
         var lastPoint: RoutePoint? = null
         var focusedPoint: RoutePoint? = null
+        var focusedZoom: Float? = null
+        var framedPoint: RoutePoint? = null
+        var framedZoom: Float? = null
         var clearedRouteCount = 0
+        var zoomInCount = 0
+        var zoomOutCount = 0
+        var routeAvailableCount = 0
 
         override fun showWaiting() { waitingShown = true }
         override fun showUnavailable() = Unit
+        override fun showRouteAvailable() { routeAvailableCount++ }
         override fun clearRoute() { clearedRouteCount++ }
         override fun renderRoute(points: List<RoutePoint>, follow: Boolean, frameRoute: Boolean) {
             renderedRoutes += points.toList()
@@ -111,7 +165,16 @@ class RouteMapRenderingTest {
             followValues += follow
             frameValues += frameRoute
         }
-        override fun focus(point: RoutePoint) { focusedPoint = point }
+        override fun focus(point: RoutePoint, zoom: Float) {
+            focusedPoint = point
+            focusedZoom = zoom
+        }
+        override fun frame(point: RoutePoint, zoom: Float) {
+            framedPoint = point
+            framedZoom = zoom
+        }
         override fun setOnUserPanListener(listener: () -> Unit) = Unit
+        override fun zoomIn() { zoomInCount++ }
+        override fun zoomOut() { zoomOutCount++ }
     }
 }
