@@ -224,7 +224,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_star -> openAppInGooglePlay()
             R.id.nav_privacy_policy -> openPrivacyPolicy()
             R.id.nav_atividades -> activitiesLauncher.launch(Intent(this, MyActivities::class.java))
-            R.id.nav_config -> configActivityLauncher.launch(Intent(this, ConfigActivity::class.java))
+            R.id.nav_config -> openConfigIfAllowed()
             R.id.nav_share -> shareApp()
         }
 
@@ -260,6 +260,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         startActivity(sendIntent)
     }
 
+    private fun openConfigIfAllowed() {
+        val service = speedometerService
+        if (service == null || !service.isRunning || service.isPause) {
+            configActivityLauncher.launch(Intent(this, ConfigActivity::class.java))
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.app_name)
+            .setMessage(R.string.info_config_in_running)
+            .setPositiveButton(R.string.bt_ok, null)
+            .show()
+    }
+
     private fun stopService() {
         if (callbackNotify != null) callbackNotify!!.onCloseProgram()
         stopService(Intent(this, SpeedometerService::class.java))
@@ -284,15 +298,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val id = item.itemId
         if (id == R.id.action_settings) {
-            if (speedometerService == null || !speedometerService!!.isRunning || speedometerService!!.isPause) {
-                configActivityLauncher.launch(Intent(this, ConfigActivity::class.java))
-            }else{
-                val dialog = AlertDialog.Builder(this)
-                dialog.setTitle(R.string.app_name)
-                dialog.setMessage(R.string.info_config_in_running)
-                dialog.setPositiveButton(R.string.bt_ok, null)
-                dialog.create().show()
-            }
+            openConfigIfAllowed()
         } else if (id == R.id.action_keep_alive) {
             val msg = if (sharePref.getBoolean(SP_KEEP_ALIVE, false)) {
                 sharePref.edit().putBoolean(SP_KEEP_ALIVE, false).apply()

@@ -80,6 +80,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         binding.btStartStop!!.setOnClickListener(this)
         binding.btSave!!.setOnClickListener(this)
         binding.btRefresh!!.setOnClickListener(this)
+        binding.btMap.setOnClickListener(this)
 
 
         val onClickGanho = View.OnClickListener {
@@ -98,6 +99,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         onSharedPreferenceChanged(sp, getString(R.string.pref_hr_sensor))
 
         clear()
+        updateMapButtonVisibility()
     }
 
     override fun onClick(v: View) {
@@ -105,6 +107,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
             v.id == R.id.btSave -> save()
             v.id == R.id.btRefresh -> clear()
             v.id == R.id.btStartStop -> playPause()
+            v.id == R.id.btMap -> startActivity(Intent(requireContext(), RouteMapActivity::class.java))
         }
     }
 
@@ -186,6 +189,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
             if (gpsProcess != null) {
                 gpsProcess!!.stop()
             }
+            updateMapButtonVisibility()
             binding.gpsDesatualizado.visibility = View.INVISIBLE
             binding.pausadoAutomaticamente.visibility = View.INVISIBLE
             binding.searchSensorVam.visibility = View.INVISIBLE
@@ -246,6 +250,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         }
         binding.btSave.visibility = if (gpsProcess!!.isPause) View.VISIBLE else View.GONE
         binding.btStartStop.setImageResource(if (gpsProcess!!.isPause) R.drawable.play else R.drawable.pause)
+        updateMapButtonVisibility()
     }
 
     private fun updateValuesText() {
@@ -306,7 +311,10 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
     override fun updateValues(obSpeedometerAlert: ObSpeedometerAlert) {
         this.obSpeedometerAlert = obSpeedometerAlert
         if (activity != null)
-            activity!!.runOnUiThread { updateValuesText() }
+            activity!!.runOnUiThread {
+                updateValuesText()
+                updateMapButtonVisibility()
+            }
     }
 
     @Synchronized
@@ -343,6 +351,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
                 binding.btRefresh.visibility = if (paused) View.VISIBLE else View.GONE
                 binding.btStartStop.setImageResource(if (paused) R.drawable.play else R.drawable.pause)
                 updateValuesText()
+                updateMapButtonVisibility()
             }
     }
 
@@ -372,7 +381,8 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         super.onAttach(context)
         myActivity!!.setCallbackNotify(object : MainActivity.CallbackNotify {
             override fun onServiceConnected(speedometerService: SpeedometerService?) {
-                speedometerService!!.setCallbackGpsThread(this@MainActivityFragment)
+                speedometerService?.setCallbackGpsThread(this@MainActivityFragment)
+                updateMapButtonVisibility()
             }
 
             override fun onBeforeDisconnect(speedometerService: SpeedometerService) {
@@ -408,9 +418,12 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         host.runOnUiThread {
                 if (_binding == null) return@runOnUiThread
                 binding.chronometer.base = base
+                updateMapButtonVisibility()
                 if (resume) {
                     binding.chronometer.start()
                     binding.btStartStop.setImageResource(R.drawable.pause)
+                } else {
+                    binding.chronometer.stop()
                 }
             }
     }
@@ -466,6 +479,11 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
                 binding.layoutSensorsHm.visibility = View.GONE
             }
         }
+    }
+
+    private fun updateMapButtonVisibility() {
+        val currentBinding = _binding ?: return
+        currentBinding.btMap.visibility = if (gpsProcess?.isRunning == true) View.VISIBLE else View.GONE
     }
 
     companion object {

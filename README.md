@@ -24,6 +24,16 @@ Use the Play Store:
 
 [Speedometer Alert](https://play.google.com/store/apps/details?id=br.com.helpdev.velocimetroalerta.v2)
 
+## Maps SDK setup (development)
+
+The live activity map uses the Google Maps SDK for Android. Enable **Maps SDK for Android** in a Google Cloud project and configure billing for that project. Create a development API key restricted to the debug application ID and debug signing certificate, then put it in the ignored root-level `secrets.properties` file:
+
+```properties
+MAPS_API_KEY=your-development-key
+```
+
+The tracked `local.defaults.properties` contains only a placeholder so builds can run without a key; map tiles require a valid key. Use a separate release key restricted to application ID `br.com.helpdev.velocimetroalerta.v2` and the release signing certificate SHA-1. Never commit keys. Review the Maps SDK's current Google Play Data Safety disclosure and update the app's Data Safety declaration and privacy policy before releasing a build with Maps.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
