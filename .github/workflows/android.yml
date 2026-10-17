@@ -50,7 +50,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api-level: [24, 36]
+        include:
+          - api-level: 24
+            emulator-build: 15004761
+          - api-level: 36
+            emulator-build: ''
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -82,9 +86,10 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
+          emulator-build: ${{ matrix.emulator-build }}
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
           disable-animations: true
           script: python3 tools/run-hermetic-android-tests.py --sdk ${{ matrix.api-level }} --device emulator-5554
