@@ -19,6 +19,7 @@ espresso = "3.7.0"
 junit = "4.13.2"
 uiautomator = "2.3.0"
 play-services-maps = "20.0.0"
+play-review = "2.0.2"
 maps-secrets-plugin = "2.0.1"
 
 [libraries]
@@ -42,6 +43,7 @@ test-espresso-intents = { module = "androidx.test.espresso:espresso-intents", ve
 test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
 junit = { module = "junit:junit", version.ref = "junit" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "play-services-maps" }
+play-review = { module = "com.google.android.play:review", version.ref = "play-review" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
