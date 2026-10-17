@@ -228,22 +228,27 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
     }
 
     private fun playPause() {
-        if (gpsProcess == null) return
+        val service = gpsProcess
+        if (service == null) {
+            // The Activity binds asynchronously. Do not discard an early tap while it is connecting.
+            myActivity?.requestTrackingStart()
+            return
+        }
 
-        if (gpsProcess!!.isRunning) {
+        if (service.isRunning) {
             if (binding.pausadoAutomaticamente.visibility == View.VISIBLE) {
                 binding.pausadoAutomaticamente.visibility = View.INVISIBLE
             }
 
-            if (gpsProcess!!.isRunning) {
+            if (service.isRunning) {
                 binding.btStartStop!!.isEnabled = false
             }
 
-            if (gpsProcess!!.isPause) {
-                gpsProcess!!.pause(false)
+            if (service.isPause) {
+                service.pause(false)
                 binding.btRefresh!!.visibility = View.GONE
             } else {
-                gpsProcess!!.pause(true)
+                service.pause(true)
                 binding.btRefresh!!.visibility = View.VISIBLE
             }
 
@@ -252,8 +257,8 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
             myActivity?.requestTrackingStart()
             return
         }
-        binding.btSave.visibility = if (gpsProcess!!.isPause) View.VISIBLE else View.GONE
-        binding.btStartStop.setImageResource(if (gpsProcess!!.isPause) R.drawable.play else R.drawable.pause)
+        binding.btSave.visibility = if (service.isPause) View.VISIBLE else View.GONE
+        binding.btStartStop.setImageResource(if (service.isPause) R.drawable.play else R.drawable.pause)
         updateMapButtonVisibility()
     }
 

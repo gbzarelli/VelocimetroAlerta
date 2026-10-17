@@ -48,6 +48,8 @@ make test-e2e          # full instrumentation suite on API 24 and API 36
 make verify            # unit tests plus emulator instrumentation
 ```
 
+GitHub Actions runs `make test` and replays the three tracked elevation GPX fixtures on every pull request. It also runs the hermetic instrumentation suite on API 24 and API 36 emulators.
+
 ### Simulate a GPX route
 
 The simulator injects track coordinates and altitude through the Android Emulator GPS console. Put a GPX file at `tools/gpx/Pedalada_vespertina.gpx` (or set `GPX=/path/to/ride.gpx`). GPX files in `tools/gpx/` are ignored by Git because they can contain private location history; the local `Pedalada_vespertina.gpx` is copied from `~/Downloads` when available.
