@@ -102,6 +102,27 @@ class ElevationEstimatorTest {
     }
 
     @Test
+    fun repeatedPoorVerticalAccuracyFixesDoNotBridgeAnUntrustedGap() {
+        val estimator = ElevationEstimator()
+        feed(estimator, (100..112).map(Int::toDouble) + List(4) { 112.0 })
+        val beforePoorFixes = estimator.snapshot()
+        val firstPoorFixTime = timeIndex * FIX_INTERVAL_NANOS + 10 * FIX_INTERVAL_NANOS
+
+        listOf(10L, 20L, 30L, 40L).forEach { seconds ->
+            estimator.accept(sample(300.0, firstPoorFixTime + seconds * FIX_INTERVAL_NANOS, verticalAccuracy = 26.0))
+        }
+        val recovered = estimator.accept(sample(300.0, firstPoorFixTime + 41 * FIX_INTERVAL_NANOS, verticalAccuracy = 4.0))
+
+        assertEquals(beforePoorFixes.gainMeters, recovered.gainMeters, 0.0)
+        assertEquals(beforePoorFixes.lossMeters, recovered.lossMeters, 0.0)
+
+        timeIndex = (firstPoorFixTime / FIX_INTERVAL_NANOS) + 41
+        feed(estimator, (301..312).map(Int::toDouble) + List(4) { 312.0 }, verticalAccuracy = 4.0)
+
+        assertEquals(beforePoorFixes.gainMeters + 12.0, estimator.snapshot().gainMeters, 0.01)
+    }
+
+    @Test
     fun verticalAccuracySetsLocalThresholdWithConfiguredBounds() {
         val precise = ElevationEstimator()
         feed(precise, (100..106).map(Int::toDouble) + List(5) { 106.0 }, verticalAccuracy = 2.0)

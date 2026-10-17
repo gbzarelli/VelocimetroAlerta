@@ -49,6 +49,7 @@ class ElevationEstimator(private val config: ElevationConfig = ElevationConfig()
     private val recentAltitudes = ArrayDeque<Double>(config.medianWindowSize)
     private val recentVerticalAccuracies = ArrayDeque<Double>(config.medianWindowSize)
     private var lastFixElapsedRealtimeNanos: Long? = null
+    private var lastReliableFixElapsedRealtimeNanos: Long? = null
     private var filteredAltitude: Double? = null
     private var valley: Double? = null
     private var peak: Double? = null
@@ -67,9 +68,9 @@ class ElevationEstimator(private val config: ElevationConfig = ElevationConfig()
         val time = sample.fixElapsedRealtimeNanos
         if (time <= 0L || lastFixElapsedRealtimeNanos?.let { time <= it } == true) return snapshot()
 
-        val previousTime = lastFixElapsedRealtimeNanos
         lastFixElapsedRealtimeNanos = time
-        val gapDetected = previousTime != null && time - previousTime > config.maximumFixGapNanos
+        val previousReliableTime = lastReliableFixElapsedRealtimeNanos
+        val gapDetected = previousReliableTime != null && time - previousReliableTime > config.maximumFixGapNanos
         if (gapDetected) {
             resetSegment()
             quality = ElevationQuality.STALE
@@ -80,6 +81,8 @@ class ElevationEstimator(private val config: ElevationConfig = ElevationConfig()
             quality = ElevationQuality.LOW_CONFIDENCE
             return snapshot()
         }
+
+        lastReliableFixElapsedRealtimeNanos = time
 
         if (verticalAccuracy != null) {
             recentVerticalAccuracies.addLast(verticalAccuracy)
@@ -138,6 +141,7 @@ class ElevationEstimator(private val config: ElevationConfig = ElevationConfig()
     fun reset() {
         resetSegment()
         lastFixElapsedRealtimeNanos = null
+        lastReliableFixElapsedRealtimeNanos = null
         filteredAltitude = null
         gain = 0.0
         loss = 0.0
