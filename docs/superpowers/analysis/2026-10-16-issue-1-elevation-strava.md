@@ -1,4 +1,4 @@
-# Issue #1 — análise de elevação com a atividade TDL na Canastra
+# Issue #1 — análise de elevação em três atividades Strava
 
 Data: 16/10/2026. Base: `master` em `22b77937065c102fc9f0dc6f83ad523031e92850`.
 
@@ -6,17 +6,19 @@ Data: 16/10/2026. Base: `master` em `22b77937065c102fc9f0dc6f83ad523031e92850`.
 
 - [Issue #1](https://github.com/gbzarelli/VelocimetroAlerta/issues/1).
 - [Atividade 19463623301 no Strava](https://www.strava.com/activities/19463623301), consultada no Chrome autenticado do usuário: 63,69 km, 4:03:18 de movimento, 5:26:22 decorridos e **2.174 m de ganho de elevação**.
-- Exportação GPX dessa atividade, baixada em 16/10/2026 e guardada **somente** em `tools/gpx/TDL_na_Canastra.gpx` desta worktree; o diretório é ignorado pelo Git. O arquivo original também permanece em `~/Downloads`. Não publicar, adicionar ao Git ou anexar o GPX sem autorização explícita.
+- [Atividade 20049386131 no Strava](https://www.strava.com/activities/20049386131): 79,26 km, 4:11:08 de movimento, 5:11:19 decorridos e **1.303 m de ganho**.
+- [Atividade 20338280241 no Strava](https://www.strava.com/activities/20338280241): 60,86 km, 3:08:02 de movimento, 3:43:18 decorridos e **1.184 m de ganho**.
+- Os três GPX exportados em 16/10/2026 estão em `tools/gpx/issue-1/<id>.gpx` desta worktree, ignorados pelo Git; há cópias originais em `~/Downloads`. O comparador e os testes ficam em `tools/elevation_validation/`. Não publicar, adicionar ao Git ou anexar os GPX sem autorização explícita.
 - Código local: `GpxMath.kt`, `SpeedometerService.kt`, `Gps.kt`, `TrkSeg.java`, `TrkPt.java`, `ActivityModels.kt`, `MainActivityFragment.kt` e testes correspondentes.
 - [Strava: Elevation on Strava FAQs](https://support.strava.com/en-us/articles/15402093-elevation-on-strava-faqs), [Strava: Elevation](https://support.strava.com/en-us/articles/15401909-elevation) e [Android `Location`](https://developer.android.com/reference/android/location/Location).
 
-Reproduzir os agregados, sem expor coordenadas ou horários: `python3 tools/analyze_elevation_gpx.py tools/gpx/TDL_na_Canastra.gpx --reference-gain 2174`.
+Reproduzir os agregados, sem expor coordenadas ou horários: `python3 -m tools.elevation_validation.compare --format markdown` ou `--format json`. O script anterior permanece disponível para inspeção individual: `python3 tools/analyze_elevation_gpx.py tools/gpx/issue-1/19463623301.gpx --reference-gain 2174`.
 
 ## O que o GPX permite afirmar
 
-O GPX exportado contém **14.560 pontos**, todos com `<ele>` e `<time>`, em um único segmento. A distância entre pontos por Haversine soma **64,002 km**, 0,312 km (0,49%) acima dos 63,69 km apresentados no Strava. Isso já mostra que a página aplica processamento diferente do somatório ingênuo do arquivo. A altitude do arquivo começa em 681,2 m, termina em 682,3 m e varia entre 675,3 e 1.280,0 m; a diferença líquida é só +1,1 m. O somatório de todas as subidas entre pontos consecutivos, **sem filtro**, é 2.322,5 m; o de descidas, 2.321,4 m.
+O primeiro GPX exportado contém **14.560 pontos**, todos com `<ele>` e `<time>`, em um único segmento. A distância entre pontos por Haversine soma **64,002 km**, 0,312 km (0,49%) acima dos 63,69 km apresentados no Strava. Isso já mostra que a página aplica processamento diferente do somatório ingênuo do arquivo. A altitude do arquivo começa em 681,2 m, termina em 682,3 m e varia entre 675,3 e 1.280,0 m; a diferença líquida é só +1,1 m. O somatório de todas as subidas entre pontos consecutivos, **sem filtro**, é 2.322,5 m; o de descidas, 2.321,4 m.
 
-O GPX **não contém** precisão horizontal, precisão vertical, pressão, identificação do dispositivo ou dados sobre correção de elevação. `TrkPt.accuracy` é preenchido a partir de `Location.getAccuracy()` durante a gravação pelo app, mas é descartado na exportação GPX. Ao ler um GPX externo com o modelo atual, a precisão fica no valor padrão `0`, e `GpxMath` soma praticamente cada incremento. Assim, os cenários de 3 a 15 m abaixo são **suposições de precisão horizontal constante**, não medições dessa pedalada nem replay fiel no aparelho.
+Os GPX **não contêm** precisão horizontal, precisão vertical, pressão, identificação do dispositivo ou dados sobre correção de elevação. `TrkPt.accuracy` é preenchido a partir de `Location.getAccuracy()` durante a gravação pelo app, mas é descartado na exportação GPX. Ao ler um GPX externo com o modelo atual, a precisão fica no valor padrão `0`, e `GpxMath` soma praticamente cada incremento. Assim, os cenários de 3 a 15 m abaixo são **suposições de precisão horizontal constante**, não medições dessa pedalada nem replay fiel no aparelho.
 
 O Strava diz que atividades sem altímetro barométrico reconhecido podem ter elevação corrigida por uma base externa e suavizada; o valor de 2.174 m é uma **estimativa processada da plataforma**, não verdade de terreno. A página identifica o gravador como “Strava App” e não oferece “Corrigir elevação” no menu observado, o que é compatível com essa correção, mas não comprova a origem de cada `<ele>` exportado. A comparação entre 2.174 m e os totais abaixo mede concordância entre métodos diferentes; não mede erro absoluto do app. Altitude absoluta de `Location.getAltitude()` usa o elipsoide WGS84, enquanto outras fontes podem usar referência do nível médio do mar, reforçando que altitude absoluta e ganho acumulado são comparações distintas.
 
@@ -48,7 +50,29 @@ No cenário hipotético de 5 m, o cálculo integral fica **166,1 m (7,6%) abaixo
 
 ### Experimento exploratório, não proposta calibrada
 
-O script inclui uma **sonda** com mediana causal dos últimos 5 valores e máquina persistente de excursão/reversão. Sobre o GPX já processado pelo Strava, produziu ganho/perda de 2.139,4 / 2.139,5 m com limiar 5 m, e 1.948,0 / 1.947,9 m com limiar 10 m. O primeiro total fica 34,6 m (1,6%) abaixo da página. Essa proximidade **não valida** o limiar de 5 m: a rota é uma amostra só, não contém a precisão vertical original e já pode estar suavizada/corrigida. A mediana de 5 pontos ignora uma única espícula `100,100,100,100,100,106,100,...`, mas introduz atraso de cerca de duas amostras em subida contínua. O valor para parada/finalização precisa de regra própria para a cauda do filtro.
+O script inclui uma **sonda** com mediana causal dos últimos 5 valores e máquina persistente de excursão/reversão. Sobre o GPX já processado pelo Strava, produziu ganho/perda de 2.139,4 / 2.139,5 m com limiar 5 m, e 1.948,0 / 1.947,9 m com limiar 10 m. O primeiro total fica 34,6 m (1,6%) abaixo da página. Essa proximidade **não valida** o limiar de 5 m: mesmo em três rotas semelhantes, não há precisão vertical original e já pode estar suavizada/corrigida. A mediana de 5 pontos ignora uma única espícula `100,100,100,100,100,106,100,...`, mas introduz atraso de cerca de duas amostras em subida contínua. O valor para parada/finalização precisa de regra própria para a cauda do filtro.
+
+## Ampliação: comparação das três atividades
+
+Os outros dois GPX têm 15.026 e 11.249 pontos. Como no primeiro, `<ele>` descreve um perfil suave: maior passo vertical entre pontos adjacentes de 3,3 m e 4,1 m, respectivamente (4,0 m no primeiro). Os pares de coordenadas repetidas somam 124 e 45 (64 no primeiro). Há 23 e 13 lacunas de tempo acima de 30 s, com máximos de 843 s e 616 s (15 lacunas, máximo 1.937 s no primeiro). Lacuna é apenas um indício de interrupção da gravação, **não** marca confiável de pausa do app. O comparador produz esses diagnósticos agregados no JSON.
+
+| Atividade | Pontos | Distância Strava / GPX (km) | Ganho Strava (m) | Ganho bruto GPX (m) | Atual integral, 5 m | Atual por 1 km, 5 m | Sonda, 5 m |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| [19463623301](https://www.strava.com/activities/19463623301) | 14.560 | 63,69 / 64,002 | 2.174 | 2.322,5 | 2.007,9 | 1.941,8 | 2.139,4 |
+| [20049386131](https://www.strava.com/activities/20049386131) | 15.026 | 79,26 / 79,633 | 1.303 | 1.620,3 | 1.184,4 | 1.062,1 | 1.279,3 |
+| [20338280241](https://www.strava.com/activities/20338280241) | 11.249 | 60,86 / 61,349 | 1.184 | 1.699,5 | 1.031,5 | 975,2 | 1.133,1 |
+
+O limiar de 5 m representa **precisão horizontal constante presumida**. O Strava não publica a precisão dos fixes nem a regra que resultou no ganho exibido. A distância Haversine excede a exibida em 0,312, 0,373 e 0,489 km, respectivamente; isso também indica que somar o GPX literalmente não reproduz o processamento da plataforma.
+
+| Atividade | Atual integral − Strava, 5 m | Atual por 1 km − integral, 5 m | Atual por 1 km − Strava, 5 m | Sonda − Strava, 5 m | Atual por 1 km − integral, 10 m |
+|---|---:|---:|---:|---:|---:|
+| 19463623301 | −166,1 m (−7,6%) | −66,1 m | −232,2 m (−10,7%) | −34,6 m (−1,6%) | −143,2 m |
+| 20049386131 | −118,6 m (−9,1%) | −122,3 m | −240,9 m (−18,5%) | −23,7 m (−1,8%) | −211,5 m |
+| 20338280241 | −152,5 m (−12,9%) | −56,3 m | −208,8 m (−17,6%) | −50,9 m (−4,3%) | −139,6 m |
+
+O déficit **entre execução integral e processamento em blocos dos mesmos pontos** aparece nas três rotas, em dois limiares: é evidência da dependência indevida das fronteiras de cálculo. A sonda fica mais perto do ganho Strava nas três rotas no cenário de 5 m, mas isto mede concordância com uma estimativa processada e não valida sua acurácia, seus parâmetros nem seu comportamento ao vivo. Com 10 m, a sonda produz 1.948,0 / 1.159,5 / 972,9 m: a escolha do limiar muda substancialmente a conclusão. As três rotas são pedaladas da mesma plataforma, sem qualidade vertical original ou referência de terreno independente; não substituem os testes em percurso plano ruidoso e montanhoso com dados brutos.
+
+**Próximo experimento decisivo:** implementar o estimador incremental Kotlin e um replay que invoque exatamente esse código; medir invariância para fronteiras arbitrárias, custo por fix e atraso de atualização, e confrontar os três GPX como referência secundária. Capturar em paralelo uma atividade plana e uma montanhosa com altitude bruta, precisão vertical, timestamps monotônicos e eventos reais de pausa para avaliar ganho espúrio, perda de subidas e efeito de sinal ruim. Ajustar limiar e janela por métricas desses controles, sem buscar apenas igualdade com o total do Strava.
 
 ## Recomendações prioritárias
 
@@ -56,8 +80,8 @@ O script inclui uma **sonda** com mediana causal dos últimos 5 valores e máqui
 2. **Processar cada fix novo em série.** Um estimador puro e incremental deve possuir seu filtro, mínimo/máximo, direção, ganho e perda; chamadas em blocos e replay contínuo devem produzir o mesmo resultado. `pause` congela; `resume` mantém a referência sem conectar saltos; `stop/save` finaliza e publica um snapshot atômico. Nenhuma leitura da lista GPX em mutação.
 3. **Filtrar sem esconder subidas graduais.** Usar uma pequena janela causal robusta para espículas e uma histerese de reversão para não contar zigue-zague vertical curto. A escolha de janela/limiar deve minimizar ganho espúrio e atraso em testes sintéticos e replays independentes; 10 m sem barômetro é uma referência externa, não uma meta de equivalência com o Strava.
 4. **Exibir procedência e frescor.** Ganho/perda confirmados atualizam no mesmo ciclo de fix aceito (meta: até 5 s depois de ultrapassar o limiar sob fix por segundo). Altitude atual pode usar a mesma amostra filtrada, com estado “aguardando GPS”/“sinal impreciso” quando necessário. Não exibir `0 m` como medição ausente nem saltar os totais ao pausar.
-5. **Validar sem circularidade.** Primeiro testes de propriedades (invariância por blocos, monotonicidade, conservação aproximada de ganho−perda, repetição e pausas). Depois replays de pelo menos um percurso plano e outro montanhoso **com dados brutos e precisão vertical**, além desta rota. Comparar Strava só como referência secundária. Instrumentar contagens de amostras aceitas/rejeitadas e latência, sem registrar coordenadas nem altitudes brutas em logs de produção.
+5. **Validar sem circularidade.** Primeiro testes de propriedades (invariância por blocos, monotonicidade, conservação aproximada de ganho−perda, repetição e pausas). Depois replays de pelo menos um percurso plano e outro montanhoso **com dados brutos e precisão vertical**, além das três rotas Strava. Comparar Strava só como referência secundária. Instrumentar contagens de amostras aceitas/rejeitadas e latência, sem registrar coordenadas nem altitudes brutas em logs de produção.
 
 ## Limites deste trabalho
 
-Não foi implementada mudança no app nem executado replay de 5 h no emulador. O GPX exportado não informa a precisão dos fixes nem se cada altitude é do sensor original ou da correção posterior. Também não há medição independente de terreno ou arquivo original de sensores; portanto **não se pode afirmar** que algum dos totais reproduz a medição real do aparelho. `make test` passou na base antes das mudanças desta análise; os testes do script e a inspeção final são registrados no fechamento da worktree.
+Não foi implementada mudança no app nem executado replay de 5 h no emulador. Os GPX exportados não informam a precisão dos fixes nem se cada altitude é do sensor original ou da correção posterior. Também não há medição independente de terreno ou arquivo original de sensores; portanto **não se pode afirmar** que algum dos totais reproduz a medição real do aparelho. `make test` passou na base antes das mudanças desta análise; os testes do script e a inspeção final são registrados no fechamento da worktree.

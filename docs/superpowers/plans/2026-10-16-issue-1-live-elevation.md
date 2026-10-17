@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Não adicionar nem publicar `tools/gpx/*.gpx`; a faixa pode revelar localização privada.
+- Não adicionar nem publicar `tools/gpx/**/*.gpx`; a faixa pode revelar localização privada. As três exportações da issue #1 estão somente na worktree em `tools/gpx/issue-1/<id>.gpx`.
 - `Location.getAccuracy()` é só horizontal; `getVerticalAccuracyMeters()`/`hasVerticalAccuracy()` apenas em API 26+.
 - Manter a política atual de não contar altimetria durante pausa, inclusive pausas automáticas, até decisão explícita de produto em contrário.
 - GPX exportado mantém `<ele>` bruto e o esquema atual. Resumos históricos não são recalculados.
@@ -39,7 +39,7 @@
 | `mobile/src/main/java/br/com/helpdev/velocimetroalerta/MainActivityFragment.kt`, `mobile/src/main/res/values/strings.xml`, `mobile/src/main/res/values-pt/strings.xml` | Estados de altitude/qualidade e explicação atualizada. |
 | `mobile/src/test/java/br/com/helpdev/velocimetroalerta/gps/ElevationEstimatorTest.kt` (novo) | Sequências sintéticas e invariantes do algoritmo. |
 | `mobile/src/androidTest/java/br/com/helpdev/velocimetroalerta/SpeedometerServiceElevationTest.kt` (novo) | Fluxo Android e snapshot de gravação; reutilizar infraestrutura dos testes instrumentados. |
-| `tools/analyze_elevation_gpx.py` e `tools/test_analyze_elevation_gpx.py` | Benchmark offline agregado; evoluir para execução do estimador Kotlin ou fixture equivalente, mantendo GPX fora do Git. |
+| `tools/analyze_elevation_gpx.py`, `tools/elevation_validation/` e seus testes Python | Benchmark offline agregado das três rotas; evoluir para execução do estimador Kotlin real, mantendo GPX fora do Git. |
 
 ---
 
@@ -108,11 +108,12 @@
 
 ### Task 5: Calibração, comparação e gate de liberação
 
-**Files:** atualizar `tools/analyze_elevation_gpx.py`, `tools/test_analyze_elevation_gpx.py`, `gps/ElevationEstimatorTest.kt` e a documentação de análise, sem versionar tracks. Se necessário, criar um pequeno runner de replay que invoque **o estimador Kotlin real** a partir do GPX local.
+**Files:** evoluir `tools/elevation_validation/compare.py`, `tools/elevation_validation/test_compare.py`, `gps/ElevationEstimatorTest.kt` e a documentação de análise, sem versionar tracks. Criar um pequeno runner de replay que invoque **o estimador Kotlin real** a partir do GPX local; o comparador Python atual só executa a lógica anterior e a sonda exploratória.
 
 **Interfaces:** consome parâmetros e saídas das Tasks 1–4; produz relatório agregado por rota (`ganho`, `perda`, erro em trechos conhecidos, ruído plano, latência p50/p95, descartes, tempo por fix), sem coordenadas.
 
-- [ ] **Step 1: Coletar ou obter consentidamente** pelo menos duas rotas independentes: uma plana e uma montanhosa com dados brutos/precisão vertical; manter arquivos em `tools/gpx/` ignorado. Esta atividade Strava permanece um terceiro caso de sensibilidade, não o único gabarito.
+- [x] **Step 1a: Organizar e comparar três exportações Strava autorizadas** (`19463623301`, `20049386131`, `20338280241`) em `tools/gpx/issue-1/` ignorado, com manifesto, script e testes agregados em `tools/elevation_validation/`. O replay atual assume precisão horizontal constante e não modela pausas ou qualidade real.
+- [ ] **Step 1b: Coletar ou obter consentidamente** pelo menos duas rotas independentes: uma plana ruidosa e uma montanhosa com dados brutos/precisão vertical e eventos de pausa; manter arquivos em `tools/gpx/` ignorado. Os três casos Strava são sensibilidade secundária, não gabarito de acurácia.
 - [ ] **Step 2: Executar o estimador Kotlin real** em replay ponto a ponto e em blocos; confirmar invariância `≤0,01 m` e comparar com a implementação anterior sob hipóteses explicitadas. Ajustar janela/limiares somente se testes de ruído, subida e latência justificarem; registrar números e versão de parâmetros.
 - [ ] **Step 3: Testar API 24 e 36** com `make test-e2e` e replay controlado; confirmar fallback sem precisão vertical, pausas, tela desligada, notification e resumo salvo. Medir atraso p95 `≤5 s` após confirmação sob 1 fix/s e ausência de ganho espúrio relevante na rota plana (meta provisória: `<10 m por hora`, sujeita à qualidade do material de referência).
 - [ ] **Step 4: Rodar `make verify`** e revisar que `git status --short` não lista GPX, coordenadas ou logs brutos. Atualizar a análise com resultados observados e limitações.
@@ -122,4 +123,4 @@
 
 - **Cobertura da spec:** entrada/qualidade (Tasks 1–2), estado e serialização (Tasks 1 e 3), UI/salvamento (Task 4), calibração/rollout (Task 5).
 - **Consistência de tipos:** `ElevationSample` → `ElevationEstimator` → `ElevationEstimate` → serviço/`ObSpeedometerAlert` → resumo/UI; nenhum consumidor depende de `TrkPt.accuracy` como precisão vertical.
-- **Risco material pendente:** o GPX desta análise não substitui uma captura bruta em aparelho. O gate da Task 5 exige mais dados antes de afirmar melhoria de acurácia ou publicar o cálculo.
+- **Risco material pendente:** os três GPX desta análise não substituem capturas brutas com qualidade vertical e pausas em aparelho. O gate da Task 5 exige esses dados e replay do Kotlin real antes de afirmar melhoria de acurácia ou publicar o cálculo.

@@ -2,7 +2,7 @@
 
 **Objetivo:** durante uma atividade, mostrar altitude, ganho e perda com atraso curto, sem acumular ruído isolado nem alterar o total porque a atividade foi pausada ou processada em blocos. Preservar a consistência entre tela, voz/notification quando aplicável, resumo salvo e GPX bruto.
 
-**Evidência e limites:** ver [análise da atividade TDL na Canastra](../analysis/2026-10-16-issue-1-elevation-strava.md). O total de 2.174 m do Strava é uma referência processada, não um gabarito do GPS. O GPX fornecido não inclui precisão vertical nem a fonte de altitude.
+**Evidência e limites:** ver [análise das três atividades Strava](../analysis/2026-10-16-issue-1-elevation-strava.md). Os ganhos de 2.174, 1.303 e 1.184 m são referências processadas, não gabaritos do GPS. Os GPX não incluem precisão vertical, eventos de pausa nem a fonte de altitude. O comparador reproduz cenários de precisão presumida em `tools/elevation_validation/`.
 
 ## Contrato de entrada e saída
 
@@ -31,7 +31,7 @@ O estimador guarda apenas um buffer circular curto e o estado de mínimo/máximo
 
 - Testes puros: plano com ruído/espícula, subida lenta, platô, reversões, subida seguida de descida, altitude ausente, precisão vertical ruim/variável, duplicatas, tempo fora de ordem, pausa/retomada, lacuna de sinal e finalização. Para a mesma sequência e política de pausas, processar ponto a ponto, em blocos arbitrários e com snapshots intermediários dá **exatamente o mesmo total** dentro de tolerância de ponto flutuante de 0,01 m.
 - Invariantes: ganho/perda não diminuem; sem dados válidos não aparecem como medição zero; nenhum pico causado por uma única espícula; não há salto em `pause/resume/finish`; para um percurso que volta à altitude inicial, ganho e perda diferem apenas pela resolução do filtro e cauda (meta inicial ≤ 5 m em dados controlados).
-- Calibrar com a atividade desta análise **e** pelo menos duas rotas independentes (uma plana com GPS ruidoso e outra montanhosa com registro bruto de precisão vertical; se possível uma medição barométrica/levantamento independente). Medir ganho/perda final, erro em trechos conhecidos, ganho espúrio plano, atraso p50/p95 desde subida confirmada, descarte de amostras e diferença entre replay e execução em aparelho. O Strava é referência secundária, sem meta de “igualar 2.174 m”. Se o limiar inicial falhar em rota plana ou apagar subidas reais, ajustar os parâmetros antes do rollout e registrar o resultado.
+- Comparar inicialmente com os **três GPX Strava** em `tools/gpx/issue-1/` como casos de sensibilidade, mantendo os arquivos privados fora do Git. Para calibrar/liberar, obter **também** pelo menos duas rotas independentes (uma plana com GPS ruidoso e outra montanhosa com registro bruto de precisão vertical; se possível uma medição barométrica/levantamento independente). Medir ganho/perda final, erro em trechos conhecidos, ganho espúrio plano, atraso p50/p95 desde subida confirmada, descarte de amostras e diferença entre replay e execução em aparelho. O Strava é referência secundária, sem meta de igualar seus totais. Se o limiar inicial falhar em rota plana ou apagar subidas reais, ajustar os parâmetros antes do rollout e registrar o resultado.
 - Emuladores API 24 e 36: `make test` seguido de `make test-e2e`; replay GPX em teste controlado do serviço e teste manual de exibição com pausa, retomada, sinal ruim, tela desligada e salvamento. `make verify` no candidato final. Sem raw GPX no repositório, logs ou anexos de revisão.
 
 ## Rollout
