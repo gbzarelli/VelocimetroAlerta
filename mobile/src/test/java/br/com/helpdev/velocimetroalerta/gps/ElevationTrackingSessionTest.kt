@@ -1,9 +1,51 @@
 package br.com.helpdev.velocimetroalerta.gps
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ElevationTrackingSessionTest {
+    @Test
+    fun altitudeIsAcceptedWhenHorizontalAccuracyIsTooCoarseForDistanceTracking() {
+        val session = ElevationTrackingSession()
+        session.beginAutomaticPauseCandidate()
+
+        (100..112).map(Int::toDouble).plus(List(4) { 112.0 }).forEach { altitude ->
+            session.acceptLocation(sample(altitude), horizontalAccuracyMeters = 20.0)
+        }
+
+        assertEquals(0.0, session.snapshot().gainMeters, 0.0)
+        session.cancelAutomaticPauseCandidate()
+        assertEquals(12.0, session.snapshot().gainMeters, 0.01)
+    }
+
+    @Test
+    fun fallbackAccuracyAboveVerticalAccuracyLimitIsRejected() {
+        val session = ElevationTrackingSession()
+
+        (100..112).map(Int::toDouble).plus(List(4) { 112.0 }).forEach { altitude ->
+            session.acceptLocation(sample(altitude), horizontalAccuracyMeters = 25.1)
+        }
+
+        assertEquals(0L, session.snapshot().acceptedSamples)
+        assertEquals(0.0, session.snapshot().gainMeters, 0.0)
+    }
+
+    @Test
+    fun poorVerticalAccuracyIsRejectedEvenWhenHorizontalAccuracyIsGood() {
+        val session = ElevationTrackingSession()
+
+        (100..112).map(Int::toDouble).plus(List(4) { 112.0 }).forEach { altitude ->
+            session.acceptLocation(
+                ElevationSample(altitude, verticalAccuracyMeters = 30.0, fixElapsedRealtimeNanos = ++timeNanos),
+                horizontalAccuracyMeters = 5.0
+            )
+        }
+
+        assertEquals(0L, session.snapshot().acceptedSamples)
+        assertTrue(session.snapshot().quality == ElevationQuality.LOW_CONFIDENCE)
+    }
+
     @Test
     fun lowSpeedSamplesCountWhenAutomaticPauseIsCancelled() {
         val session = ElevationTrackingSession()

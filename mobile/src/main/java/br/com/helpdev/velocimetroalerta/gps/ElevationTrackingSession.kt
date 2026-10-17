@@ -5,6 +5,7 @@ import java.util.ArrayDeque
 /** Applies activity pause decisions around the speed independent elevation estimator. */
 class ElevationTrackingSession(config: ElevationConfig = ElevationConfig()) {
     private val estimator = ElevationEstimator(config)
+    private val maximumFallbackAccuracyMeters = config.maximumVerticalAccuracyMeters
     private val automaticPauseSamples = ArrayDeque<ElevationSample>()
     private var holdingForAutomaticPause = false
     private var paused = false
@@ -22,6 +23,27 @@ class ElevationTrackingSession(config: ElevationConfig = ElevationConfig()) {
         if (holdingForAutomaticPause) automaticPauseSamples.addLast(sample)
         else estimator.accept(sample)
         return estimator.snapshot()
+    }
+
+    /**
+     * Accepts altitude using vertical accuracy when available, falling back to horizontal
+     * accuracy on Android versions that do not report vertical accuracy. Poor reported vertical
+     * accuracy still reaches the estimator so it can expose low confidence in the live estimate.
+     */
+    @Synchronized
+    fun acceptLocation(sample: ElevationSample, horizontalAccuracyMeters: Double): ElevationEstimate {
+        if (paused || finished) return estimator.snapshot()
+        val verticalAccuracy = sample.verticalAccuracyMeters
+        if (verticalAccuracy == null) {
+            if (!horizontalAccuracyMeters.isFinite() || horizontalAccuracyMeters <= 0.0 ||
+                horizontalAccuracyMeters > maximumFallbackAccuracyMeters
+            ) {
+                return estimator.snapshot()
+            }
+        } else if (!verticalAccuracy.isFinite() || verticalAccuracy <= 0.0) {
+            return estimator.snapshot()
+        }
+        return accept(sample)
     }
 
     /** Replays the short low speed debounce interval when the app decides the ride continued. */

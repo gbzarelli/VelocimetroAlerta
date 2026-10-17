@@ -592,36 +592,42 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
                 return
             }
 
-            //If has minimal accuracy calculate data:
-            if (accuracy > 0.0 && accuracy <= CONST_PRECISAO_MINIMA &&
-                fixDeduplicator.shouldAccept(location.elapsedRealtimeNanos)
-            ) {
-                //Define time on GPX for first location.
-                if (gpx.metaData == null) {
-                    obSpeedometerAlert.dateTimeStart = Date(location.time)
-                    val metaData = MetaData()
-                    metaData.time = Gpx.getUtcGpxTime(location.time)
-                    gpx.metaData = metaData
+            // Keep vertical data independent from the stricter horizontal threshold used for
+            // route distance and GPX points. Older Android versions have no vertical accuracy,
+            // so ElevationTrackingSession applies the configured horizontal fallback limit.
+            if (fixDeduplicator.shouldAccept(location.elapsedRealtimeNanos)) {
+                publishElevationEstimate(
+                    elevationSession.acceptLocation(location.toElevationSample(), accuracy)
+                )
 
-                    val trk = Trk()
-                    trk.name = "VEL_ALERTA_" + SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(obSpeedometerAlert.dateTimeStart)
-                    gpx.trk = trk
+                //If has minimal accuracy calculate distance and track data:
+                if (accuracy > 0.0 && accuracy <= CONST_PRECISAO_MINIMA) {
+                    //Define time on GPX for first location.
+                    if (gpx.metaData == null) {
+                        obSpeedometerAlert.dateTimeStart = Date(location.time)
+                        val metaData = MetaData()
+                        metaData.time = Gpx.getUtcGpxTime(location.time)
+                        gpx.metaData = metaData
+
+                        val trk = Trk()
+                        trk.name = "VEL_ALERTA_" + SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(obSpeedometerAlert.dateTimeStart)
+                        gpx.trk = trk
+                    }
+
+                    calculateDistances(location)
+                    calculateSpeedAVG()
+
+                    if (currentSpeed > obSpeedometerAlert.speedMax) {
+                        obSpeedometerAlert.speedMax = currentSpeed
+                    }
+
+                    if (trackPointExtension == null) {
+                        gpx.trk.trkseg.addTrkPt(location)
+                    } else {
+                        gpx.trk.trkseg.addTrkPt(location, trackPointExtension)
+                    }
+                    activeRoute.append(RoutePoint(location.latitude, location.longitude))
                 }
-
-                calculateDistances(location)
-                publishElevationEstimate(elevationSession.accept(location.toElevationSample()))
-                calculateSpeedAVG()
-
-                if (currentSpeed > obSpeedometerAlert.speedMax) {
-                    obSpeedometerAlert.speedMax = currentSpeed
-                }
-
-                if (trackPointExtension == null) {
-                    gpx.trk.trkseg.addTrkPt(location)
-                } else {
-                    gpx.trk.trkseg.addTrkPt(location, trackPointExtension)
-                }
-                activeRoute.append(RoutePoint(location.latitude, location.longitude))
             }
             obSpeedometerAlert.time = chronometerTime
 

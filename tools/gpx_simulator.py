@@ -14,7 +14,7 @@ from typing import Optional
 
 
 EARTH_RADIUS_METERS = 6_371_000.0
-METERS_PER_KNOT_SECOND = 1852.0 / 3600.0
+NMEA_SETTLE_DELAY_SECONDS = 0.4
 
 
 @dataclass(frozen=True)
@@ -93,19 +93,18 @@ def _distance_meters(first: TrackPoint, second: TrackPoint) -> float:
     return 2 * EARTH_RADIUS_METERS * math.asin(math.sqrt(min(1.0, haversine)))
 
 
-def _segment_speed_knots(previous: TrackPoint, current: TrackPoint, playback_speed: float) -> float:
+def _segment_speed_meters_per_second(previous: TrackPoint, current: TrackPoint, playback_speed: float) -> float:
     if previous.timestamp is None or current.timestamp is None:
         recorded_seconds = 1.0
     else:
         recorded_seconds = (current.timestamp - previous.timestamp).total_seconds()
     if recorded_seconds <= 0:
         return 0.0
-    meters_per_second = _distance_meters(previous, current) / recorded_seconds * playback_speed
-    return meters_per_second / METERS_PER_KNOT_SECOND
+    return _distance_meters(previous, current) / recorded_seconds * playback_speed
 
 
-def point_speeds_knots(points: list[TrackPoint], playback_speed: float = 1.0) -> list[float]:
-    """Derive emulator velocities in knots while preserving GPX playback timing."""
+def point_speeds_meters_per_second(points: list[TrackPoint], playback_speed: float = 1.0) -> list[float]:
+    """Derive emulator velocities in m/s while preserving GPX playback timing."""
     if playback_speed <= 0:
         raise ValueError("Playback speed must be greater than zero")
     if not points:
@@ -113,9 +112,9 @@ def point_speeds_knots(points: list[TrackPoint], playback_speed: float = 1.0) ->
     if len(points) == 1:
         return [0.0]
 
-    velocities = [_segment_speed_knots(points[0], points[1], playback_speed)]
+    velocities = [_segment_speed_meters_per_second(points[0], points[1], playback_speed)]
     velocities.extend(
-        _segment_speed_knots(points[index - 1], points[index], playback_speed)
+        _segment_speed_meters_per_second(points[index - 1], points[index], playback_speed)
         for index in range(1, len(points))
     )
     return velocities
@@ -140,10 +139,10 @@ def emulator_geo_fix_command(
     adb: str,
     device: str,
     point: TrackPoint,
-    velocity_knots: float,
+    velocity_meters_per_second: float,
     fallback_elevation_meters: float = 0.0,
 ) -> list[str]:
-    """Build an emulator GPS fix command; geo fix accepts velocity in knots."""
+    """Build an emulator GPS fix command with the observed m/s velocity behavior."""
     elevation = (
         point.elevation
         if point.elevation is not None and math.isfinite(point.elevation)
@@ -160,7 +159,75 @@ def emulator_geo_fix_command(
         str(point.latitude),
         str(elevation),
         "8",
-        str(velocity_knots),
+        str(velocity_meters_per_second),
+    ]
+
+
+def _nmea_coordinate(value: float, degree_digits: int) -> tuple[str, str]:
+    absolute = abs(value)
+    degrees = int(absolute)
+    minutes = round((absolute - degrees) * 60.0, 4)
+    if minutes >= 60.0:
+        degrees += 1
+        minutes = 0.0
+    hemisphere = ("N" if value >= 0 else "S") if degree_digits == 2 else ("E" if value >= 0 else "W")
+    return f"{degrees:0{degree_digits}d}{minutes:07.4f}", hemisphere
+
+
+def emulator_geo_nmea_command(
+    adb: str,
+    device: str,
+    point: TrackPoint,
+    fallback_elevation_meters: float = 0.0,
+) -> list[str]:
+    """Build a GGA fix because API 24 emulator `geo fix` omits altitude from Location."""
+    elevation = (
+        point.elevation
+        if point.elevation is not None and math.isfinite(point.elevation)
+        else fallback_elevation_meters
+    )
+    timestamp = point.timestamp or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    utc_time = timestamp.astimezone(timezone.utc).strftime("%H%M%S.%f")[:-4]
+    latitude, north_south = _nmea_coordinate(point.latitude, 2)
+    longitude, east_west = _nmea_coordinate(point.longitude, 3)
+    fields = [
+        "GPGGA",
+        utc_time,
+        latitude,
+        north_south,
+        longitude,
+        east_west,
+        "1",
+        "08",
+        "0.9",
+        f"{elevation:.1f}",
+        "M",
+        "0.0",
+        "M",
+        "",
+        "",
+    ]
+    body = ",".join(fields)
+    checksum = 0
+    for character in body:
+        checksum ^= ord(character)
+    sentence = f"${body}*{checksum:02X}"
+    return [adb, "-s", device, "emu", "geo", "nmea", sentence]
+
+
+def emulator_geo_commands(
+    adb: str,
+    device: str,
+    point: TrackPoint,
+    velocity_meters_per_second: float,
+    fallback_elevation_meters: float = 0.0,
+) -> list[list[str]]:
+    """Send altitude via GGA, then refresh speed and position with the emulator fix."""
+    return [
+        emulator_geo_nmea_command(adb, device, point, fallback_elevation_meters),
+        emulator_geo_fix_command(adb, device, point, velocity_meters_per_second, fallback_elevation_meters),
     ]
 
 
@@ -168,12 +235,16 @@ def _send_point(
     adb: str,
     device: str,
     point: TrackPoint,
-    velocity_knots: float,
+    velocity_meters_per_second: float,
     fallback_elevation_meters: float,
 ) -> None:
-    command = emulator_geo_fix_command(adb, device, point, velocity_knots, fallback_elevation_meters)
     try:
-        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+        for index, command in enumerate(
+            emulator_geo_commands(adb, device, point, velocity_meters_per_second, fallback_elevation_meters)
+        ):
+            if index > 0:
+                time.sleep(NMEA_SETTLE_DELAY_SECONDS)
+            subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
     except FileNotFoundError as error:
         raise RuntimeError("adb was not found; install Android platform-tools or set ADB") from error
     except subprocess.CalledProcessError as error:
@@ -181,23 +252,22 @@ def _send_point(
 
 
 def simulate(points: list[TrackPoint], adb: str, device: str, speed: float, loop: bool, loop_pause: float) -> None:
-    velocities = point_speeds_knots(points, playback_speed=speed)
+    velocities = point_speeds_meters_per_second(points, playback_speed=speed)
     elevations = point_elevations_meters(points)
     cycle = 0
     while True:
         cycle += 1
         print("Cycle {}: sending {} GPX points to {} at {}x".format(cycle, len(points), device, speed), flush=True)
-        next_due = None
-        for index, (point, velocity_knots, elevation) in enumerate(zip(points, velocities, elevations)):
-            if next_due is not None:
-                remaining = next_due - time.monotonic()
-                if remaining > 0:
-                    time.sleep(remaining)
-            _send_point(adb, device, point, velocity_knots, elevation)
+        next_due = time.monotonic()
+        for index, (point, velocity_meters_per_second, elevation) in enumerate(zip(points, velocities, elevations)):
+            remaining = next_due - time.monotonic()
+            if remaining > 0:
+                time.sleep(remaining)
+            _send_point(adb, device, point, velocity_meters_per_second, elevation)
             if index % 100 == 0 or index == len(points) - 1:
                 print("  {}/{} points ({:.6f}, {:.6f})".format(index + 1, len(points), point.latitude, point.longitude), flush=True)
             if index < len(points) - 1:
-                next_due = time.monotonic() + playback_delay(point, points[index + 1], speed)
+                next_due += playback_delay(point, points[index + 1], speed)
         if not loop:
             return
         print("Route complete; restarting in {:.1f}s (Ctrl+C to stop).".format(loop_pause), flush=True)
