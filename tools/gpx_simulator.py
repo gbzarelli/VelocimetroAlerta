@@ -15,6 +15,7 @@ from typing import Optional
 
 EARTH_RADIUS_METERS = 6_371_000.0
 NMEA_SETTLE_DELAY_SECONDS = 0.4
+METERS_PER_SECOND_PER_KNOT = 1_852.0 / 3_600.0
 
 
 @dataclass(frozen=True)
@@ -142,7 +143,7 @@ def emulator_geo_fix_command(
     velocity_meters_per_second: float,
     fallback_elevation_meters: float = 0.0,
 ) -> list[str]:
-    """Build an emulator GPS fix command with the observed m/s velocity behavior."""
+    """Build a geo-fix command, converting meters per second to the console's knots."""
     elevation = (
         point.elevation
         if point.elevation is not None and math.isfinite(point.elevation)
@@ -159,7 +160,7 @@ def emulator_geo_fix_command(
         str(point.latitude),
         str(elevation),
         "8",
-        str(velocity_meters_per_second),
+        str(round(velocity_meters_per_second / METERS_PER_SECOND_PER_KNOT, 3)),
     ]
 
 

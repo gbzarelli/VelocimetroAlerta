@@ -85,8 +85,7 @@ class GpxSimulatorTest(unittest.TestCase):
             points = read_track_points(gpx)
 
         # At the equator, 0.001 degrees of longitude is about 111.2 m,
-        # or 11.1 m/s over ten seconds. The emulator Location API reports
-        # the supplied geo-fix velocity directly as m/s.
+        # or 11.1 m/s over ten seconds. The emulator geo-fix command takes knots.
         velocities = point_speeds_meters_per_second(points)
         self.assertAlmostEqual(velocities[0], 11.12, delta=0.1)
         self.assertAlmostEqual(velocities[1], 11.12, delta=0.1)
@@ -154,7 +153,7 @@ class GpxSimulatorTest(unittest.TestCase):
         self.assertAlmostEqual(point_speeds_meters_per_second(points, playback_speed=4)[0], 44.48, delta=0.5)
         self.assertEqual(playback_delay(points[0], points[1], speed=4), 2.5)
 
-    def test_emulator_fix_includes_satellites_and_velocity_with_missing_altitude(self):
+    def test_emulator_fix_converts_meters_per_second_to_knots_with_missing_altitude(self):
         with tempfile.TemporaryDirectory() as directory:
             gpx = Path(directory) / "route.gpx"
             gpx.write_text("<gpx><trk><trkseg><trkpt lat='1' lon='2'/></trkseg></trk></gpx>", encoding="utf-8")
@@ -162,8 +161,17 @@ class GpxSimulatorTest(unittest.TestCase):
 
         self.assertEqual(
             emulator_geo_fix_command("adb", "emulator-5564", point, 12.5, 540.5),
-            ["adb", "-s", "emulator-5564", "emu", "geo", "fix", "2.0", "1.0", "540.5", "8", "12.5"],
+            ["adb", "-s", "emulator-5564", "emu", "geo", "fix", "2.0", "1.0", "540.5", "8", "24.298"],
         )
+
+    def test_geo_fix_preserves_slow_movement_and_zero_speed(self):
+        point = TrackPoint(1.0, 2.0, 540.5, None)
+
+        slow = emulator_geo_fix_command("adb", "emulator-5564", point, 0.04)
+        paused = emulator_geo_fix_command("adb", "emulator-5564", point, 0.0)
+
+        self.assertEqual(slow[-1], "0.078")
+        self.assertEqual(paused[-1], "0.0")
 
     def test_emulator_nmea_fix_encodes_altitude_coordinates_and_checksum(self):
         point = TrackPoint(
@@ -206,7 +214,7 @@ class GpxSimulatorTest(unittest.TestCase):
                     "nmea",
                     "$GPGGA,175425.00,2106.0000,S,04748.0000,W,1,08,0.9,540.5,M,0.0,M,,*5C",
                 ],
-                ["adb", "-s", "emulator-5564", "emu", "geo", "fix", "-47.8", "-21.1", "540.5", "8", "12.5"],
+                ["adb", "-s", "emulator-5564", "emu", "geo", "fix", "-47.8", "-21.1", "540.5", "8", "24.298"],
             ],
         )
 
