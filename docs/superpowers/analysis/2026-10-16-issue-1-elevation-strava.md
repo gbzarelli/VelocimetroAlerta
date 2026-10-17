@@ -82,6 +82,24 @@ O déficit **entre execução integral e processamento em blocos dos mesmos pont
 4. **Exibir procedência e frescor.** Ganho/perda confirmados atualizam no mesmo ciclo de fix aceito (meta: até 5 s depois de ultrapassar o limiar sob fix por segundo). Altitude atual pode usar a mesma amostra filtrada, com estado “aguardando GPS”/“sinal impreciso” quando necessário. Não exibir `0 m` como medição ausente nem saltar os totais ao pausar.
 5. **Validar sem circularidade.** Primeiro testes de propriedades (invariância por blocos, monotonicidade, conservação aproximada de ganho−perda, repetição e pausas). Depois replays de pelo menos um percurso plano e outro montanhoso **com dados brutos e precisão vertical**, além das três rotas Strava. Comparar Strava só como referência secundária. Instrumentar contagens de amostras aceitas/rejeitadas e latência, sem registrar coordenadas nem altitudes brutas em logs de produção.
 
-## Limites deste trabalho
+## Implementação inicial e replay Kotlin
 
-Não foi implementada mudança no app nem executado replay de 5 h no emulador. Os GPX exportados não informam a precisão dos fixes nem se cada altitude é do sensor original ou da correção posterior. Também não há medição independente de terreno ou arquivo original de sensores; portanto **não se pode afirmar** que algum dos totais reproduz a medição real do aparelho. `make test` passou na base antes das mudanças desta análise; os testes do script e a inspeção final são registrados no fechamento da worktree.
+A branch agora contém um `ElevationEstimator` Kotlin usado diretamente pelo app e pelo replay. Ele filtra cada fix com mediana causal de janela 5, mantém a excursão/direção entre amostras, usa fallback de 10 m sem precisão vertical e não mistura `Location.getAccuracy()` horizontal com incerteza vertical. O serviço processa cada fix monotônico aceito no mesmo ciclo serializado, substituindo o recálculo assíncrono a cada quilômetro. A execução por fix tem janela fixa e memória constante.
+
+O replay da implementação Kotlin nos mesmos GPX produziu:
+
+| Atividade | Ganho novo | Perda nova | Strava (ganho) | Diferença do ganho novo |
+|---|---:|---:|---:|---:|
+| 19463623301 | 1.949,3 m | 1.951,6 m | 2.174 m | −224,7 m (−10,3%) |
+| 20049386131 | 1.168,7 m | 1.153,9 m | 1.303 m | −134,3 m (−10,3%) |
+| 20338280241 | 973,5 m | 971,2 m | 1.184 m | −210,5 m (−17,8%) |
+
+Em comparação ao método antigo por blocos de 1 km com a hipótese uniforme de 5 m, o novo ganho variou em +7,5 m, +106,6 m e −1,7 m, respectivamente; isso evidencia a persistência de estado, não uma comparação de erro real. O GPX não traz precisão vertical nem pausas, e seus valores podem ter sido suavizados/corrigidos pelo Strava. Logo, os resultados não provam que o total novo seja mais ou menos próximo do terreno real.
+
+A pausa automática ainda exige velocidade ≤1 km/h por 3 s: durante esse debounce, os fixes de altitude ficam temporariamente retidos. Se a pessoa voltar a se mover, os fixes válidos são reaplicados; se a pausa for confirmada, o buffer é descartado para não contar deriva parado. Fixes válidos de baixa velocidade são contados enquanto a atividade segue ativa; pausa manual/automática congela os totais e retomar cria nova âncora sem salto. Valores de precisão horizontal zero/ausente não entram no track. O salvamento agora captura resumo e GPX sob a mesma trava do serviço, e a altitude ausente não é gravada como medição no resumo.
+
+`make test` passou; `make test-elevation-replay` passou para as três trilhas. Os testes de conversão Android da altitude/precisão vertical passaram nos emuladores API 24 e 36. Após reiniciar o emulador API 36 e corrigir o runner para usar o SDK já selecionado (sem reler `getprop` depois de cada teste), `make test-e2e` passou **78/78** testes instrumentados. A confirmação do fluxo real ainda exige validar manualmente pausa, retomada, GPS ruim, tela desligada e salvamento durante uma atividade.
+
+## Limites e próximo gate
+
+Não há gravações independentes com altitudes brutas e precisão vertical, trilha plana ruidosa ou referência barométrica; os GPX do Strava não indicam a regra de pausa e não constituem gabarito. Portanto, não se pode afirmar acurácia absoluta nem recomendar ajuste do limiar só para aproximar os totais Strava. A arquitetura incremental corrige as causas de latência, custo crescente e dependência de blocos identificadas; a mediana de 5 pontos e os limiares devem permanecer parâmetros experimentais até validar rotas independentes e o comportamento real de pausa/baixa velocidade.

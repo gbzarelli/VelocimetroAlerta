@@ -259,7 +259,7 @@ def install_apks(adb: str, serial: str) -> None:
             raise RuntimeError(f"Could not install {apk.name} on {serial}: {result.stdout}")
 
 
-def run_case(adb: str, serial: str, test_package: str, case: TestCase, log_path: Path) -> bool:
+def run_case(adb: str, serial: str, sdk: int, test_package: str, case: TestCase, log_path: Path) -> bool:
     test_id = f"{case.class_name}#{case.method_name}"
     command = [
         "shell",
@@ -279,9 +279,9 @@ def run_case(adb: str, serial: str, test_package: str, case: TestCase, log_path:
         and re.search(r"\bOK \(\d+ tests?\)", result.stdout) is not None
     )
     if successful:
-        print(f"PASS api{adb_shell(adb, serial, 'getprop', 'ro.build.version.sdk')} {test_id}")
+        print(f"PASS api{sdk} {test_id}")
         return True
-    print(f"FAIL api{adb_shell(adb, serial, 'getprop', 'ro.build.version.sdk')} {test_id}", file=sys.stderr)
+    print(f"FAIL api{sdk} {test_id}", file=sys.stderr)
     print(result.stdout[-5000:] if result.stdout else "(no instrumentation output)", file=sys.stderr)
     return False
 
@@ -354,6 +354,7 @@ def main() -> int:
                 passed = run_case(
                     adb,
                     serial,
+                    sdk,
                     test_package,
                     case,
                     RESULT_ROOT / f"{serial}_{case.class_name.rsplit('.', 1)[-1]}_{case.method_name}.log",

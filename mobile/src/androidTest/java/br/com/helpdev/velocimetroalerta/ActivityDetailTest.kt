@@ -136,6 +136,7 @@ class ActivityDetailTest {
             speedAvg = 18.9
             speedMax = 42.3
             altitude = 760.0
+            hasAltitude = true
             accuracyGPS = 4.5
             gainAlt = 210.0
             lostAlt = 180.0

@@ -124,3 +124,11 @@
 - **Cobertura da spec:** entrada/qualidade (Tasks 1–2), estado e serialização (Tasks 1 e 3), UI/salvamento (Task 4), calibração/rollout (Task 5).
 - **Consistência de tipos:** `ElevationSample` → `ElevationEstimator` → `ElevationEstimate` → serviço/`ObSpeedometerAlert` → resumo/UI; nenhum consumidor depende de `TrkPt.accuracy` como precisão vertical.
 - **Risco material pendente:** os três GPX desta análise não substituem capturas brutas com qualidade vertical e pausas em aparelho. O gate da Task 5 exige esses dados e replay do Kotlin real antes de afirmar melhoria de acurácia ou publicar o cálculo.
+
+## Estado da implementação inicial (16/10/2026)
+
+Implementados nesta branch: estimador incremental Kotlin e testes puros; conversor Android compatível com API 24 e precisão vertical API 26+; deduplicação monotônica; controle de debounce da pausa automática; integração serial no serviço; snapshots coerentes de atividade; estado de altitude ausente na UI/resumo; replay da implementação Kotlin para as três trilhas privadas. A pausa automática retém fixes por até 3 s, reaplicando-os se o movimento voltar e descartando-os se a pausa for confirmada; fixes lentos continuam válidos enquanto a atividade permanece ativa.
+
+Validações executadas: `make test` e `make test-elevation-replay` passaram. Os testes Android de conversão passaram em API 24/36. Após reiniciar o emulador API 36 (que havia parado de iniciar instrumentation depois de rodadas repetidas), `make test-e2e` passou **78/78** métodos aplicáveis nos dois emuladores. O runner também foi corrigido para imprimir o SDK escolhido sem fazer uma chamada ADB redundante depois de cada método.
+
+Pendente antes de declarar calibração/rollout: rotas independentes plana e montanhosa com dados brutos/precisão vertical e eventos reais de pausa; replay dos cenários de pausa a partir de dados com marcações confiáveis; benchmark de tempo por fix e atraso p95; confirmação manual no aparelho de pausa, retomada, sinal ruim, tela desligada e salvamento. Não anexar GPX privados à issue nem incluí-los no Git.

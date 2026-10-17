@@ -27,6 +27,7 @@ class ActivityDraftFactoryTest {
             gainAlt = 312.0
             lostAlt = 287.0
             altitude = 741.0
+            hasAltitude = true
             accuracyGPS = 5.0
             cadenceAvg = 82
             cadenceMax = 109
@@ -88,6 +89,13 @@ class ActivityDraftFactoryTest {
         assertNull(draft.summary.maxHeartRateBpm)
         assertNull(draft.summary.temperatureCelsius)
         assertNull(draft.summary.humidityPercent)
+    }
+
+    @Test
+    fun treatsFinalAltitudeWithoutAValidFixAsUnavailable() {
+        val draft = ActivityDraftFactory.from(gpxWithPoints(1), ObSpeedometerAlert(), "Atividade", "no-altitude")
+
+        assertNull(draft.summary.finalAltitudeMeters)
     }
 
     @Test

@@ -42,6 +42,8 @@ Run `make help` for the available commands. Common workflows:
 make build             # assemble the debug APK
 make run               # open/wait for emulator-5564, install, and launch the app
 make test              # GPX simulator tests and JVM unit tests
+make test-elevation    # elevation estimator and pause policy tests
+make test-elevation-replay # replay the three local Strava GPX files
 make test-e2e          # full instrumentation suite on API 24 and API 36
 make verify            # unit tests plus emulator instrumentation
 ```

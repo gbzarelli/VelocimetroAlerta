@@ -20,7 +20,6 @@ import android.view.ViewGroup
 import br.com.helpdev.velocimetroalerta.gps.ObSpeedometerAlert
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
 import br.com.helpdev.velocimetroalerta.activities.ActivityDraft
-import br.com.helpdev.velocimetroalerta.activities.ActivityDraftFactory
 import br.com.helpdev.velocimetroalerta.activities.ActivityRepository
 import br.com.helpdev.velocimetroalerta.databinding.FragmentMainBinding
 import br.com.helpdev.velocimetroalerta.sensors.SensorConnectionState
@@ -124,20 +123,29 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         val service = gpsProcess
         val alert = obSpeedometerAlert
         val startDate = alert?.dateTimeStart
-        val points = service?.gpx?.trk?.trkseg?.trkPts.orEmpty()
-        if (service == null || alert == null || startDate == null || alert.time < TimeUnit.MINUTES.toMillis(1) || points.isEmpty()) {
-            val builder = AlertDialog.Builder(host)
-            builder.setTitle(R.string.app_name)
-            builder.setMessage(R.string.atividades_sem_dados)
-            builder.setCancelable(false)
-            builder.setPositiveButton(R.string.bt_ok, null)
-            builder.create().show()
+        if (service == null || startDate == null) {
+            showNoActivityData(host)
+            return
+        }
+
+        val suggestedName = SimpleDateFormat("'Atividade' dd MMM, HH:mm", Locale.getDefault())
+            .format(startDate)
+        val draft = service.snapshotActivityDraft(suggestedName)
+        if (draft.summary.movingDurationMillis < TimeUnit.MINUTES.toMillis(1) || draft.gpx.trk?.trkseg?.trkPts.isNullOrEmpty()) {
+            showNoActivityData(host)
         } else {
-            val suggestedName = SimpleDateFormat("'Atividade' dd MMM, HH:mm", Locale.getDefault())
-                .format(startDate)
-            pendingActivityDraft = ActivityDraftFactory.from(service.gpx, alert, suggestedName)
+            pendingActivityDraft = draft
             saveActivityLauncher.launch(ActivitySaveActivity.newIntent(requireContext(), suggestedName))
         }
+    }
+
+    private fun showNoActivityData(host: Activity) {
+        val builder = AlertDialog.Builder(host)
+        builder.setTitle(R.string.app_name)
+        builder.setMessage(R.string.atividades_sem_dados)
+        builder.setCancelable(false)
+        builder.setPositiveButton(R.string.bt_ok, null)
+        builder.create().show()
     }
 
     private fun saveActivity(draft: ActivityDraft, name: String) {
@@ -259,7 +267,11 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
                     binding.velocidadeMedia.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.speedAvg)
 
                     binding.distancia.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.distance)
-                    binding.altitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.altitude)
+                    if (obSpeedometerAlert!!.hasAltitude) {
+                        binding.altitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.altitude)
+                    } else {
+                        binding.altitude.setText(R.string.text_null_value)
+                    }
                     binding.ganhoAltitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.gainAlt)
                     binding.perdaAltitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.lostAlt)
                     binding.precision.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.accuracyGPS)
