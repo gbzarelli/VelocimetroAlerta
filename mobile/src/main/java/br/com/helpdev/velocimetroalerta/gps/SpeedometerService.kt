@@ -26,7 +26,8 @@ import java.util.concurrent.ConcurrentHashMap
 import br.com.helpdev.velocimetroalerta.MainActivity
 import br.com.helpdev.velocimetroalerta.MySpeechSpeed
 import br.com.helpdev.velocimetroalerta.R
-import br.com.helpdev.velocimetroalerta.gpx.GpxMath
+import br.com.helpdev.velocimetroalerta.activities.ActivityDraft
+import br.com.helpdev.velocimetroalerta.activities.ActivityDraftFactory
 import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx
 import br.com.helpdev.velocimetroalerta.gpx.objects.MetaData
 import br.com.helpdev.velocimetroalerta.gpx.objects.TrackPointExtension
@@ -58,9 +59,11 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
     private var pauseAutomaticEnable = true
     private var tmpMillisPaused: Long = 0
-    private var tmpCurrentTimeMillis: Long? = null
     private var tmpDistancePaused = -1.0
     private var vibratorService: Vibrator? = null
+    private val elevationSession = ElevationTrackingSession()
+    private val fixDeduplicator = MonotonicFixDeduplicator()
+    private val automaticPauseController = AutomaticPauseController()
 
     private var callbackGpsThread: CallbackGpsThread? = null
     private var myNotificationBuilder: Notification.Builder? = null
@@ -89,11 +92,6 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
         }
     }
 
-    @Volatile
-    private var tmpCalculatingAltimetry = false
-    private var tmpIndexTrkAltimetry = 0
-    private var tmpDistanceCalcAltimetry = 0.0
-
     val isRunning: Boolean
         get() = statusService != STATUS_FINALIZADO
 
@@ -109,6 +107,10 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
     val hasLocationFix: Boolean
         get() = gps.hasLocationFix
+
+    @Synchronized
+    fun snapshotActivityDraft(suggestedName: String): ActivityDraft =
+        ActivityDraftFactory.from(gpx, obSpeedometerAlert, suggestedName)
 
     var isForegroundTracking: Boolean = false
         private set
@@ -377,6 +379,7 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
     @Synchronized
     fun stop() {
+        publishElevationEstimate(elevationSession.finish())
         this.statusService = STATUS_FINALIZADO
         gps.stopTracking()
         deactivateHeartRateSensor()
@@ -462,9 +465,9 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
         obSpeedometerAlert.inPauseAutomatic = false
         obSpeedometerAlert.inPauseActivity = false
         if (callbackGpsThread != null) callbackGpsThread!!.setBaseChronometer(base, true)
-        tmpCurrentTimeMillis = null
-        tmpIndexTrkAltimetry = 0
-        tmpDistanceCalcAltimetry = 0.0
+        automaticPauseController.reset()
+        elevationSession.reset()
+        fixDeduplicator.reset()
         tmpDistancePaused = -1.0
         tmpMillisPaused = 0
         gpsStatusSignal = CallbackGpsThread.GPS_ATUALIZADO
@@ -498,11 +501,13 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
         vibrate()
         if (!obSpeedometerAlert.inPauseActivity) return
         obSpeedometerAlert.inPauseActivity = false
+        publishElevationEstimate(elevationSession.resume())
         notifyBase(true, true)
-        if (automatic) {
+        if (obSpeedometerAlert.inPauseAutomatic) {
             obSpeedometerAlert.inPauseAutomatic = false
             callbackGpsThread?.setPauseAutomatic(obSpeedometerAlert.inPauseAutomatic)
         }
+        if (!automatic) automaticPauseController.reset()
     }
 
     @Synchronized
@@ -512,7 +517,9 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
         obSpeedometerAlert.inPauseActivity = true
         tmpDistancePaused = obSpeedometerAlert.distance
         tmpMillisPaused = SystemClock.elapsedRealtime()
-        calculateAltimetryAsync(true)
+        val estimate = if (automatic) elevationSession.confirmAutomaticPause() else elevationSession.pauseManually()
+        publishElevationEstimate(estimate)
+        automaticPauseController.reset()
         if (automatic) {
             obSpeedometerAlert.inPauseAutomatic = true
             callbackGpsThread?.setPauseAutomatic(obSpeedometerAlert.inPauseAutomatic)
@@ -528,6 +535,7 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
         if (callbackGpsThread != null) callbackGpsThread!!.setBaseChronometer(baseTime, resume)
     }
 
+    @Synchronized
     private fun process(views: Int, location: Location?) {
         var currentSpeed = 0.0
         var accuracy = -1.0
@@ -548,7 +556,6 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
                 }
                 currentSpeed = (location.speed * 3.6f).toDouble()
                 accuracy = location.accuracy.toDouble()
-                obSpeedometerAlert.altitude = location.altitude
                 obSpeedometerAlert.accuracyGPS = accuracy
             }
 
@@ -559,19 +566,25 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
             //Verify Automatic pause
             if (pauseAutomaticEnable) {
-                if (currentSpeed <= CONST_VELOCIDADE_PAUSA_AUTOMATICA && accuracy <= CONST_PRECISAO_MINIMA) {
-                    if (tmpCurrentTimeMillis == null) {
-                        tmpCurrentTimeMillis = System.currentTimeMillis()
-                    } else if (System.currentTimeMillis() - tmpCurrentTimeMillis!! > 3000) {
-                        if (!obSpeedometerAlert.inPauseActivity) {
-                            startPause(true)
-                        }
+                when (automaticPauseController.update(
+                    nowElapsedRealtime = SystemClock.elapsedRealtime(),
+                    speedKmh = currentSpeed,
+                    horizontalAccuracyMeters = accuracy,
+                    automaticallyPaused = obSpeedometerAlert.inPauseAutomatic
+                )) {
+                    AutomaticPauseDecision.HOLD_FOR_PAUSE -> elevationSession.beginAutomaticPauseCandidate()
+                    AutomaticPauseDecision.CONFIRM_PAUSE -> {
+                        startPause(true)
                         return
                     }
-                } else if (obSpeedometerAlert.inPauseActivity) {
-                    tmpCurrentTimeMillis = null
-                    resumePause(true)
+                    AutomaticPauseDecision.KEEP_PAUSED -> return
+                    AutomaticPauseDecision.RESUME -> resumePause(true)
+                    AutomaticPauseDecision.TRACK ->
+                        publishElevationEstimate(elevationSession.cancelAutomaticPauseCandidate())
                 }
+            } else {
+                automaticPauseController.reset()
+                publishElevationEstimate(elevationSession.cancelAutomaticPauseCandidate())
             }
 
             //If don't have location! do nothing
@@ -579,34 +592,42 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
                 return
             }
 
-            //If has minimal accuracy calculate data:
-            if (accuracy <= CONST_PRECISAO_MINIMA) {
-                //Define time on GPX for first location.
-                if (gpx.metaData == null) {
-                    obSpeedometerAlert.dateTimeStart = Date(location.time)
-                    val metaData = MetaData()
-                    metaData.time = Gpx.getUtcGpxTime(location.time)
-                    gpx.metaData = metaData
+            // Keep vertical data independent from the stricter horizontal threshold used for
+            // route distance and GPX points. Older Android versions have no vertical accuracy,
+            // so ElevationTrackingSession applies the configured horizontal fallback limit.
+            if (fixDeduplicator.shouldAccept(location.elapsedRealtimeNanos)) {
+                publishElevationEstimate(
+                    elevationSession.acceptLocation(location.toElevationSample(), accuracy)
+                )
 
-                    val trk = Trk()
-                    trk.name = "VEL_ALERTA_" + SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(obSpeedometerAlert.dateTimeStart)
-                    gpx.trk = trk
+                //If has minimal accuracy calculate distance and track data:
+                if (accuracy > 0.0 && accuracy <= CONST_PRECISAO_MINIMA) {
+                    //Define time on GPX for first location.
+                    if (gpx.metaData == null) {
+                        obSpeedometerAlert.dateTimeStart = Date(location.time)
+                        val metaData = MetaData()
+                        metaData.time = Gpx.getUtcGpxTime(location.time)
+                        gpx.metaData = metaData
+
+                        val trk = Trk()
+                        trk.name = "VEL_ALERTA_" + SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(obSpeedometerAlert.dateTimeStart)
+                        gpx.trk = trk
+                    }
+
+                    calculateDistances(location)
+                    calculateSpeedAVG()
+
+                    if (currentSpeed > obSpeedometerAlert.speedMax) {
+                        obSpeedometerAlert.speedMax = currentSpeed
+                    }
+
+                    if (trackPointExtension == null) {
+                        gpx.trk.trkseg.addTrkPt(location)
+                    } else {
+                        gpx.trk.trkseg.addTrkPt(location, trackPointExtension)
+                    }
+                    activeRoute.append(RoutePoint(location.latitude, location.longitude))
                 }
-
-                calculateDistances(location)
-                calculateAltimetryAsync(false)
-                calculateSpeedAVG()
-
-                if (currentSpeed > obSpeedometerAlert.speedMax) {
-                    obSpeedometerAlert.speedMax = currentSpeed
-                }
-
-                if (trackPointExtension == null) {
-                    gpx.trk.trkseg.addTrkPt(location)
-                } else {
-                    gpx.trk.trkseg.addTrkPt(location, trackPointExtension)
-                }
-                activeRoute.append(RoutePoint(location.latitude, location.longitude))
             }
             obSpeedometerAlert.time = chronometerTime
 
@@ -677,43 +698,14 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
         notificationManager!!.notify(ID_NOTIFICATION_FOREGROUND, myNotificationBuilder!!.build())
     }
 
-    private fun calculateAltimetryAsync(force: Boolean) {
-        if (tmpCalculatingAltimetry) return
-        object : Thread() {
-            override fun run() {
-                try {
-                    tmpCalculatingAltimetry = true
-                    calculateAltimetry(force)
-                } catch (t: Throwable) {
-                    Log.e(LOG, "Falaha ao calcular elevação", t)
-                } finally {
-                    tmpCalculatingAltimetry = false
-                }
-            }
-        }.start()
-    }
-
-    private fun calculateAltimetry(force: Boolean) {
-        val locationsHistory = trkPts
-        if (locationsHistory == null || locationsHistory.isEmpty() || !force && obSpeedometerAlert.distance <= tmpDistanceCalcAltimetry + CONST_INTERVALO_DISTANCIA_CALCULO_GANHO) {
-            return
+    private fun publishElevationEstimate(estimate: ElevationEstimate) {
+        estimate.filteredAltitudeMeters?.let { altitude ->
+            obSpeedometerAlert.altitude = altitude
+            obSpeedometerAlert.hasAltitude = true
         }
-        if (force) {
-            tmpIndexTrkAltimetry = 0
-            obSpeedometerAlert.gainAlt = 0.0
-            obSpeedometerAlert.lostAlt = 0.0
-        }
-        tmpDistanceCalcAltimetry = obSpeedometerAlert.distance
-
-        val calculateGain = GpxMath.calculateGain(tmpIndexTrkAltimetry, locationsHistory)
-
-        obSpeedometerAlert.addGainAlt(calculateGain.first)
-        obSpeedometerAlert.addLostAlt(calculateGain.second)
-
-        tmpIndexTrkAltimetry = locationsHistory.size - 1
-        if (force) {
-            notifyUpdate()
-        }
+        obSpeedometerAlert.elevationQuality = estimate.quality
+        obSpeedometerAlert.gainAlt = estimate.gainMeters
+        obSpeedometerAlert.lostAlt = estimate.lossMeters
     }
 
 
@@ -795,7 +787,6 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
         private const val CONST_VELOCIDADE_PAUSA_AUTOMATICA = 1.0//km/h
         private const val CONST_PRECISAO_MINIMA = 15
-        private const val CONST_INTERVALO_DISTANCIA_CALCULO_GANHO = 1.0//em km
     }
 
 }

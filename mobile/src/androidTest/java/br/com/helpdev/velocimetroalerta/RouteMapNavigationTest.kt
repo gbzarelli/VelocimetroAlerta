@@ -23,6 +23,7 @@ import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
 import br.com.helpdev.velocimetroalerta.test.RuntimePermissionState
 import br.com.helpdev.velocimetroalerta.test.RuntimePermissionStateRule
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -159,11 +160,20 @@ class RouteMapNavigationTest {
     }
 
     private fun openMapAndReturn() {
-        onView(withId(R.id.btMap)).perform(click())
+        onView(withId(R.id.btMap)).check(matches(isDisplayed()))
+        val mapMonitor = instrumentation.addMonitor(RouteMapActivity::class.java.name, null, false)
+        val mapActivity = try {
+            onView(withId(R.id.btMap)).perform(click())
+            instrumentation.waitForMonitorWithTimeout(mapMonitor, 8_000)
+        } finally {
+            instrumentation.removeMonitor(mapMonitor)
+        }
+        assertNotNull("The map activity should open", mapActivity)
         assertTrue(
-            "The map activity should open",
-            device.wait(Until.hasObject(By.text(context.getString(R.string.route_map_title))), 8_000)
+            "The map activity should render its root view",
+            device.wait(Until.hasObject(By.res(context.packageName, "route_map_root")), 8_000)
         )
+        assertEquals(context.getString(R.string.route_map_title), (mapActivity as RouteMapActivity).supportActionBar?.title)
         device.pressBack()
         assertTrue(
             "Back from the map should return to the speed screen",

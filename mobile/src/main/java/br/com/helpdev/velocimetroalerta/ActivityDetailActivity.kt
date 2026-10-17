@@ -120,9 +120,9 @@ class ActivityDetailActivity : AppCompatActivity() {
         if (summary.hasHumidityData) summary.humidityPercent?.let {
             addMetric(metrics, R.string.activity_metric_humidity, "$it%")
         }
-        if (summary.finalAltitudeMeters > 0) addMetric(
-            metrics, R.string.activity_metric_altitude, "${number.format(summary.finalAltitudeMeters)} m"
-        )
+        summary.finalAltitudeMeters?.takeIf { it > 0 }?.let {
+            addMetric(metrics, R.string.activity_metric_altitude, "${number.format(it)} m")
+        }
         if (summary.gpsAccuracyMeters > 0) addMetric(
             metrics, R.string.activity_metric_gps_accuracy, "${number.format(summary.gpsAccuracyMeters)} m"
         )

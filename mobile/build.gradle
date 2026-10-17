@@ -32,8 +32,8 @@ android {
         applicationId = 'br.com.helpdev.velocimetroalerta.v2'
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = '4.2'
+        versionCode = 5
+        versionName = '4.4'
         testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
     }
 

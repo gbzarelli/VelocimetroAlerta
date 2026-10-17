@@ -59,13 +59,17 @@ class InAppReviewLauncherTest {
     @Test
     fun opensThePlayStoreListingWhenReviewRequestFails() {
         val fallbackRequests = AtomicInteger()
+        val fallbackRequested = CountDownLatch(1)
         val manager = FailedReviewManager()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                InAppReviewLauncher(manager) { fallbackRequests.incrementAndGet() }.request(activity)
+                InAppReviewLauncher(manager) {
+                    fallbackRequests.incrementAndGet()
+                    fallbackRequested.countDown()
+                }.request(activity)
             }
 
-            assertTrue("The fallback should run after the failed review request", manager.requestFinished.await(5, TimeUnit.SECONDS))
+            assertTrue("The fallback should run after the failed review request", fallbackRequested.await(5, TimeUnit.SECONDS))
             assertEquals(1, fallbackRequests.get())
         }
     }
@@ -86,12 +90,8 @@ class InAppReviewLauncherTest {
     }
 
     private class FailedReviewManager : ReviewManager {
-        val requestFinished = CountDownLatch(1)
-
         override fun requestReviewFlow(): Task<ReviewInfo> =
-            Tasks.forException<ReviewInfo>(IllegalStateException("Play review unavailable")).also {
-                it.addOnCompleteListener { requestFinished.countDown() }
-            }
+            Tasks.forException<ReviewInfo>(IllegalStateException("Play review unavailable"))
 
         override fun launchReviewFlow(activity: Activity, reviewInfo: ReviewInfo): Task<Void> =
             error("Review flow cannot launch without review info")

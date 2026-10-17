@@ -252,6 +252,30 @@ def selected_devices(adb: str, requested_sdks: set[int], requested_devices: set[
     return devices
 
 
+def visible_pinned_task_packages(activity_dump: str) -> list[str]:
+    """Return packages whose visible activity task is currently in Android PiP mode."""
+    packages: list[str] = []
+    for line in activity_dump.splitlines():
+        if not re.search(r"\bTask\{", line) or not re.search(r"\bmode=pinned\b", line):
+            continue
+        match = re.search(r"\bA=\d+:([A-Za-z0-9_.]+)", line)
+        if match and match.group(1) not in packages:
+            packages.append(match.group(1))
+    return packages
+
+
+def dismiss_foreground_picture_in_picture_app(
+    adb: str, serial: str, protected_packages: set[str]
+) -> None:
+    """Stop pre-existing PiP tasks that could cover instrumentation test controls."""
+    activity_dump = adb_shell(adb, serial, "dumpsys", "activity", "activities")
+    for package in visible_pinned_task_packages(activity_dump):
+        if package in protected_packages or package.startswith(("android.", "com.android.")):
+            continue
+        print(f"Stopping pre-existing PiP app before instrumentation: {package}")
+        adb_shell(adb, serial, "am", "force-stop", package)
+
+
 def install_apks(adb: str, serial: str) -> None:
     for apk in (APP_APK, TEST_APK):
         result = run(adb, serial, ["install", "-r", str(apk)])
@@ -259,7 +283,7 @@ def install_apks(adb: str, serial: str) -> None:
             raise RuntimeError(f"Could not install {apk.name} on {serial}: {result.stdout}")
 
 
-def run_case(adb: str, serial: str, test_package: str, case: TestCase, log_path: Path) -> bool:
+def run_case(adb: str, serial: str, sdk: int, test_package: str, case: TestCase, log_path: Path) -> bool:
     test_id = f"{case.class_name}#{case.method_name}"
     command = [
         "shell",
@@ -279,9 +303,9 @@ def run_case(adb: str, serial: str, test_package: str, case: TestCase, log_path:
         and re.search(r"\bOK \(\d+ tests?\)", result.stdout) is not None
     )
     if successful:
-        print(f"PASS api{adb_shell(adb, serial, 'getprop', 'ro.build.version.sdk')} {test_id}")
+        print(f"PASS api{sdk} {test_id}")
         return True
-    print(f"FAIL api{adb_shell(adb, serial, 'getprop', 'ro.build.version.sdk')} {test_id}", file=sys.stderr)
+    print(f"FAIL api{sdk} {test_id}", file=sys.stderr)
     print(result.stdout[-5000:] if result.stdout else "(no instrumentation output)", file=sys.stderr)
     return False
 
@@ -337,6 +361,7 @@ def main() -> int:
     failures = 0
     total = 0
     for serial, sdk in devices:
+        dismiss_foreground_picture_in_picture_app(adb, serial, {app_package, test_package})
         install_apks(adb, serial)
         flags_supported = permission_flags_supported(adb_shell(adb, serial, "cmd", "package", "help"))
         original = read_runtime_permissions(adb, serial, app_package)
@@ -354,6 +379,7 @@ def main() -> int:
                 passed = run_case(
                     adb,
                     serial,
+                    sdk,
                     test_package,
                     case,
                     RESULT_ROOT / f"{serial}_{case.class_name.rsplit('.', 1)[-1]}_{case.method_name}.log",

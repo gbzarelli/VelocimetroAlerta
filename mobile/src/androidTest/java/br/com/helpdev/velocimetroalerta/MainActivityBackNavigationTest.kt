@@ -31,11 +31,12 @@ class MainActivityBackNavigationTest {
             scenario.onActivity { activity ->
                 activity.findViewById<DrawerLayout>(R.id.drawer_layout).openDrawer(GravityCompat.START)
             }
+            awaitDrawerOpen(scenario)
 
             pressBack()
+            awaitDrawerClosed(scenario)
 
             scenario.onActivity { activity ->
-                assertFalse(activity.findViewById<DrawerLayout>(R.id.drawer_layout).isDrawerOpen(GravityCompat.START))
                 assertFalse(activity.isFinishing)
             }
         }
@@ -51,7 +52,7 @@ class MainActivityBackNavigationTest {
     @Test
     fun backDuringRideRequiresConfirmation() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity { activity -> activity.requestTrackingStart() }
+            onView(withId(R.id.btStartStop)).perform(click())
             onView(withText(R.string.location_background_disclosure_message)).check(matches(isDisplayed()))
             onView(withText(R.string.location_background_disclosure_continue)).perform(click())
             awaitTracking(scenario)
@@ -75,5 +76,31 @@ class MainActivityBackNavigationTest {
             if (!isRunning) Thread.sleep(100)
         }
         assertTrue("The active-ride Back scenario must start a tracking service", isRunning)
+    }
+
+    private fun awaitDrawerOpen(scenario: ActivityScenario<MainActivity>) {
+        val deadline = System.currentTimeMillis() + 5_000
+        var isOpen = false
+        while (!isOpen && System.currentTimeMillis() < deadline) {
+            scenario.onActivity { activity ->
+                isOpen = activity.findViewById<DrawerLayout>(R.id.drawer_layout)
+                    .isDrawerOpen(GravityCompat.START)
+            }
+            if (!isOpen) Thread.sleep(50)
+        }
+        assertTrue("The navigation drawer should finish opening before Back is pressed", isOpen)
+    }
+
+    private fun awaitDrawerClosed(scenario: ActivityScenario<MainActivity>) {
+        val deadline = System.currentTimeMillis() + 5_000
+        var isClosed = false
+        while (!isClosed && System.currentTimeMillis() < deadline) {
+            scenario.onActivity { activity ->
+                isClosed = !activity.findViewById<DrawerLayout>(R.id.drawer_layout)
+                    .isDrawerVisible(GravityCompat.START)
+            }
+            if (!isClosed) Thread.sleep(50)
+        }
+        assertTrue("Back should finish closing the navigation drawer", isClosed)
     }
 }

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help doctor build clean emulator-open emulators-open install run test test-unit test-simulator test-e2e verify gpx-realtime gpx-fast
+.PHONY: help doctor build clean emulator-open emulators-open install run test test-unit test-simulator test-runner test-elevation test-elevation-replay compare-elevation test-e2e verify gpx-realtime gpx-fast
 
 APP_ID ?= br.com.helpdev.velocimetroalerta.v2
 MAIN_ACTIVITY ?= br.com.helpdev.velocimetroalerta.MainActivity
@@ -59,7 +59,21 @@ test-unit: ## Run Android/JVM unit tests
 test-simulator: ## Run GPX simulator parser and timing tests
 	python3 -m unittest tools.test_gpx_simulator -v
 
-test: test-simulator test-unit ## Run local unit tests (does not require emulators)
+test-runner: ## Run hermetic Android instrumentation runner tests
+	python3 -m unittest tools.test_run_hermetic_android_tests -v
+
+test-elevation: ## Run elevation estimator, pause policy, and offline comparator tests
+	python3 -m unittest tools.test_analyze_elevation_gpx tools.elevation_validation.test_compare -v
+	./gradlew :mobile:testDebugUnitTest --tests '*ElevationEstimatorTest' --tests '*ElevationTrackingSessionTest' --tests '*MonotonicFixDeduplicatorTest' --tests '*AutomaticPauseControllerTest'
+
+test-elevation-replay: ## Replay the three private GPX files through the Kotlin estimator
+	@test -f tools/gpx/issue-1/19463623301.gpx -a -f tools/gpx/issue-1/20049386131.gpx -a -f tools/gpx/issue-1/20338280241.gpx || { printf '%s\n' 'Missing private GPX files under tools/gpx/issue-1/'; exit 1; }
+	ELEVATION_GPX_DIR=$(CURDIR)/tools/gpx/issue-1 ./gradlew :mobile:testDebugUnitTest --tests '*ElevationGpxReplayTest'
+
+compare-elevation: ## Compare three local Strava GPX files using aggregate output
+	python3 -m tools.elevation_validation.compare --format markdown
+
+test: test-simulator test-runner test-elevation test-unit ## Run local unit tests (does not require emulators)
 
 test-e2e: emulators-open ## Run the full hermetic instrumentation suite on API 24 and API 36
 	python3 tools/run-hermetic-android-tests.py --sdk "$(TEST_SDKS)" $(foreach device,$(E2E_DEVICES),--device $(device))
