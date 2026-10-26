@@ -17,7 +17,7 @@ The app also shows live GPS speed, distance, elapsed time, and an estimate of el
 
 Compatible Bluetooth sensors can provide heart-rate and cadence data. An optional Arduino-based Vel Alert module can add cadence, temperature, and humidity readings; see [VelocimetroAlertaBLModule](https://github.com/helpdeveloper/VelocimetroAlertaBLModule).
 
-The app displays an interstitial ad when you open My activities and a banner at the bottom of Settings.
+The app displays banner ads at the bottom of My activities, saved activity details, and Settings.
 
 ### Português (Brasil)
 
@@ -27,7 +27,7 @@ O app também mostra velocidade pelo GPS, distância, tempo decorrido e uma esti
 
 Sensores Bluetooth compatíveis podem fornecer dados de frequência cardíaca e cadência. Um módulo Vel Alert opcional, baseado em Arduino, pode adicionar cadência, temperatura e umidade; veja o projeto [VelocimetroAlertaBLModule](https://github.com/helpdeveloper/VelocimetroAlertaBLModule).
 
-O app exibe um anúncio intersticial ao abrir Minhas atividades e um banner na parte inferior de Configurações.
+O app exibe anúncios em banner na parte inferior de Minhas atividades, dos detalhes de atividades salvas e de Configurações.
 
 ## Installation
 

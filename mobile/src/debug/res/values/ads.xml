@@ -2,5 +2,6 @@
 <resources>
     <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
     <string name="ad_unit_banner" translatable="false">ca-app-pub-3940256099942544/6300978111</string>
-    <string name="ad_unit_activities_interstitial" translatable="false">ca-app-pub-3940256099942544/1033173712</string>
+    <string name="ad_unit_activities_banner" translatable="false">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="ad_unit_activity_details_banner" translatable="false">ca-app-pub-3940256099942544/6300978111</string>
 </resources>

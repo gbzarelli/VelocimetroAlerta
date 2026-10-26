@@ -6,10 +6,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
+import android.view.inputmethod.InputMethodManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -21,6 +21,7 @@ import androidx.appcompat.widget.Toolbar
 import br.com.helpdev.velocimetroalerta.activities.ActivityRepository
 import br.com.helpdev.velocimetroalerta.activities.ActivitySummary
 import br.com.helpdev.velocimetroalerta.activities.RoutePreviewView
+import br.com.helpdev.velocimetroalerta.ads.BannerAdController
 import java.io.IOException
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -36,6 +37,7 @@ class ActivityDetailActivity : AppCompatActivity() {
     private lateinit var loading: View
     private lateinit var error: View
     private lateinit var exportButton: View
+    private lateinit var bannerAdController: BannerAdController
     private var loadedSummary: ActivitySummary? = null
     private var isMutatingActivity = false
 
@@ -60,9 +62,25 @@ class ActivityDetailActivity : AppCompatActivity() {
         loading = findViewById(R.id.activity_detail_loading)
         error = findViewById(R.id.activity_detail_error)
         exportButton = findViewById(R.id.activity_export_gpx)
+        bannerAdController = BannerAdController(
+            this,
+            findViewById(R.id.activity_detail_banner_container),
+            getString(R.string.ad_unit_activity_details_banner),
+            (application as VelocimetroApplication).adsConsentManager
+        )
         activityId = intent.getStringExtra(EXTRA_ACTIVITY_ID)
         exportButton.setOnClickListener { activityId?.let(::launchExport) }
         loadActivity()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        bannerAdController.onResume()
+    }
+
+    override fun onPause() {
+        bannerAdController.onPause()
+        super.onPause()
     }
 
     private fun loadActivity() {
@@ -83,6 +101,7 @@ class ActivityDetailActivity : AppCompatActivity() {
 
     private fun bindActivity(summary: ActivitySummary) {
         loadedSummary = summary
+        bannerAdController.requestWhenAdsAreReady()
         invalidateOptionsMenu()
         loading.visibility = View.GONE
         error.visibility = View.GONE
@@ -322,6 +341,7 @@ class ActivityDetailActivity : AppCompatActivity() {
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     override fun onDestroy() {
+        bannerAdController.onDestroy()
         ioExecutor.shutdown()
         super.onDestroy()
     }

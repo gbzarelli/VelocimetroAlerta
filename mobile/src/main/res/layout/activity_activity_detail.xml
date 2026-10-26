@@ -153,4 +153,10 @@
         android:text="@string/activity_export_gpx"
         android:textColor="@android:color/white"
         android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/activity_detail_banner_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center" />
 </LinearLayout>
