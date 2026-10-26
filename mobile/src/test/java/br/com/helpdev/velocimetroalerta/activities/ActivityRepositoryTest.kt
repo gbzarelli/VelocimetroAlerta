@@ -54,6 +54,43 @@ class ActivityRepositoryTest {
     }
 
     @Test
+    fun renameUpdatesSummaryAndGpxTrackName() {
+        val repository = repository()
+        repository.save(draft("rename-me", startedAt = 100, savedAt = 100), "Before")
+
+        val renamed = repository.rename("rename-me", "  After  ")
+
+        assertEquals("After", renamed?.name)
+        assertEquals("After", repository.loadSummary("rename-me")?.name)
+        assertTrue(requireNotNull(repository.gpxFile("rename-me")).readText().contains("track-name:After"))
+    }
+
+    @Test
+    fun renameAndDeleteRejectInvalidOrMalformedActivityIds() {
+        val repository = repository()
+        repository.save(draft("keep-me", startedAt = 100, savedAt = 100), "Keep")
+        val malformedDirectory = File(temporaryFolder.root, "activities/malformed")
+        malformedDirectory.mkdirs()
+        File(malformedDirectory, "summary.json").writeText("not json")
+
+        assertNull(repository.rename("../keep-me", "Corrupted"))
+        assertFalse(repository.delete("../keep-me"))
+        assertNull(repository.rename("malformed", "Corrupted"))
+        assertFalse(repository.delete("malformed"))
+        assertEquals("Keep", repository.loadSummary("keep-me")?.name)
+    }
+
+    @Test
+    fun deleteRemovesSavedActivityAndReportsMissingIds() {
+        val repository = repository()
+        repository.save(draft("delete-me", startedAt = 100, savedAt = 100), "Delete")
+
+        assertTrue(repository.delete("delete-me"))
+        assertNull(repository.loadSummary("delete-me"))
+        assertFalse(repository.delete("missing"))
+    }
+
+    @Test
     fun skipsMalformedSummariesAndIncompleteDirectories() {
         val repository = repository()
         repository.save(draft("valid", startedAt = 100, savedAt = 100), "Valid")
@@ -132,6 +169,7 @@ class ActivityRepositoryTest {
     private class TextGpxFileUtils(private val failWrite: Boolean = false) : GpxFileUtils() {
         override fun writeGpx(gpx: Gpx, output: OutputStream) {
             if (failWrite) throw IllegalStateException("disk full while writing gpx")
+            output.write("track-name:${gpx.trk?.name}\n".toByteArray())
             gpx.trk.trkseg.trkPts.forEach { point ->
                 output.write("${point.latitude},${point.longitude}\n".toByteArray())
             }

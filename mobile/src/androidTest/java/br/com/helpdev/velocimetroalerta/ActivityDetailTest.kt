@@ -7,7 +7,10 @@ import android.content.Intent
 import android.net.Uri
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.closeSoftKeyboard
+import androidx.test.espresso.action.ViewActions.replaceText
 import androidx.test.espresso.action.ViewActions.scrollTo
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
@@ -26,8 +29,9 @@ import br.com.helpdev.velocimetroalerta.gpx.objects.Extensions
 import br.com.helpdev.velocimetroalerta.gpx.objects.Gpx
 import br.com.helpdev.velocimetroalerta.gpx.objects.TrackPointExtension
 import br.com.helpdev.velocimetroalerta.gpx.objects.TrkPt
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -79,6 +83,38 @@ class ActivityDetailTest {
         }
 
         assertEquals("Viewing a saved route must not change live tracking", serviceWasRunning, isTrackingServiceRunning())
+    }
+
+    @Test
+    fun renamesActivityFromDetailMenu() {
+        val summary = repository.save(draft("rename-from-detail", sensors = false), "Original ride")
+
+        ActivityScenario.launch<ActivityDetailActivity>(ActivityDetailActivity.newIntent(context, summary.id)).use {
+            awaitDisplayed(R.id.activity_detail_content)
+            openActionBarOverflowOrOptionsMenu(context)
+            onView(withText(R.string.activity_rename)).perform(click())
+            onView(withId(R.id.activity_name_input)).perform(replaceText("Edited ride"), closeSoftKeyboard())
+            onView(withText(R.string.activity_rename_save)).perform(click())
+            awaitActivityName(summary.id, "Edited ride")
+        }
+
+        assertEquals("Edited ride", repository.loadSummary(summary.id)?.name)
+    }
+
+    @Test
+    fun confirmsDeleteAndRemovesActivity() {
+        val summary = repository.save(draft("delete-from-detail", sensors = false), "Delete me")
+
+        ActivityScenario.launch<ActivityDetailActivity>(ActivityDetailActivity.newIntent(context, summary.id)).use {
+            awaitDisplayed(R.id.activity_detail_content)
+            openActionBarOverflowOrOptionsMenu(context)
+            onView(withText(R.string.activity_delete)).perform(click())
+            onView(withText(R.string.activity_delete_confirm_message)).check(matches(isDisplayed()))
+            onView(withText(R.string.activity_delete)).perform(click())
+            awaitActivityDeleted(summary.id)
+        }
+
+        assertNull(repository.loadSummary(summary.id))
     }
 
     @Test
@@ -179,6 +215,19 @@ class ActivityDetailTest {
             }
         }
         assertEquals("Expected view $id to become visible", true, displayed)
+    }
+
+    private fun awaitActivityName(id: String, name: String) {
+        val deadline = System.currentTimeMillis() + 10_000
+        while (System.currentTimeMillis() < deadline && repository.loadSummary(id)?.name != name) {
+            Thread.sleep(100)
+        }
+        onView(withId(R.id.activity_name)).check(matches(withText(name)))
+    }
+
+    private fun awaitActivityDeleted(id: String) {
+        val deadline = System.currentTimeMillis() + 10_000
+        while (System.currentTimeMillis() < deadline && repository.loadSummary(id) != null) Thread.sleep(100)
     }
 
     private fun awaitExport(uri: Uri): ByteArray {

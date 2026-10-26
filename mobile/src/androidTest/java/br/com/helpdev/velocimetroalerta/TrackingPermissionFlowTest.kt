@@ -37,6 +37,25 @@ class TrackingPermissionFlowTest {
     val permissionState = RuntimePermissionStateRule()
 
     @RuntimePermissionState(
+        denied = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION],
+        locationPermissionPromptAlreadyHandled = false
+    )
+    @Test
+    fun firstLaunchRequestsLocationAndDenialLeavesPlayRetryAvailable() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            assertNotNull("The first launch should request location immediately", findPermissionButton("permission_deny_button"))
+            clickPermissionButton("permission_deny_button")
+            waitForTrackingState(scenario, expected = false)
+
+            onView(withId(R.id.btStartStop)).perform(click())
+            confirmLocationDisclosure()
+            assertNotNull("Play must still be able to request location after the launch prompt was denied", findPermissionButton("permission_deny_button"))
+            clickPermissionButton("permission_deny_button")
+            waitForTrackingState(scenario, expected = false)
+        }
+    }
+
+    @RuntimePermissionState(
         granted = [Manifest.permission.POST_NOTIFICATIONS],
         denied = [Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION]
     )
@@ -159,10 +178,17 @@ class TrackingPermissionFlowTest {
         onView(withText(R.string.location_background_disclosure_continue)).perform(click())
     }
 
-    private fun findPermissionButton(resourceName: String) = device.wait(
-        Until.findObject(By.res(permissionControllerPackage(), resourceName)),
-        5_000
-    )
+    private fun findPermissionButton(resourceName: String) =
+        (if (resourceName == "permission_deny_button") {
+            listOf(resourceName, "permission_deny_and_dont_ask_again_button")
+        } else {
+            listOf(resourceName)
+        }).firstNotNullOfOrNull { permissionButtonId ->
+            device.wait(
+                Until.findObject(By.res(permissionControllerPackage(), permissionButtonId)),
+                2_500
+            )
+        }
 
     private fun permissionControllerPackage(): String =
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {

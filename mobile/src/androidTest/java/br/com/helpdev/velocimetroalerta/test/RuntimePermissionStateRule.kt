@@ -14,7 +14,8 @@ import org.junit.runners.model.Statement
 @Target(AnnotationTarget.FUNCTION)
 annotation class RuntimePermissionState(
     val granted: Array<String> = [],
-    val denied: Array<String> = []
+    val denied: Array<String> = [],
+    val locationPermissionPromptAlreadyHandled: Boolean = true
 )
 
 class RuntimePermissionStateRule(
@@ -43,6 +44,7 @@ class RuntimePermissionStateRule(
 
             try {
                 resetTestState()
+                setLaunchPermissionPromptState(annotation?.locationPermissionPromptAlreadyHandled ?: true)
                 requestedGrants.intersect(applicablePermissions).forEach { assertPermissionState(it, granted = true) }
                 requestedDenials.intersect(applicablePermissions).forEach { assertPermissionState(it, granted = false) }
                 base.evaluate()
@@ -67,8 +69,19 @@ class RuntimePermissionStateRule(
             .commit()
     }
 
+    private fun setLaunchPermissionPromptState(alreadyHandled: Boolean) {
+        val editor = PreferenceManager.getDefaultSharedPreferences(context).edit()
+        if (alreadyHandled) {
+            editor.putBoolean(LOCATION_LAUNCH_PROMPT_HANDLED, true)
+        } else {
+            editor.remove(LOCATION_LAUNCH_PROMPT_HANDLED)
+        }
+        editor.commit()
+    }
+
     private companion object {
         const val LOCATION_DISCLOSURE_ACCEPTED = "location_background_disclosure_accepted"
+        const val LOCATION_LAUNCH_PROMPT_HANDLED = "location_launch_permission_prompt_handled"
 
         val runtimePermissionIntroducedIn = mapOf(
             Manifest.permission.ACCESS_COARSE_LOCATION to Build.VERSION_CODES.M,

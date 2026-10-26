@@ -1,6 +1,7 @@
 package br.com.helpdev.velocimetroalerta
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,13 @@ import androidx.recyclerview.widget.RecyclerView
 import br.com.helpdev.velocimetroalerta.activities.ActivityRepository
 import br.com.helpdev.velocimetroalerta.activities.ActivitySummary
 import br.com.helpdev.velocimetroalerta.activities.RoutePreviewView
+import br.com.helpdev.velocimetroalerta.ads.AdsConsentManager
+import br.com.helpdev.velocimetroalerta.ads.canShowActivitiesEntryInterstitial
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -25,9 +33,16 @@ class MyActivities : AppCompatActivity() {
     private lateinit var emptyState: View
     private lateinit var loading: View
     private var loadGeneration = 0
+    private lateinit var adsConsentManager: AdsConsentManager
+    private var cancelAdsReadyRegistration: (() -> Unit)? = null
+    private var interstitialAd: InterstitialAd? = null
+    private var screenResumed = false
+    private var hasShownInterstitial = false
+    private var entryFlowActive = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        adsConsentManager = (application as VelocimetroApplication).adsConsentManager
         EdgeToEdge.enable(window)
         setContentView(R.layout.activity_my_activities)
         EdgeToEdge.applySystemBarInsets(window, findViewById(R.id.my_activities_root))
@@ -44,13 +59,27 @@ class MyActivities : AppCompatActivity() {
         loading = findViewById(R.id.activity_feed_loading)
         activityList.layoutManager = LinearLayoutManager(this)
         activityList.adapter = ActivityAdapter { summary ->
+            entryFlowActive = false
+            interstitialAd = null
             startActivity(ActivityDetailActivity.newIntent(this, summary.id))
         }
+        loadEntryInterstitialWhenAdsAreReady()
     }
 
     override fun onStart() {
         super.onStart()
         loadActivities()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        screenResumed = true
+        showEntryInterstitialIfReady()
+    }
+
+    override fun onPause() {
+        screenResumed = false
+        super.onPause()
     }
 
     private fun loadActivities() {
@@ -74,8 +103,58 @@ class MyActivities : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        cancelAdsReadyRegistration?.invoke()
+        cancelAdsReadyRegistration = null
+        interstitialAd = null
         ioExecutor.shutdown()
         super.onDestroy()
+    }
+
+    private fun loadEntryInterstitialWhenAdsAreReady() {
+        cancelAdsReadyRegistration = adsConsentManager.whenAdsReady {
+            cancelAdsReadyRegistration = null
+            if (isFinishing || isDestroyed) return@whenAdsReady
+            InterstitialAd.load(
+                this,
+                getString(R.string.ad_unit_activities_interstitial),
+                AdRequest.Builder().build(),
+                object : InterstitialAdLoadCallback() {
+                    override fun onAdLoaded(ad: InterstitialAd) {
+                        if (isFinishing || isDestroyed || !entryFlowActive) return
+                        interstitialAd = ad
+                        showEntryInterstitialIfReady()
+                    }
+
+                    override fun onAdFailedToLoad(error: LoadAdError) {
+                        Log.d(LOG_TAG, "Activities interstitial unavailable: ${error.message}")
+                        interstitialAd = null
+                    }
+                }
+            )
+        }
+    }
+
+    private fun showEntryInterstitialIfReady() {
+        if (!canShowActivitiesEntryInterstitial(
+                screenResumed = screenResumed,
+                hasShownInterstitial = hasShownInterstitial,
+                entryFlowActive = entryFlowActive,
+                adAvailable = interstitialAd != null
+            )
+        ) return
+        val ad = interstitialAd ?: return
+        interstitialAd = null
+        hasShownInterstitial = true
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
+                Log.d(LOG_TAG, "Activities interstitial failed to show: ${error.message}")
+            }
+        }
+        ad.show(this)
+    }
+
+    private companion object {
+        const val LOG_TAG = "MyActivities"
     }
 
     private class ActivityAdapter(

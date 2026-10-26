@@ -32,8 +32,8 @@ android {
         applicationId = 'br.com.helpdev.velocimetroalerta.v2'
         minSdk = 24
         targetSdk = 36
-        versionCode = 5
-        versionName = '4.4'
+        versionCode = 6
+        versionName = '4.5'
         testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
     }
 
@@ -78,6 +78,8 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.play.services.maps)
     implementation(libs.play.review)
+    implementation(libs.play.services.ads)
+    implementation(libs.ump)
     testImplementation(libs.junit)
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.test.rules)

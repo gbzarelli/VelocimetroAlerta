@@ -47,7 +47,7 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
     private var statusService: Int = 0
     private var gpsStatusSignal = CallbackGpsThread.GPS_ATUALIZADO
     private var gpsStatusPaused = CallbackGpsThread.GPS_RETOMADO
-    private var gpsStatusPrecision = CallbackGpsThread.GPS_PRECISAO_OK
+    private var gpsStatusPrecision = CallbackGpsThread.GPS_PRECISAO_DESCONHECIDA
 
     var gpx: Gpx = Gpx("Velocimetro Alerta Android")
         private set
@@ -149,6 +149,7 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
             //--
             const val GPS_SEM_PRECISAO = 5
             const val GPS_PRECISAO_OK = 6
+            const val GPS_PRECISAO_DESCONHECIDA = 7
         }
     }
 
@@ -472,7 +473,7 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
         tmpMillisPaused = 0
         gpsStatusSignal = CallbackGpsThread.GPS_ATUALIZADO
         gpsStatusPaused = CallbackGpsThread.GPS_RETOMADO
-        gpsStatusPrecision = CallbackGpsThread.GPS_PRECISAO_OK
+        gpsStatusPrecision = CallbackGpsThread.GPS_PRECISAO_DESCONHECIDA
     }
 
     override fun run() {
@@ -633,10 +634,10 @@ class SpeedometerService : Service(), Runnable, SharedPreferences.OnSharedPrefer
 
         } finally {
             obSpeedometerAlert.speed = currentSpeed
-            val statusPrecision = if (accuracy > 0 && accuracy <= CONST_PRECISAO_MINIMA) {
-                CallbackGpsThread.GPS_PRECISAO_OK
-            } else {
-                CallbackGpsThread.GPS_SEM_PRECISAO
+            val statusPrecision = when (GpsPrecisionStatus.fromAccuracy(accuracy)) {
+                GpsPrecisionStatus.UNKNOWN -> CallbackGpsThread.GPS_PRECISAO_DESCONHECIDA
+                GpsPrecisionStatus.GOOD -> CallbackGpsThread.GPS_PRECISAO_OK
+                GpsPrecisionStatus.POOR -> CallbackGpsThread.GPS_SEM_PRECISAO
             }
             if (gpsStatusPrecision != statusPrecision) {
                 gpsStatusPrecision = statusPrecision

@@ -48,6 +48,58 @@ class ActivityRepository(
         }
     }
 
+    /** Renames a valid saved activity and keeps its summary and GPX track name in sync. */
+    fun rename(id: String, confirmedName: String): ActivitySummary? {
+        val name = confirmedName.trim()
+        require(name.isNotEmpty()) { "An activity name is required" }
+        val directory = activityDirectory(id) ?: return null
+        val current = loadSummary(id) ?: return null
+        val currentGpxFile = gpxFile(id) ?: return null
+        val currentGpx = currentGpxFile.inputStream().use { gpxFileUtils.readGpx(it) }
+        val renamedSummary = current.copy(name = name)
+        val renamedGpx = copyGpxWithName(currentGpx, name)
+        val summaryFile = File(directory, SUMMARY_FILENAME)
+        val gpxFile = File(directory, GPX_FILENAME)
+        val temporarySummary = File(directory, "$SUMMARY_FILENAME.rename-tmp")
+        val temporaryGpx = File(directory, "$GPX_FILENAME.rename-tmp")
+        val backupSummary = File(directory, "$SUMMARY_FILENAME.rename-backup")
+        val backupGpx = File(directory, "$GPX_FILENAME.rename-backup")
+
+        try {
+            temporaryGpx.outputStream().use { gpxFileUtils.writeGpx(renamedGpx, it) }
+            temporarySummary.writeText(gson.toJson(renamedSummary), Charsets.UTF_8)
+            if (temporaryGpx.length() == 0L || temporarySummary.length() == 0L) {
+                throw IOException("Unable to prepare the renamed activity")
+            }
+            if (backupSummary.exists() && !backupSummary.delete()) throw IOException("Unable to clear old summary backup")
+            if (backupGpx.exists() && !backupGpx.delete()) throw IOException("Unable to clear old GPX backup")
+
+            if (!summaryFile.renameTo(backupSummary)) throw IOException("Unable to protect the activity summary")
+            if (!gpxFile.renameTo(backupGpx)) throw IOException("Unable to protect the activity GPX")
+            if (!temporarySummary.renameTo(summaryFile)) throw IOException("Unable to replace the activity summary")
+            if (!temporaryGpx.renameTo(gpxFile)) throw IOException("Unable to replace the activity GPX")
+
+            backupSummary.delete()
+            backupGpx.delete()
+            return renamedSummary
+        } catch (error: Exception) {
+            restoreBackup(backupSummary, summaryFile)
+            restoreBackup(backupGpx, gpxFile)
+            if (error is IOException) throw error
+            throw IOException("Unable to rename the saved activity", error)
+        } finally {
+            temporarySummary.delete()
+            temporaryGpx.delete()
+        }
+    }
+
+    /** Deletes only a valid activity whose stored ID matches its directory. */
+    fun delete(id: String): Boolean {
+        val directory = activityDirectory(id) ?: return false
+        if (loadSummary(id) == null) return false
+        return directory.deleteRecursively()
+    }
+
     fun list(): List<ActivitySummary> {
         val directories = activitiesDirectory.listFiles()?.asSequence().orEmpty()
         return directories
@@ -117,6 +169,15 @@ class ActivityRepository(
 
     private fun copyGpxWithName(source: Gpx, name: String): Gpx = ActivityDraftFactory.snapshotGpx(source).apply {
         trk?.name = name
+    }
+
+    private fun restoreBackup(backup: File, target: File) {
+        if (backup.exists()) {
+            target.delete()
+            if (!backup.renameTo(target)) {
+                LOGGER.warning("Unable to restore activity file ${target.name} after a failed rename")
+            }
+        }
     }
 
     private companion object {

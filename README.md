@@ -7,16 +7,27 @@
 <img src=imagens/Screenshot_20180929-100722.png width=170> . <img src=imagens/Screenshot_20180929-100727.png width=170> . <img src=imagens/Screenshot_20180929-100735.png width=170>
 
 
-[en] The Speedometer Alert is an application that indicates precisely through GPS positions the current speed, average speed, maximum speed, elapsed time, altimetry, ALTIMETRY GAIN/LOSS IN REAL TIME and distance traveled of a started activity, is able to predict a GPS interruption or stop activity if you do not have speed and stop activity automatically, thus not losing important information such as time and average speed.
-Its most important function is the ALERT that can be configured to SPEAK from time to time or kilometers in kilometers the information you want with the interval you want, so if you have doing some activity that you can not be looking at the device (such as cycling ) he will tell you the information you want.
-You can extract the GPX file from your activity and upload it to applications known as Strava.
-We have an independent design developed on Arduino to monitor cadence, temperature and humidity. See: https://github.com/helpdeveloper/VelocimetroAlertaBLModule
+## Product overview
 
-[pt-br] O Velocímetro Alerta é um aplicativo que indica precisamente através de posições GPS a velocidade atual, velocidade média, velocidade máxima, tempo decorrido, altimetria, GANHO DE ALTIMETRIA EM TEMPO REAL (calculado a cada quilômetro) e distância percorrida de uma atividade iniciada, é capaz de prever uma interrupção de GPS ou parada de atividade caso não tenha velocidade e parar a atividade automaticamente, assim não perdendo informações importantes como tempo e velocidade média.
-Sua função mais importante é o ALERTA que pode ser configurado para FALAR de tempos em tempos ou quilometros em quilometros a informação que desejar com o intervalo que desejar, assim se tiver fazendo alguma atividade que não seja possível estar olhando para o dispositivo (como o ciclismo) ele falara para você as informações que desejar.
-Com o Velocímetro Alerta é possível se conectar com sua cinta cardíaca bluetooth para monitorar suas zonas, e também configurar suas zonas de acordo com seu perfil.
-É possível extrair o arquivo GPX de sua atividade e subir para aplicativos conhecidos como o Strava.
-Temos um projeto independente desenvolvido no Arduino para monitorar a cadência, temperatura e humidade. Veja em: https://github.com/helpdeveloper/VelocimetroAlertaBLModule
+### English
+
+**Hear your speed updates and keep your eyes on the road.** Speedometer Alert is a GPS speedometer for cycling and other activities where watching a phone is inconvenient. During an activity, it can speak your selected updates at an interval based on minutes or kilometers. Choose current, average, or maximum speed, distance, and elapsed time; vibration is optional.
+
+The app also shows live GPS speed, distance, elapsed time, and an estimate of elevation gain and loss. Automatic pause helps handle stops and low-speed sections. Save activities on your device, review routes on a map, edit an activity name, delete saved activities, or export a GPX file for use with services such as Strava.
+
+Compatible Bluetooth sensors can provide heart-rate and cadence data. An optional Arduino-based Vel Alert module can add cadence, temperature, and humidity readings; see [VelocimetroAlertaBLModule](https://github.com/helpdeveloper/VelocimetroAlertaBLModule).
+
+The app displays an interstitial ad when you open My activities and a banner at the bottom of Settings.
+
+### Português (Brasil)
+
+**Ouça os avisos de velocidade e mantenha os olhos no caminho.** O Velocímetro Alerta é um velocímetro por GPS para ciclismo e outras atividades em que não é prático olhar para o celular. Durante a atividade, ele fala as informações escolhidas em intervalos por minutos ou quilômetros. Selecione velocidade atual, média ou máxima, distância e tempo decorrido; a vibração é opcional.
+
+O app também mostra velocidade pelo GPS, distância, tempo decorrido e uma estimativa de ganho e perda de elevação. A pausa automática ajuda a lidar com paradas e trechos de baixa velocidade. Salve as atividades no dispositivo, consulte os percursos no mapa, edite o nome, exclua atividades salvas ou exporte um arquivo GPX para usar em serviços como o Strava.
+
+Sensores Bluetooth compatíveis podem fornecer dados de frequência cardíaca e cadência. Um módulo Vel Alert opcional, baseado em Arduino, pode adicionar cadência, temperatura e umidade; veja o projeto [VelocimetroAlertaBLModule](https://github.com/helpdeveloper/VelocimetroAlertaBLModule).
+
+O app exibe um anúncio intersticial ao abrir Minhas atividades e um banner na parte inferior de Configurações.
 
 ## Installation
 

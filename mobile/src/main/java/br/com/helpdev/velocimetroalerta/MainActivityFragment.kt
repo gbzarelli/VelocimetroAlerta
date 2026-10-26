@@ -41,6 +41,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
 
     private var progressDialog: ProgressDialog? = null
     private var obSpeedometerAlert: ObSpeedometerAlert? = null
+    private var gpsPrecisionState = SpeedometerService.CallbackGpsThread.GPS_PRECISAO_DESCONHECIDA
     private val sensorStates = mutableMapOf<SensorKind, SensorConnectionState>()
     private var pendingActivityDraft: ActivityDraft? = null
     private val saveExecutor = Executors.newSingleThreadExecutor { task ->
@@ -195,6 +196,8 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
             }
             updateMapButtonVisibility()
             binding.gpsDesatualizado.visibility = View.INVISIBLE
+            gpsPrecisionState = SpeedometerService.CallbackGpsThread.GPS_PRECISAO_DESCONHECIDA
+            renderGpsPrecision()
             binding.pausadoAutomaticamente.visibility = View.INVISIBLE
             binding.searchSensorVam.visibility = View.INVISIBLE
             binding.searchSensorHr.visibility = View.INVISIBLE
@@ -279,7 +282,11 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
                     }
                     binding.ganhoAltitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.gainAlt)
                     binding.perdaAltitude.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.lostAlt)
-                    binding.precision.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.accuracyGPS)
+                    if (gpsPrecisionState == SpeedometerService.CallbackGpsThread.GPS_PRECISAO_DESCONHECIDA) {
+                        binding.precision.setText(R.string.text_null_value)
+                    } else {
+                        binding.precision.text = format(Locale.getDefault(), "%.1f", obSpeedometerAlert!!.accuracyGPS)
+                    }
 
                     if (obSpeedometerAlert!!.cadence < 0) {
                         binding.cadence.setText(R.string.text_null_value)
@@ -343,6 +350,7 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
                     }
                     binding.gpsDesatualizado.visibility = View.VISIBLE
                 }
+                renderGpsPrecision()
                 updateValuesText()
             }
     }
@@ -369,24 +377,28 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
     }
 
     @Synchronized
-    override fun setGpsPrecision(gpsPrecision: Int) {
+    override fun setGpsPrecision(precision: Int) {
         val host = activity ?: return
 
         host.runOnUiThread {
             if (_binding == null) return@runOnUiThread
-            if (gpsPrecision == SpeedometerService.CallbackGpsThread.GPS_SEM_PRECISAO && binding.precision!!.tag == null) {
-                binding.precision!!.setTextColor(Color.RED)
-                binding.precision!!.setTypeface(binding.precision!!.typeface, Typeface.BOLD)
-                if (binding.gpsDesatualizado.visibility == View.INVISIBLE) {
-                    binding.tvPrecisionInfo.visibility = View.VISIBLE
-                    binding.precision!!.tag = 1
-                }
-            } else if (gpsPrecision == SpeedometerService.CallbackGpsThread.GPS_PRECISAO_OK && binding.precision!!.tag != null) {
-                binding.precision.setTextColor(Color.BLACK)
-                binding.precision.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-                binding.tvPrecisionInfo.visibility = View.GONE
-                binding.precision.tag = null
-            }
+            gpsPrecisionState = precision
+            renderGpsPrecision()
+        }
+    }
+
+    private fun renderGpsPrecision() {
+        if (_binding == null) return
+        if (gpsPrecisionState == SpeedometerService.CallbackGpsThread.GPS_PRECISAO_DESCONHECIDA) {
+            binding.precision.setText(R.string.text_null_value)
+        }
+        val isPoor = gpsPrecisionState == SpeedometerService.CallbackGpsThread.GPS_SEM_PRECISAO
+        binding.precision.setTextColor(if (isPoor) Color.RED else Color.BLACK)
+        binding.precision.setTypeface(Typeface.DEFAULT, if (isPoor) Typeface.BOLD else Typeface.NORMAL)
+        binding.tvPrecisionInfo.visibility = if (isPoor && binding.gpsDesatualizado.visibility == View.INVISIBLE) {
+            View.VISIBLE
+        } else {
+            View.GONE
         }
     }
 

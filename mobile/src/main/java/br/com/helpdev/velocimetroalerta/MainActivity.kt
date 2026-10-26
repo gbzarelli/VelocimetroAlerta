@@ -38,6 +38,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private var callbackNotify: CallbackNotify? = null
     private var isServiceBound = false
+    private var consentFlowStarted = false
+    private var locationLaunchPermissionPromptInProgress = false
     var speedometerService: SpeedometerService? = null
         private set
     internal lateinit var inAppReviewRequester: InAppReviewRequester
@@ -48,6 +50,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private val activitiesLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { }
+
+    private val launchLocationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        locationLaunchPermissionPromptInProgress = false
+        requestAdsConsentIfReady()
+    }
 
     private val trackingPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -106,6 +115,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
         navigationView.setNavigationItemSelectedListener(this)
+        requestLocationPermissionOnFirstLaunch()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -131,6 +141,30 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         })
+    }
+
+    private fun requestLocationPermissionOnFirstLaunch() {
+        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        if (preferences.getBoolean(LOCATION_LAUNCH_PERMISSION_PROMPT_HANDLED, false)) return
+
+        val locationPermissions = RuntimePermissionPolicy.permissionsFor(
+            RuntimePermissionPolicy.Feature.LOCATION,
+            Build.VERSION.SDK_INT
+        )
+        val grantedLocationPermissions = locationPermissions.filterTo(mutableSetOf()) {
+            checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+        }
+        val requestedPermissions = RuntimePermissionPolicy.permissionsToRequest(
+            RuntimePermissionPolicy.Feature.LOCATION,
+            Build.VERSION.SDK_INT,
+            grantedLocationPermissions
+        )
+
+        preferences.edit().putBoolean(LOCATION_LAUNCH_PERMISSION_PROMPT_HANDLED, true).apply()
+        if (requestedPermissions.isNotEmpty()) {
+            locationLaunchPermissionPromptInProgress = true
+            launchLocationPermissionLauncher.launch(requestedPermissions.toTypedArray())
+        }
     }
 
     fun requestTrackingStart() {
@@ -320,7 +354,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onResume() {
         super.onResume()
+        requestAdsConsentIfReady()
         isServiceBound = bindService(Intent(this, SpeedometerService::class.java), this, BIND_AUTO_CREATE)
+    }
+
+    private fun requestAdsConsentIfReady() {
+        if (consentFlowStarted || locationLaunchPermissionPromptInProgress) return
+        consentFlowStarted = true
+        (application as VelocimetroApplication).adsConsentManager.requestConsent(this)
     }
 
     override fun onPause() {
@@ -370,6 +411,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     companion object {
         private const val BACK_CONFIRMATION_TAG = "back-confirmation"
         private const val LOCATION_BACKGROUND_DISCLOSURE_ACCEPTED = "location_background_disclosure_accepted"
+        private const val LOCATION_LAUNCH_PERMISSION_PROMPT_HANDLED = "location_launch_permission_prompt_handled"
         private const val SP_KEEP_ALIVE = "keep_alive"
         private const val LOG = "MainActivity"
     }

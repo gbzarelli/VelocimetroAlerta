@@ -62,7 +62,7 @@ class MainActivitySmokeTest {
             if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                 assertNull(
-                    "Location permission must not be requested at launch",
+                    "A launch prompt marked handled by the test fixture must not reappear",
                     device.wait(Until.findObject(By.res("com.android.permissioncontroller", "permission_deny_button")), 1_000)
                 )
             }

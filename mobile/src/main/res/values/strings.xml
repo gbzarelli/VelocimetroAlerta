@@ -79,6 +79,7 @@
     <string name="compartilhar">Share</string>
     <string name="publico">Public</string>
     <string name="privacy_policy">Privacy policy</string>
+    <string name="privacy_options">Privacy choices</string>
     <string name="privacy_policy_url">https://helpdev.com.br/apps/velocimetro-alerta/privacidade/#english</string>
     <string name="privacy_policy_unavailable">No browser is available to open the privacy policy.</string>
     <string name="minhas_atividades">My activities</string>
@@ -120,6 +121,15 @@
     <string name="activity_metric_gps_accuracy">GPS accuracy</string>
     <string name="activity_export_error">The GPX could not be exported. The saved activity remains unchanged. %1$s</string>
     <string name="activity_exported">GPX exported successfully.</string>
+    <string name="activity_rename">Rename activity</string>
+    <string name="activity_rename_title">Edit activity name</string>
+    <string name="activity_rename_hint">Activity name</string>
+    <string name="activity_rename_save">Save</string>
+    <string name="activity_rename_error">The activity name could not be changed.</string>
+    <string name="activity_delete">Delete activity</string>
+    <string name="activity_delete_confirm_title">Delete this activity?</string>
+    <string name="activity_delete_confirm_message">This activity and its saved route will be permanently deleted.</string>
+    <string name="activity_delete_error">The activity could not be deleted.</string>
     <string name="retry">Try again</string>
 
     <string name="bloqueio_desativado">SCREEN LOCK: OFF</string>

@@ -20,6 +20,8 @@ junit = "4.13.2"
 uiautomator = "2.3.0"
 play-services-maps = "20.0.0"
 play-review = "2.0.2"
+play-services-ads = "25.5.0"
+ump = "4.0.0"
 maps-secrets-plugin = "2.0.1"
 
 [libraries]
@@ -44,6 +46,8 @@ test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.r
 junit = { module = "junit:junit", version.ref = "junit" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "play-services-maps" }
 play-review = { module = "com.google.android.play:review", version.ref = "play-review" }
+play-services-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "play-services-ads" }
+ump = { module = "com.google.android.ump:user-messaging-platform", version.ref = "ump" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

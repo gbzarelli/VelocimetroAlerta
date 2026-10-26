@@ -1,9 +1,32 @@
-<fragment xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/fragment"
-    android:name="br.com.helpdev.velocimetroalerta.ConfigActivityFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:layout="@layout/fragment_config" />
+    tools:context="br.com.helpdev.velocimetroalerta.ConfigActivity">
+
+    <fragment
+        android:id="@+id/fragment"
+        android:name="br.com.helpdev.velocimetroalerta.ConfigActivityFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        tools:layout="@layout/fragment_config" />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/privacy_options_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/privacy_options"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/settings_banner_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center" />
+</LinearLayout>

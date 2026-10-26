@@ -16,6 +16,7 @@
     <string name="site_helpdev">www.helpdev.com.br</string>
 
     <string name="action_settings">Settings</string>
+    <string name="privacy_options">Opções de privacidade</string>
 
     <string name="bt_ok">OK</string>
     <string name="bt_cancel">Cancelar</string>
@@ -121,6 +122,15 @@
     <string name="activity_metric_gps_accuracy">Precisão do GPS</string>
     <string name="activity_export_error">Não foi possível exportar o GPX. A atividade salva não foi alterada. %1$s</string>
     <string name="activity_exported">GPX exportado com sucesso.</string>
+    <string name="activity_rename">Editar nome</string>
+    <string name="activity_rename_title">Editar nome da atividade</string>
+    <string name="activity_rename_hint">Nome da atividade</string>
+    <string name="activity_rename_save">Salvar</string>
+    <string name="activity_rename_error">Não foi possível alterar o nome da atividade.</string>
+    <string name="activity_delete">Excluir atividade</string>
+    <string name="activity_delete_confirm_title">Excluir esta atividade?</string>
+    <string name="activity_delete_confirm_message">Esta atividade e o percurso salvo serão excluídos permanentemente.</string>
+    <string name="activity_delete_error">Não foi possível excluir a atividade.</string>
     <string name="retry">Tentar novamente</string>
 
     <string name="bloqueio_desativado">BLOQUEIO DE TELA: DESATIVADO.</string>

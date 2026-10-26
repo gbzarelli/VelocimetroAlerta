@@ -6,9 +6,14 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +36,8 @@ class ActivityDetailActivity : AppCompatActivity() {
     private lateinit var loading: View
     private lateinit var error: View
     private lateinit var exportButton: View
+    private var loadedSummary: ActivitySummary? = null
+    private var isMutatingActivity = false
 
     private val createGpxDocument = registerForActivityResult(
         ActivityResultContracts.CreateDocument("application/gpx+xml")
@@ -75,6 +82,8 @@ class ActivityDetailActivity : AppCompatActivity() {
     }
 
     private fun bindActivity(summary: ActivitySummary) {
+        loadedSummary = summary
+        invalidateOptionsMenu()
         loading.visibility = View.GONE
         error.visibility = View.GONE
         detailContent.visibility = View.VISIBLE
@@ -126,6 +135,116 @@ class ActivityDetailActivity : AppCompatActivity() {
         if (summary.gpsAccuracyMeters > 0) addMetric(
             metrics, R.string.activity_metric_gps_accuracy, "${number.format(summary.gpsAccuracyMeters)} m"
         )
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_activity_detail, menu)
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        val canEdit = loadedSummary != null && !isMutatingActivity
+        menu.findItem(R.id.action_rename_activity)?.isEnabled = canEdit
+        menu.findItem(R.id.action_delete_activity)?.isEnabled = canEdit
+        return super.onPrepareOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.action_rename_activity -> {
+            loadedSummary?.let(::showRenameDialog)
+            true
+        }
+        R.id.action_delete_activity -> {
+            loadedSummary?.let(::confirmDelete)
+            true
+        }
+        else -> super.onOptionsItemSelected(item)
+    }
+
+    private fun showRenameDialog(summary: ActivitySummary) {
+        val input = EditText(this).apply {
+            id = R.id.activity_name_input
+            hint = getString(R.string.activity_rename_hint)
+            setSingleLine(true)
+            setText(summary.name)
+            setSelection(text.length)
+        }
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.activity_rename_title)
+            .setView(input)
+            .setNegativeButton(R.string.bt_cancel, null)
+            .setPositiveButton(R.string.activity_rename_save, null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val newName = input.text.toString().trim()
+                if (newName.isEmpty()) {
+                    input.error = getString(R.string.activity_name_required)
+                    return@setOnClickListener
+                }
+                (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                    ?.hideSoftInputFromWindow(input.windowToken, 0)
+                dialog.dismiss()
+                renameActivity(summary.id, newName)
+            }
+        }
+        dialog.show()
+        input.requestFocus()
+    }
+
+    private fun renameActivity(id: String, name: String) {
+        setMutationInProgress(true)
+        ioExecutor.execute {
+            val result = runCatching {
+                ActivityRepository(applicationContext.filesDir).rename(id, name)
+                    ?: throw IOException("Saved activity is unavailable")
+            }
+            runOnUiThread {
+                if (isFinishing) return@runOnUiThread
+                setMutationInProgress(false)
+                result.onSuccess(::bindActivity).onFailure { failure ->
+                    Log.e(LOG_TAG, "Unable to rename saved activity", failure)
+                    Toast.makeText(this, R.string.activity_rename_error, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun confirmDelete(summary: ActivitySummary) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.activity_delete_confirm_title)
+            .setMessage(R.string.activity_delete_confirm_message)
+            .setNegativeButton(R.string.bt_cancel, null)
+            .setPositiveButton(R.string.activity_delete) { _, _ -> deleteActivity(summary.id) }
+            .show()
+    }
+
+    private fun deleteActivity(id: String) {
+        setMutationInProgress(true)
+        ioExecutor.execute {
+            val result = runCatching { ActivityRepository(applicationContext.filesDir).delete(id) }
+            runOnUiThread {
+                if (isFinishing) return@runOnUiThread
+                setMutationInProgress(false)
+                result.onSuccess { deleted ->
+                    if (deleted) {
+                        setResult(RESULT_OK)
+                        finish()
+                    } else {
+                        Toast.makeText(this, R.string.activity_delete_error, Toast.LENGTH_LONG).show()
+                    }
+                }.onFailure { failure ->
+                    Log.e(LOG_TAG, "Unable to delete saved activity", failure)
+                    Toast.makeText(this, R.string.activity_delete_error, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun setMutationInProgress(inProgress: Boolean) {
+        isMutatingActivity = inProgress
+        exportButton.isEnabled = !inProgress
+        invalidateOptionsMenu()
     }
 
     private fun addMetric(container: LinearLayout, label: Int, value: String) {
