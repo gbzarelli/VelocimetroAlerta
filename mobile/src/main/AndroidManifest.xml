@@ -95,7 +95,7 @@
             android:exported="false"
             android:label="@string/account_title"
             android:parentActivityName=".MainActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:theme="@style/AppTheme.AccountConnections" />
         <activity
             android:name=".strava.StravaOAuthCallbackActivity"
             android:exported="true"

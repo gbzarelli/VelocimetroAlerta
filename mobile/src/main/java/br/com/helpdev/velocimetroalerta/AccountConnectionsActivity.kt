@@ -47,7 +47,9 @@ class AccountConnectionsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdge.enable(window)
         setContentView(R.layout.activity_account_connections)
+        EdgeToEdge.applySystemBarInsets(window, findViewById(R.id.account_connections_root))
         findViewById<Toolbar>(R.id.toolbar).apply {
             setTitle(R.string.account_title)
             setNavigationIcon(R.drawable.ic_arrow_back)
