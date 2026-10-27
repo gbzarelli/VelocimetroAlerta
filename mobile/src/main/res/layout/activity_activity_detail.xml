@@ -154,6 +154,60 @@
         android:textColor="@android:color/white"
         android:visibility="gone" />
 
+    <LinearLayout
+        android:id="@+id/activity_strava_sync_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/activity_export_strava"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#FC4C02"
+            android:text="@string/strava_send_activity"
+            android:textColor="@android:color/white" />
+
+        <ProgressBar
+            android:id="@+id/activity_strava_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/activity_strava_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp"
+            android:textColor="#455A64"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/activity_strava_needs_action"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/activity_strava_already_there"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/strava_already_there" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/activity_strava_retry"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/strava_retry_type" />
+        </LinearLayout>
+    </LinearLayout>
+
     <FrameLayout
         android:id="@+id/activity_detail_banner_container"
         android:layout_width="match_parent"

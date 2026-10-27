@@ -39,7 +39,8 @@ data class ActivitySummary(
     val hasHeartRateData: Boolean,
     val hasTemperatureData: Boolean,
     val hasHumidityData: Boolean,
-    val routePreview: List<ActivityPreviewPoint>
+    val routePreview: List<ActivityPreviewPoint>,
+    val activityType: ActivityType? = null
 )
 
 data class ActivityDraft(val summary: ActivitySummary, val gpx: Gpx)

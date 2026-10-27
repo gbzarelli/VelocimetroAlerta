@@ -6,13 +6,17 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Spinner
+import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.appcompat.widget.AppCompatButton
+import br.com.helpdev.velocimetroalerta.activities.ActivityType
 
 class ActivitySaveActivity : AppCompatActivity() {
     private lateinit var nameInput: EditText
     private lateinit var errorText: TextView
+    private lateinit var typeSelector: Spinner
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +31,13 @@ class ActivitySaveActivity : AppCompatActivity() {
 
         nameInput = findViewById(R.id.activity_name)
         errorText = findViewById(R.id.activity_name_error)
+        typeSelector = findViewById(R.id.activity_type)
+        typeSelector.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            ActivityType.selectable.map { it.label(this) }
+        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        typeSelector.setSelection(ActivityType.selectable.indexOf(ActivityType.BIKE))
         nameInput.setText(intent.getStringExtra(EXTRA_SUGGESTED_NAME).orEmpty())
         nameInput.setSelection(nameInput.text.length)
 
@@ -37,7 +48,13 @@ class ActivitySaveActivity : AppCompatActivity() {
                 nameInput.requestFocus()
                 return@setOnClickListener
             }
-            setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_ACTION, ACTION_CONFIRM).putExtra(EXTRA_NAME, name))
+            val selectedType = ActivityType.selectable.getOrNull(typeSelector.selectedItemPosition) ?: ActivityType.BIKE
+            setResult(
+                Activity.RESULT_OK,
+                Intent().putExtra(EXTRA_ACTION, ACTION_CONFIRM)
+                    .putExtra(EXTRA_NAME, name)
+                    .putExtra(EXTRA_ACTIVITY_TYPE, selectedType.stableKey)
+            )
             finish()
         }
         findViewById<AppCompatButton>(R.id.discard_activity).setOnClickListener {
@@ -51,6 +68,7 @@ class ActivitySaveActivity : AppCompatActivity() {
         const val EXTRA_SUGGESTED_NAME = "activity_save.suggested_name"
         const val EXTRA_ACTION = "activity_save.action"
         const val EXTRA_NAME = "activity_save.name"
+        const val EXTRA_ACTIVITY_TYPE = "activity_save.type"
         const val ACTION_CONFIRM = "confirm"
         const val ACTION_DISCARD = "discard"
 

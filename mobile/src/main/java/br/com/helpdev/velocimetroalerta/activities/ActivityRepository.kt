@@ -16,7 +16,11 @@ class ActivityRepository(
 ) {
     private val activitiesDirectory = File(filesDir, ACTIVITIES_DIRECTORY)
 
-    fun save(draft: ActivityDraft, confirmedName: String): ActivitySummary {
+    fun save(
+        draft: ActivityDraft,
+        confirmedName: String,
+        activityType: ActivityType = draft.summary.activityType ?: ActivityType.BIKE
+    ): ActivitySummary {
         val name = confirmedName.trim()
         require(name.isNotEmpty()) { "An activity name is required" }
         require(ID_PATTERN.matches(draft.summary.id)) { "Invalid activity ID" }
@@ -31,7 +35,7 @@ class ActivityRepository(
         }
         if (!temporaryDirectory.mkdirs()) throw IOException("Unable to create temporary activity directory")
 
-        val summary = draft.summary.copy(name = name)
+        val summary = draft.summary.copy(name = name, activityType = activityType)
         val gpx = copyGpxWithName(draft.gpx, name)
         try {
             val gpxFile = File(temporaryDirectory, GPX_FILENAME)
@@ -126,6 +130,28 @@ class ActivityRepository(
             validateStoredFiles(directory, summary.id)
             summary
         }.onFailure { error -> LOGGER.log(Level.WARNING, "Unable to load saved activity $id", error) }.getOrNull()
+    }
+
+    fun updateActivityType(id: String, activityType: ActivityType): ActivitySummary? {
+        val directory = activityDirectory(id) ?: return null
+        val summary = loadSummary(id) ?: return null
+        val updated = summary.copy(activityType = activityType)
+        val summaryFile = File(directory, SUMMARY_FILENAME)
+        val temporaryFile = File(directory, "$SUMMARY_FILENAME.type-tmp")
+        val backupFile = File(directory, "$SUMMARY_FILENAME.type-backup")
+        try {
+            temporaryFile.writeText(gson.toJson(updated), Charsets.UTF_8)
+            if (backupFile.exists() && !backupFile.delete()) throw IOException("Unable to clear activity summary backup")
+            if (!summaryFile.renameTo(backupFile)) throw IOException("Unable to protect activity summary")
+            if (!temporaryFile.renameTo(summaryFile)) {
+                backupFile.renameTo(summaryFile)
+                throw IOException("Unable to update activity type")
+            }
+            backupFile.delete()
+            return updated
+        } finally {
+            temporaryFile.delete()
+        }
     }
 
     fun loadRoute(id: String): List<RoutePoint>? {

@@ -3,6 +3,12 @@ plugins {
     alias(libs.plugins.maps.secrets)
 }
 
+// Firebase is configured with an untracked google-services.json supplied by each environment.
+// Keep local-only builds usable when no Firebase project has been configured yet.
+if (file('google-services.json').exists() || file('src/debug/google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}
+
 secrets {
     propertiesFileName = 'secrets.properties'
     defaultPropertiesFileName = 'local.defaults.properties'
@@ -65,6 +71,16 @@ android {
 }
 
 dependencies {
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.functions)
+    implementation(libs.firebase.appcheck.playintegrity)
+    debugImplementation(libs.firebase.appcheck.debug)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
+    implementation(libs.work.runtime)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)

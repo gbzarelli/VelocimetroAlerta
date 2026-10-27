@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function allowedSettingKeys() {
+      return request.resource.data.keys().hasOnly([
+        'key_informar_tempo', 'key_informar_distancia', 'key_informar_vatual',
+        'key_informar_vmedia', 'key_informar_vmax', 'pref_vibrar',
+        'key_intervalo', 'key_intervalo_valor', 'key_pause_automatico',
+        'pref_hr_max_value', 'pref_hr_rest_value', 'pref_hr_z1_value',
+        'pref_hr_z2_value', 'pref_hr_z3_value', 'pref_hr_z4_value',
+        'pref_hr_z5_value', 'stravaAutoSyncEnabled'
+      ]);
+    }
+
+    function validSettingTypes() {
+      let data = request.resource.data;
+      return (!('key_informar_tempo' in data) || data.key_informar_tempo is bool)
+        && (!('key_informar_distancia' in data) || data.key_informar_distancia is bool)
+        && (!('key_informar_vatual' in data) || data.key_informar_vatual is bool)
+        && (!('key_informar_vmedia' in data) || data.key_informar_vmedia is bool)
+        && (!('key_informar_vmax' in data) || data.key_informar_vmax is bool)
+        && (!('pref_vibrar' in data) || data.pref_vibrar is bool)
+        && (!('key_pause_automatico' in data) || data.key_pause_automatico is bool)
+        && (!('stravaAutoSyncEnabled' in data) || data.stravaAutoSyncEnabled is bool)
+        && (!('key_intervalo' in data) || data.key_intervalo in ['distance', 'time'])
+        && (!('key_intervalo_valor' in data) || (data.key_intervalo_valor is string && data.key_intervalo_valor.matches('^[1-9][0-9]{0,2}$')))
+        && (!('pref_hr_max_value' in data) || (data.pref_hr_max_value is int && data.pref_hr_max_value >= 0 && data.pref_hr_max_value <= 300))
+        && (!('pref_hr_rest_value' in data) || (data.pref_hr_rest_value is int && data.pref_hr_rest_value >= 0 && data.pref_hr_rest_value <= 300))
+        && (!('pref_hr_z1_value' in data) || (data.pref_hr_z1_value is int && data.pref_hr_z1_value >= 0 && data.pref_hr_z1_value <= 300))
+        && (!('pref_hr_z2_value' in data) || (data.pref_hr_z2_value is int && data.pref_hr_z2_value >= 0 && data.pref_hr_z2_value <= 300))
+        && (!('pref_hr_z3_value' in data) || (data.pref_hr_z3_value is int && data.pref_hr_z3_value >= 0 && data.pref_hr_z3_value <= 300))
+        && (!('pref_hr_z4_value' in data) || (data.pref_hr_z4_value is int && data.pref_hr_z4_value >= 0 && data.pref_hr_z4_value <= 300))
+        && (!('pref_hr_z5_value' in data) || (data.pref_hr_z5_value is int && data.pref_hr_z5_value >= 0 && data.pref_hr_z5_value <= 300));
+    }
+
+    match /users/{uid}/settings/{documentId} {
+      allow read: if isOwner(uid) && documentId == 'current';
+      allow create, update: if isOwner(uid)
+        && documentId == 'current'
+        && allowedSettingKeys()
+        && validSettingTypes();
+      allow delete: if false;
+    }
+
+    // Strava OAuth state and refresh tokens are server-only. All unmatched paths
+    // are denied by default.
+    match /users/{uid}/private/{documentId} {
+      allow read, write: if false;
+    }
+    match /stravaOAuthStates/{stateHash} {
+      allow read, write: if false;
+    }
+  }
+}

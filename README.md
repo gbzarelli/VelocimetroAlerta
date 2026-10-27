@@ -52,7 +52,8 @@ Run `make help` for the available commands. Common workflows:
 ```sh
 make build             # assemble the debug APK
 make run               # open/wait for emulator-5564, install, and launch the app
-make test              # GPX simulator tests and JVM unit tests
+make test              # GPX simulator, JVM unit tests, and Cloud Functions compile
+make functions-build   # compile the Cloud Functions TypeScript
 make test-elevation    # elevation estimator and pause policy tests
 make test-elevation-replay # replay the three local Strava GPX files
 make test-e2e          # full instrumentation suite on API 24 and API 36
@@ -72,6 +73,12 @@ make gpx-fast GPX_FAST_FACTOR=20
 ```
 
 Both targets build, install, and open the app on `emulator-5564` before sending locations. Change `DEVICE`, `PORT`, or `AVD` to use another emulator. During accelerated playback, the app observes the corresponding faster apparent speed. Start or pause tracking in the app as usual; stop the simulator with Ctrl+C.
+
+## Firebase and Strava development
+
+Google sign-in, cloud preferences, and Strava uploads require Firebase configuration. Keep `google-services.json`, Firebase project selection, environment files, and signing credentials out of Git. Setup steps, local credential paths, Cloud Functions deployment, and the Android App Links template are documented in [docs/strava-firebase-setup.md](docs/strava-firebase-setup.md).
+
+Run `make functions-build` to install the locked Node.js dependencies and compile the Cloud Functions before deployment.
 
 ## Contributing
 

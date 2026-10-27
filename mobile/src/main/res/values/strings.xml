@@ -67,6 +67,7 @@
     </string-array>
 
     <string name="valor">Range value</string>
+    <string name="interval_value_invalid">Enter a value from 1 to 999.</string>
     <string name="info_ganho">
         The ELEVATION field shows the approximate value of the altimetry gain/loss of the route,
         almost in real time. The ELEVATION is calculated for each kilometer traveled and recalculated for
@@ -130,6 +131,65 @@
     <string name="activity_delete_confirm_title">Delete this activity?</string>
     <string name="activity_delete_confirm_message">This activity and its saved route will be permanently deleted.</string>
     <string name="activity_delete_error">The activity could not be deleted.</string>
+    <string name="google_sign_in">Sign in with Google</string>
+    <string name="google_sign_in_failed">Google sign-in could not be completed.</string>
+    <string name="google_sign_in_not_configured">Google sign-in is not configured for this build.</string>
+    <string name="firebase_not_configured">Cloud account features are not configured in this build. Local activities are still available.</string>
+    <string name="account_connections">Account and connections</string>
+    <string name="account_sign_in_google">Sign in with Google</string>
+    <string name="account_open_connections">Account and connections</string>
+    <string name="account_title">Account and connections</string>
+    <string name="account_guest">Guest mode</string>
+    <string name="account_signed_in_as">Signed in as %1$s</string>
+    <string name="account_sign_out">Sign out</string>
+    <string name="account_google_optional">Sign in to connect Strava and sync preferences. Saving activities and GPX export remain available without an account.</string>
+    <string name="account_delete_request">Request account and data deletion</string>
+    <string name="account_delete_request_url">https://helpdev.com.br/apps/velocimetro-alerta/privacidade/#account-deletion</string>
+    <string name="account_cloud_preferences">Cloud preferences</string>
+    <string name="account_restore_cloud_title">Preferences found in your Google account</string>
+    <string name="account_restore_cloud_message">Choose which settings to keep on this device.</string>
+    <string name="account_restore_cloud">Restore from cloud</string>
+    <string name="account_use_device">Use this device</string>
+    <string name="account_settings_sync_error">Preferences could not be synchronized. Check your connection and try again.</string>
+    <string name="account_strava">Strava</string>
+    <string name="strava_not_connected">Not connected</string>
+    <string name="strava_connected_as">Connected as %1$s</string>
+    <string name="strava_connect">Connect to Strava</string>
+    <string name="strava_disconnect">Disconnect Strava</string>
+    <string name="strava_disconnect_confirm">Disconnect this Strava account?</string>
+    <string name="strava_requires_google">Sign in with Google before connecting Strava.</string>
+    <string name="strava_oauth_failed">Strava could not be connected. Try again.</string>
+    <string name="strava_scope_required">Allow activity upload permission to connect Strava.</string>
+    <string name="strava_auto_sync">Sync automatically</string>
+    <string name="strava_auto_sync_help">New supported activities saved after this option is enabled will be sent to Strava.</string>
+    <string name="strava_auto_sync_needs_connection">Connect Strava to enable automatic sync.</string>
+    <string name="activity_type_label">Activity type</string>
+    <string name="activity_type_bike">Bike</string>
+    <string name="activity_type_ebike">eBike</string>
+    <string name="activity_type_mountain_bike">Mountain bike</string>
+    <string name="activity_type_gravel">Gravel</string>
+    <string name="activity_type_emountain_bike">eMountain bike</string>
+    <string name="activity_type_virtual_bike">Indoor / virtual bike</string>
+    <string name="activity_type_run">Run</string>
+    <string name="activity_type_walk">Walk</string>
+    <string name="activity_type_hike">Trail</string>
+    <string name="activity_type_vehicle">Vehicle / car</string>
+    <string name="strava_send_activity">Export to Strava</string>
+    <string name="strava_activity_synced">strava · Activity already synced</string>
+    <string name="strava_manual_confirmation">Presence confirmed manually</string>
+    <string name="strava_syncing">Syncing with Strava…</string>
+    <string name="strava_sync_failed">Could not confirm the Strava upload.</string>
+    <string name="strava_upload_rejected">Strava rejected the upload (HTTP %1$d): %2$s</string>
+    <string name="strava_rejection_no_details">The API returned no additional details.</string>
+    <string name="strava_needs_action">Check Strava before trying again. The upload may already have been accepted.</string>
+    <string name="strava_already_there">It appears on Strava</string>
+    <string name="strava_retry_duplicate_warning">The earlier upload may have succeeded. Retrying can create a duplicate. Try again?</string>
+    <string name="strava_activity_local_only">This activity type stays on this device and cannot be sent to Strava.</string>
+    <string name="strava_choose_legacy_type">Choose a type before sending this saved activity.</string>
+    <string name="strava_retry_type">Retry upload</string>
+    <string name="strava_oauth_cancelled">Strava connection was cancelled.</string>
+    <string name="strava_reconnect_required">Reconnect Strava to continue.</string>
+    <string name="strava_disconnect_failed">Strava could not be disconnected. Try again.</string>
     <string name="retry">Try again</string>
 
     <string name="bloqueio_desativado">SCREEN LOCK: OFF</string>

@@ -43,6 +43,30 @@ class ActivityRepositoryTest {
     }
 
     @Test
+    fun savesAndUpdatesTheSelectedActivityType() {
+        val repository = repository()
+        val draft = draft("typed-activity", 10L, 20L)
+
+        val saved = repository.save(draft, "Evening ride", ActivityType.E_BIKE)
+        assertEquals(ActivityType.E_BIKE, saved.activityType)
+        assertEquals(ActivityType.E_BIKE, repository.loadSummary(saved.id)?.activityType)
+
+        val updated = repository.updateActivityType(saved.id, ActivityType.GRAVEL)
+        assertEquals(ActivityType.GRAVEL, updated?.activityType)
+        assertEquals(ActivityType.GRAVEL, repository.loadSummary(saved.id)?.activityType)
+    }
+
+    @Test
+    fun loadsLegacySummariesWithoutActivityType() {
+        val repository = repository()
+        val saved = repository.save(draft("legacy-activity", 10L, 20L), "Legacy ride")
+        val summaryFile = File(temporaryFolder.root, "activities/${saved.id}/summary.json")
+        summaryFile.writeText(summaryFile.readText().replace(Regex(",\\s*\"activityType\"\\s*:\\s*\"[^\"]*\""), ""))
+
+        assertEquals(null, repository.loadSummary(saved.id)?.activityType)
+    }
+
+    @Test
     fun loadsFullRouteInOriginalOrder() {
         val repository = repository()
         repository.save(draft("route", startedAt = 100, savedAt = 100), "Route")

@@ -26,6 +26,16 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: Build Cloud Functions
+        run: make functions-build
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 

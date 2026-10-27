@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help doctor build clean emulator-open emulators-open install run test test-unit test-simulator test-runner test-elevation test-elevation-replay compare-elevation test-e2e verify gpx-realtime gpx-fast
+.PHONY: help doctor build clean emulator-open emulators-open install run test test-unit test-simulator test-runner test-elevation test-elevation-replay compare-elevation test-e2e verify gpx-realtime gpx-fast functions-install functions-build functions-emulate
 
 APP_ID ?= br.com.helpdev.velocimetroalerta.v2
 MAIN_ACTIVITY ?= br.com.helpdev.velocimetroalerta.MainActivity
@@ -23,6 +23,15 @@ doctor: ## Show local build and emulator tool versions
 
 build: ## Assemble the Android debug APK
 	./gradlew :mobile:assembleDebug
+
+functions-install: ## Install Cloud Functions dependencies from the lockfile
+	npm --prefix functions ci
+
+functions-build: functions-install ## Compile Cloud Functions
+	npm --prefix functions run build
+
+functions-emulate: functions-build ## Start the Firebase Auth, Firestore, and Functions emulators
+	firebase emulators:start --only auth,firestore,functions
 
 clean: ## Remove Gradle build outputs
 	./gradlew clean
@@ -73,7 +82,7 @@ test-elevation-replay: ## Replay the three private GPX files through the Kotlin 
 compare-elevation: ## Compare three local Strava GPX files using aggregate output
 	python3 -m tools.elevation_validation.compare --format markdown
 
-test: test-simulator test-runner test-elevation test-unit ## Run local unit tests (does not require emulators)
+test: test-simulator test-runner test-elevation test-unit functions-build ## Run local unit tests (does not require emulators)
 
 test-e2e: emulators-open ## Run the full hermetic instrumentation suite on API 24 and API 36
 	python3 tools/run-hermetic-android-tests.py --sdk "$(TEST_SDKS)" $(foreach device,$(E2E_DEVICES),--device $(device))

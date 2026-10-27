@@ -91,6 +91,27 @@
             android:parentActivityName=".MyActivities"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:name=".AccountConnectionsActivity"
+            android:exported="false"
+            android:label="@string/account_title"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".strava.StravaOAuthCallbackActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="helpdev.com.br"
+                    android:pathPrefix="/apps/velocimetro-alerta/strava/callback" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".SavedRouteMapActivity"
             android:exported="false"
             android:label="@string/activity_detail_map_title"

@@ -29,6 +29,7 @@ import android.view.WindowManager
 import android.widget.Toast
 
 import br.com.helpdev.velocimetroalerta.dialogs.ConfirmDialogFrag
+import br.com.helpdev.velocimetroalerta.auth.GoogleAuthRepository
 import br.com.helpdev.velocimetroalerta.gps.SpeedometerService
 import br.com.helpdev.velocimetroalerta.permissions.RuntimePermissionPolicy
 import br.com.helpdev.velocimetroalerta.sensors.SensorConnectionState
@@ -115,6 +116,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         val navigationView = findViewById<NavigationView>(R.id.nav_view)
         navigationView.setNavigationItemSelectedListener(this)
+        navigationView.getHeaderView(0).findViewById<android.view.View>(R.id.header_account_button)
+            .setOnClickListener { startActivity(Intent(this, AccountConnectionsActivity::class.java)) }
+        refreshAccountHeader(navigationView)
         requestLocationPermissionOnFirstLaunch()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -354,8 +358,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onResume() {
         super.onResume()
+        findViewById<NavigationView>(R.id.nav_view)?.let(::refreshAccountHeader)
         requestAdsConsentIfReady()
         isServiceBound = bindService(Intent(this, SpeedometerService::class.java), this, BIND_AUTO_CREATE)
+    }
+
+    private fun refreshAccountHeader(navigationView: NavigationView) {
+        val header = navigationView.getHeaderView(0)
+        val session = GoogleAuthRepository(this).currentSession()
+        header.findViewById<android.widget.TextView>(R.id.tv_distance).text =
+            session?.displayName?.takeIf(String::isNotBlank) ?: getString(R.string.site_helpdev)
+        header.findViewById<android.widget.TextView>(R.id.header_account_button).setText(
+            if (session == null) R.string.account_sign_in_google else R.string.account_open_connections
+        )
     }
 
     private fun requestAdsConsentIfReady() {

@@ -32,4 +32,13 @@
         android:layout_height="wrap_content"
         android:text="@string/site_helpdev" />
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/header_account_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:backgroundTint="@android:color/white"
+        android:text="@string/account_sign_in_google"
+        android:textColor="@color/colorPrimary" />
+
 </LinearLayout>

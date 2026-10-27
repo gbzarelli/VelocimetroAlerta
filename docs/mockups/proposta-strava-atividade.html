@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#009688">
+  <link rel="icon" href="data:,">
+  <title>Proposta visual · Envio e sincronização Strava</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --teal: #009688;
+      --teal-dark: #00695c;
+      --teal-soft: #e1f3f1;
+      --orange: #fc4c02;
+      --ink: #263238;
+      --muted: #78909c;
+      --line: #e7edef;
+      --page: #eef3f4;
+      --card: #ffffff;
+      --success: #27865a;
+      --warning: #9a5b00;
+      font-family: Roboto, "Segoe UI", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--page); color: var(--ink); }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .page { max-width: 1440px; margin: 0 auto; padding: 30px 32px 48px; }
+    .masthead { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 24px; }
+    .brandline { display: flex; align-items: center; gap: 12px; color: var(--teal-dark); font-weight: 800; letter-spacing: .04em; font-size: 13px; text-transform: uppercase; }
+    .brand-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: var(--teal); color: white; font-size: 14px; letter-spacing: -.04em; box-shadow: 0 5px 14px #00968835; }
+    h1 { font-size: clamp(26px, 3vw, 38px); line-height: 1.1; margin: 13px 0 8px; letter-spacing: -.035em; }
+    .intro { color: #61747c; max-width: 720px; font-size: 15px; line-height: 1.55; margin: 0; }
+    .prototype-tag { color: #52656d; background: #fff; border: 1px solid #dce5e7; border-radius: 99px; padding: 9px 13px; font-size: 12px; white-space: nowrap; box-shadow: 0 4px 12px #17363e08; }
+    .journey { display: flex; flex-wrap: wrap; gap: 8px; overflow: visible; padding: 2px 1px 12px; margin-bottom: 12px; scrollbar-width: thin; }
+    .step { border: 1px solid #dbe5e7; border-radius: 999px; color: #60757d; background: #f8fbfb; padding: 9px 13px; white-space: nowrap; font-size: 12px; font-weight: 700; transition: .18s ease; }
+    .step:hover { border-color: #8bcac4; color: var(--teal-dark); }
+    .step.active { color: #fff; background: var(--teal); border-color: var(--teal); box-shadow: 0 4px 12px #00968825; }
+    .layout { display: grid; grid-template-columns: minmax(240px, 1fr) 440px minmax(250px, 1fr); align-items: start; gap: 26px; }
+    .info-column { display: grid; gap: 14px; padding-top: 16px; }
+    .info-card { background: var(--card); border: 1px solid #e2e9eb; border-radius: 18px; padding: 19px 20px; box-shadow: 0 12px 30px #12373e08; }
+    .info-card h2 { font-size: 14px; margin: 0 0 11px; letter-spacing: .01em; }
+    .info-card p { margin: 0; color: #657981; font-size: 13px; line-height: 1.55; }
+    .callout { display: flex; gap: 11px; align-items: flex-start; }
+    .callout-icon { flex: 0 0 29px; display: grid; place-items: center; width: 29px; height: 29px; border-radius: 9px; color: var(--teal-dark); background: var(--teal-soft); font-weight: 800; }
+    .callout strong { display: block; color: #30474f; font-size: 13px; margin-bottom: 4px; }
+    .callout span { color: #6d8087; font-size: 12px; line-height: 1.45; }
+    .flowline { display: grid; gap: 10px; margin-top: 14px; }
+    .flow-row { display: flex; align-items: center; gap: 10px; color: #60747b; font-size: 12px; }
+    .flow-num { display: grid; width: 23px; height: 23px; place-items: center; border-radius: 50%; background: #eef5f5; color: var(--teal-dark); font-size: 11px; font-weight: 800; }
+    .flow-row.current .flow-num { color: white; background: var(--orange); }
+    .flow-row.current { color: var(--ink); font-weight: 700; }
+    .phone-shell { width: 440px; max-width: 100%; height: 854px; padding: 9px; border-radius: 48px; background: #1c2427; box-shadow: 0 28px 80px #172f3540, 0 3px 8px #172f3520; position: relative; margin: 0 auto; }
+    .phone-shell::before { content: ""; position: absolute; z-index: 2; top: 14px; left: 50%; transform: translateX(-50%); width: 92px; height: 21px; border-radius: 99px; background: #182023; }
+    .phone-screen { position: relative; height: 100%; overflow: hidden; background: #fff; border-radius: 39px; display: flex; flex-direction: column; }
+    .statusbar { height: 34px; flex: 0 0 34px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 23px; font-size: 11px; font-weight: 700; }
+    .status-icons { display: flex; align-items: center; gap: 7px; font-size: 10px; }
+    .native-bar { height: 57px; flex: 0 0 57px; display: flex; align-items: center; gap: 18px; padding: 0 18px; color: #fff; background: var(--teal); box-shadow: 0 2px 5px #003e3820; }
+    .back { width: 26px; color: white; border: 0; background: transparent; font-size: 25px; line-height: 1; padding: 0; }
+    .bar-title { font-size: 18px; font-weight: 600; letter-spacing: .005em; }
+    .bar-action { margin-left: auto; color: #fff; font-size: 12px; opacity: .9; }
+    .screen { display: none; flex: 1; min-height: 0; flex-direction: column; background: #fff; }
+    .screen.active { display: flex; }
+    .screen-scroll { flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; background: #f7f9fa; }
+    .drawer-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #fff; }
+    .drawer-main-toolbar { height: 57px; display: flex; align-items: center; gap: 16px; padding: 0 16px; color: #fff; background: var(--teal); box-shadow: 0 2px 5px #003e3820; }
+    .drawer-hamburger { border: 0; padding: 0; color: white; background: transparent; font-size: 22px; }
+    .drawer-main-toolbar strong { font-size: 16px; font-weight: 600; }
+    .drawer-main-content { padding: 12px 15px; }
+    .drawer-month { color: #607d8b; font-size: 12px; font-weight: 750; margin: 6px 0 9px; }
+    .drawer-activity { margin-bottom: 11px; border-radius: 13px; overflow: hidden; background: #fff; box-shadow: 0 3px 12px #26323812; border: 1px solid #eef1f2; }
+    .drawer-map { height: 94px; position: relative; background: #e8f0ee; overflow: hidden; }
+    .drawer-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .drawer-activity-copy { padding: 10px 12px 12px; }
+    .drawer-activity-copy strong { font-size: 14px; }
+    .drawer-activity-copy p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+    .drawer-scrim { position: absolute; inset: 0; background: #14292d70; }
+    .drawer-panel { position: absolute; inset: 0 auto 0 0; width: min(310px, 86%); display: flex; flex-direction: column; overflow: hidden; background: #fff; box-shadow: 9px 0 28px #10282e28; }
+    .drawer-header { flex: 0 0 auto; min-height: 192px; padding: 21px 17px 15px; color: #fff; background: linear-gradient(135deg, #4db6ac 0%, #009688 55%, #00695c 100%); }
+    .drawer-brand { display: flex; align-items: center; gap: 11px; min-height: 58px; }
+    .drawer-logo { width: 49px; height: 49px; object-fit: contain; border-radius: 12px; box-shadow: 0 3px 10px #003e3830; }
+    .drawer-brand-copy strong { display: block; font-size: 15px; line-height: 1.2; }
+    .drawer-brand-copy span { display: block; color: #e1f4f2; font-size: 10px; margin-top: 4px; }
+    .drawer-account-btn { width: 100%; min-height: 43px; display: flex; align-items: center; gap: 9px; margin-top: 15px; padding: 0 12px; border: 1px solid #ffffffa8; border-radius: 11px; color: #00695c; background: #fffffff2; text-align: left; font-size: 12px; font-weight: 800; box-shadow: 0 4px 12px #003e3820; }
+    .drawer-account-icon { display: grid; width: 23px; height: 23px; place-items: center; border-radius: 50%; color: white; background: var(--teal); font-size: 10px; }
+    .drawer-account-text { flex: 1; min-width: 0; }
+    .drawer-account-text strong { display: block; font-size: 12px; }
+    .drawer-account-text span { display: block; overflow: hidden; color: #718188; font-size: 9px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .drawer-menu { padding: 9px 0; }
+    .drawer-menu-item { display: flex; align-items: center; gap: 17px; height: 49px; padding: 0 19px; color: #394b51; font-size: 13px; }
+    .drawer-menu-item.active { color: var(--teal-dark); background: #e7f3f1; font-weight: 750; border-right: 3px solid var(--teal); }
+    .drawer-menu-icon { width: 20px; color: #71858b; text-align: center; font-size: 16px; }
+    .drawer-menu-item.active .drawer-menu-icon { color: var(--teal); }
+    .drawer-divider { height: 1px; margin: 7px 16px; background: #e9edef; }
+    .screen-save .screen-scroll, .screen-account .screen-scroll, .screen-google .screen-scroll, .screen-connect .screen-scroll { padding: 24px 22px 18px; background: #fff; }
+    .screen-title { font-size: 24px; line-height: 1.2; margin: 0 0 10px; font-weight: 750; letter-spacing: -.025em; }
+    .screen-copy { margin: 0 0 22px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .label { display: block; color: #566b73; font-size: 12px; font-weight: 700; margin: 19px 0 8px; }
+    .text-input { width: 100%; border: 1px solid #d9e2e4; border-radius: 11px; outline: 0; padding: 13px 14px; color: var(--ink); background: white; box-shadow: inset 0 1px 2px #17363e06; }
+    .text-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px #00968820; }
+    .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .type-option { min-height: 78px; display: grid; align-content: center; justify-items: center; gap: 5px; border: 1px solid #dce5e7; border-radius: 13px; color: #5d7077; background: white; font-size: 11px; font-weight: 650; transition: .15s; }
+    .type-option .type-icon { font-size: 21px; line-height: 1; }
+    .type-option:hover { border-color: #8bcac4; }
+    .type-option.selected { color: var(--teal-dark); border-color: var(--teal); background: #ecf8f6; box-shadow: inset 0 0 0 1px var(--teal); }
+    .type-more { margin: 12px 0 2px; border: 0; background: transparent; color: var(--teal-dark); padding: 3px 0; font-weight: 700; font-size: 12px; }
+    .more-types { display: none; margin-top: 10px; gap: 8px; flex-wrap: wrap; }
+    .more-types.open { display: flex; }
+    .small-chip { padding: 7px 10px; border-radius: 99px; border: 1px solid #dce5e7; color: #60747b; background: #fff; font-size: 11px; }
+    .small-chip.selected { color: var(--teal-dark); border-color: var(--teal); background: #ecf8f6; box-shadow: inset 0 0 0 1px var(--teal); }
+    .save-actions { padding: 10px 22px 20px; background: #fff; }
+    .primary-btn, .secondary-btn, .strava-btn, .google-btn, .soft-btn { width: 100%; min-height: 48px; border-radius: 11px; font-weight: 750; border: 0; transition: transform .12s, box-shadow .12s; }
+    .primary-btn:hover, .secondary-btn:hover, .strava-btn:hover, .google-btn:hover, .soft-btn:hover { transform: translateY(-1px); }
+    .primary-btn { color: #fff; background: var(--teal); box-shadow: 0 6px 14px #00968829; }
+    .secondary-btn { color: var(--teal-dark); background: #eaf0f2; margin-top: 9px; }
+    .strava-btn { color: #fff; background: var(--orange); box-shadow: 0 6px 16px #fc4c0233; }
+    .strava-btn:disabled:not(.is-synced):not(.is-manual-confirmed) { color: #74848a; background: #e9eef0; box-shadow: none; cursor: not-allowed; }
+    .strava-btn.is-synced, .strava-btn.is-manual-confirmed { color: #23744d; background: #e9f6ef; box-shadow: none; cursor: not-allowed; }
+    .strava-btn:disabled:hover { transform: none; }
+    .google-btn { display: flex; align-items: center; justify-content: center; gap: 12px; color: #32434a; border: 1px solid #d8e0e2; background: #fff; box-shadow: 0 3px 9px #22393e0d; }
+    .google-g { font-weight: 900; font-size: 20px; color: #4285f4; }
+    .soft-btn { color: #60747b; background: #eff4f5; }
+    .privacy-hint { color: #85969c; text-align: center; font-size: 11px; line-height: 1.45; margin: 12px 8px 0; }
+    .route-preview { height: 184px; background: #e8f0ee; position: relative; overflow: hidden; }
+    .route-preview::before, .route-preview::after { content: ""; position: absolute; inset: -20%; border: 1px solid #c9d8d2; transform: rotate(-15deg); border-radius: 44%; }
+    .route-preview::after { inset: 15% -30%; transform: rotate(21deg); border-color: #d2dfd9; }
+    .map-label { position: absolute; left: 15px; top: 13px; z-index: 1; background: #ffffffd9; color: #63777b; border-radius: 99px; padding: 6px 9px; font-size: 10px; font-weight: 700; }
+    .map-dot { position: absolute; right: 21%; bottom: 22%; z-index: 1; width: 12px; height: 12px; border: 3px solid white; border-radius: 50%; background: var(--orange); box-shadow: 0 2px 5px #0003; }
+    .detail-content { padding: 17px 20px 22px; }
+    .activity-name { font-size: 23px; line-height: 1.2; letter-spacing: -.02em; margin: 0 0 5px; }
+    .activity-date { color: var(--muted); font-size: 12px; margin-bottom: 15px; }
+    .type-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; background: #edf7f5; color: var(--teal-dark); padding: 6px 9px; font-size: 11px; font-weight: 700; margin-bottom: 16px; }
+    .metric-strip { display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 14px; padding: 12px 5px; background: #fff; box-shadow: 0 3px 13px #26323808; margin-bottom: 15px; }
+    .metric { text-align: center; border-right: 1px solid #edf1f2; }
+    .metric:last-child { border: 0; }
+    .metric strong { display: block; font-size: 17px; line-height: 1.3; }
+    .metric span { display: block; color: #84949a; font-size: 10px; margin-top: 3px; }
+    .summary-title { color: #667b82; background: #eaf0f2; margin: 0 -20px; padding: 9px 20px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; font-weight: 800; }
+    .summary-row { display: flex; justify-content: space-between; border-bottom: 1px solid #edf1f2; padding: 10px 0; color: #687b82; font-size: 12px; }
+    .summary-row strong { color: #31444a; font-size: 12px; }
+    .detail-actions { display: grid; gap: 9px; padding: 12px 20px 16px; background: #fff; border-top: 1px solid #edf1f2; }
+    .strava-word { font-style: italic; font-weight: 900; letter-spacing: -.06em; margin-right: 4px; }
+    .strava-sync-progress { display: grid; gap: 8px; padding: 3px 2px; }
+    .strava-sync-progress[hidden], .strava-btn[hidden] { display: none; }
+    .strava-sync-label { color: #40575f; font-size: 13px; font-weight: 750; }
+    .strava-sync-track { height: 6px; overflow: hidden; border-radius: 99px; background: #e5eeed; }
+    .strava-sync-fill { width: 34%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #fc4c02, #ff9b70); animation: strava-sync-progress 1.15s ease-in-out infinite alternate; }
+    @keyframes strava-sync-progress { from { transform: translateX(-18%); } to { transform: translateX(210%); } }
+    @media (prefers-reduced-motion: reduce) { .strava-sync-fill { width: 100%; animation: none; } }
+    .strava-upload-warning { padding: 12px; border: 1px solid #efd6a7; border-radius: 12px; background: #fff8ea; }
+    .strava-upload-warning[hidden] { display: none; }
+    .strava-warning-heading { display: flex; align-items: flex-start; gap: 9px; }
+    .strava-warning-icon { display: grid; flex: 0 0 23px; width: 23px; height: 23px; place-items: center; border-radius: 50%; color: #8a5a13; background: #ffedc9; font-size: 13px; font-weight: 800; }
+    .strava-warning-heading strong { display: block; color: #6e4b15; font-size: 12px; margin: 1px 0 4px; }
+    .strava-warning-heading p { margin: 0; color: #80683f; font-size: 10px; line-height: 1.4; }
+    .strava-warning-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 11px; }
+    .strava-warning-actions .primary-btn, .strava-warning-actions .secondary-btn { min-height: 43px; margin: 0; padding: 7px; font-size: 10px; line-height: 1.2; }
+    .strava-warning-note { margin: 8px 0 0; color: #8a6b34; font-size: 9px; line-height: 1.4; }
+    .export-btn { width: 100%; min-height: 44px; border: 1px solid #a9d6d1; background: #fff; color: var(--teal-dark); border-radius: 11px; font-weight: 700; }
+    .local-only { display: none; color: #8a5a13; background: #fff6e8; border: 1px solid #f0d9b3; border-radius: 10px; padding: 9px 11px; font-size: 11px; line-height: 1.4; }
+    .google-symbol { width: 22px; height: 22px; display: grid; place-items: center; font-size: 20px; font-weight: 900; color: #4285f4; }
+    .illustration { display: grid; place-items: center; height: 145px; margin: 6px 0 18px; border-radius: 18px; background: linear-gradient(145deg, #e5f5f2, #f6fbfa); }
+    .illustration .account-icon { display: grid; place-items: center; width: 74px; height: 74px; border-radius: 24px; color: var(--teal-dark); background: #fff; box-shadow: 0 8px 26px #005e5315; font-size: 30px; }
+    .brand-card { display: flex; align-items: center; gap: 13px; border: 1px solid #e2e9eb; border-radius: 14px; padding: 13px; margin: 16px 0 18px; background: #fff; }
+    .strava-badge { width: 43px; height: 43px; border-radius: 13px; display: grid; place-items: center; background: #fff0e8; color: var(--orange); font-size: 21px; font-weight: 900; }
+    .brand-card strong { display: block; font-size: 13px; }
+    .brand-card span { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .scope-box { border-radius: 13px; background: #f5f8f8; padding: 14px; margin: 14px 0 20px; }
+    .scope-box strong { display: block; font-size: 12px; margin-bottom: 5px; }
+    .scope-box p { color: #6c7e85; font-size: 11px; line-height: 1.5; margin: 0; }
+    .connected-pill { display: inline-flex; align-items: center; gap: 7px; color: #23744d; background: #e9f6ef; border: 1px solid #cbe8d7; padding: 7px 10px; border-radius: 99px; font-size: 11px; font-weight: 750; }
+    .connected-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #37a76c; }
+    .account-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 0; border-bottom: 1px solid #edf1f2; }
+    .account-item:last-child { border-bottom: 0; }
+    .account-item strong { display: block; font-size: 13px; }
+    .account-item span { display: block; color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .link-btn { border: 0; background: transparent; color: var(--teal-dark); font-size: 12px; font-weight: 750; white-space: nowrap; }
+    .account-sync-row { padding: 13px 0 14px; border-bottom: 1px solid #edf1f2; }
+    .account-sync-setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .account-sync-copy { min-width: 0; }
+    .account-sync-copy strong { display: block; font-size: 13px; }
+    .account-sync-copy span { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+    .switch-control { flex: 0 0 48px; width: 48px; height: 28px; padding: 3px; border: 0; border-radius: 99px; background: #cfd8dc; transition: background .18s; }
+    .switch-control::after { content: ""; display: block; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px #10282e30; transition: transform .18s; }
+    .switch-control[aria-checked="true"] { background: var(--teal); }
+    .switch-control[aria-checked="true"]::after { transform: translateX(20px); }
+    .switch-control:disabled { cursor: not-allowed; opacity: .58; }
+    .switch-control:focus-visible { outline: 3px solid #00968845; outline-offset: 2px; }
+    .account-sync-help { margin: 7px 0 0; color: #84949a; font-size: 10px; line-height: 1.4; }
+    .state-card { border-radius: 16px; background: #fff; padding: 18px; box-shadow: 0 3px 14px #2632380a; margin: 18px 0; text-align: center; }
+    .state-icon { width: 56px; height: 56px; margin: 0 auto 12px; display: grid; place-items: center; border-radius: 18px; color: var(--teal-dark); background: #e3f4f1; font-size: 24px; font-weight: 800; }
+    .state-icon.ok { color: var(--success); background: #e6f6ec; }
+    .state-card h3 { font-size: 16px; margin: 0 0 7px; }
+    .state-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .bottom-note { padding: 10px 22px 14px; color: #84949a; text-align: center; font-size: 10px; background: white; }
+    .toast { position: absolute; bottom: 77px; left: 50%; transform: translate(-50%, 14px); opacity: 0; pointer-events: none; white-space: nowrap; color: white; background: #263238; padding: 10px 14px; border-radius: 99px; font-size: 11px; transition: .2s; z-index: 5; box-shadow: 0 4px 15px #0003; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .right-card { margin-top: 16px; }
+    .right-card .eyebrow { display: block; text-transform: uppercase; color: #91a0a5; font-size: 10px; font-weight: 800; letter-spacing: .09em; margin-bottom: 8px; }
+    .right-card .feature-list { display: grid; gap: 12px; margin-top: 13px; }
+    .feature { display: flex; gap: 9px; color: #63767e; font-size: 12px; line-height: 1.45; }
+    .check { color: var(--teal); font-weight: 900; }
+    .subtle-warning { margin-top: 12px !important; border-left: 3px solid #e4a448; padding-left: 10px; }
+    .footnote { max-width: 1440px; margin: 18px auto 0; color: #819197; font-size: 11px; text-align: center; }
+    @media (max-width: 1050px) {
+      .layout { grid-template-columns: minmax(215px, 1fr) 420px; }
+      .right-column { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+      .right-card { margin-top: 0; }
+    }
+    @media (max-width: 720px) {
+      .page { padding: 20px 14px 32px; }
+      .masthead { display: block; }
+      .prototype-tag { display: inline-block; margin-top: 14px; }
+      .layout { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+      .left-column { order: 2; }
+      .phone-shell { order: 1; width: min(100%, 420px); height: min(820px, 88vh); min-height: 680px; border-radius: 40px; }
+      .phone-screen { border-radius: 32px; }
+      .right-column { order: 3; display: grid; grid-template-columns: 1fr; }
+      .info-column { padding-top: 0; }
+      .journey { flex-wrap: nowrap; overflow-x: auto; }
+    }
+    @media (max-width: 390px) {
+      .type-grid { grid-template-columns: repeat(2, 1fr); }
+      .phone-shell { padding: 7px; }
+      .detail-content { padding-left: 16px; padding-right: 16px; }
+      .detail-actions { padding-left: 16px; padding-right: 16px; }
+      .drawer-panel { width: 84%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <div>
+        <div class="brandline"><span class="brand-icon">VA</span> Velocímetro Alerta · proposta de fluxo</div>
+        <h1>Enviar uma atividade ao Strava</h1>
+      <p class="intro">Protótipo navegável com a aparência atual do app — barra verde petróleo, fundo claro, métricas compactas e ações nativas. Envie uma atividade manualmente ou ative o envio automático das próximas.</p>
+      </div>
+      <div class="prototype-tag">HTML de proposta · sem integração real</div>
+    </header>
+
+    <nav class="journey" aria-label="Etapas do protótipo">
+      <button class="step" data-go="drawer">Menu lateral</button>
+      <button class="step" data-go="drawerLogged">Menu logado</button>
+      <button class="step" data-go="save">1 · Salvar</button>
+      <button class="step active" data-go="detail">2 · Detalhes</button>
+      <button class="step" data-go="detailSynced">Detalhes · já sincronizada</button>
+      <button class="step" data-go="google">3 · Login Google</button>
+      <button class="step" data-go="connect">4 · Conectar Strava</button>
+      <button class="step" data-go="account">Conta e conexões</button>
+      <button class="step" data-go="accountConnected">Conta com Strava</button>
+      <button class="step" data-go="detailNeedsAction">Detalhes · falha sem confirmação</button>
+    </nav>
+
+    <section class="layout">
+      <aside class="info-column left-column">
+        <article class="info-card">
+          <div class="callout">
+            <div class="callout-icon">↗</div>
+            <div><strong>Uma atividade por toque</strong><span>Entrar ou conectar o Strava não envia o histórico. O fluxo sempre volta para a atividade aberta.</span></div>
+          </div>
+        </article>
+        <article class="info-card">
+          <h2>O que esta proposta acrescenta</h2>
+          <div class="feature-list">
+            <div class="feature"><span class="check">✓</span><span>Tipo obrigatório no momento de salvar.</span></div>
+            <div class="feature"><span class="check">✓</span><span>Botão Strava ao lado da exportação GPX.</span></div>
+            <div class="feature"><span class="check">✓</span><span>Login Google antes de configurar o Strava.</span></div>
+            <div class="feature"><span class="check">✓</span><span>Atalho de conta no banner do menu lateral.</span></div>
+            <div class="feature"><span class="check">✓</span><span>Estados claros enquanto o Strava processa o arquivo.</span></div>
+          </div>
+        </article>
+      </aside>
+
+      <div class="phone-shell" aria-label="Prévia de telas do aplicativo">
+        <div class="phone-screen">
+          <div class="statusbar"><span>09:41</span><div class="status-icons"><span>◉</span><span>▮▮▮</span><span>100%</span></div></div>
+
+          <section class="screen screen-save" data-screen="save">
+            <div class="native-bar"><button class="back" data-back aria-label="Voltar">‹</button><span class="bar-title">Salvar atividade</span></div>
+            <div class="screen-scroll">
+              <h2 class="screen-title">Finalizar atividade</h2>
+              <p class="screen-copy">Confira o nome e escolha o tipo antes de salvar.</p>
+              <label class="label" for="activity-name">Nome da atividade</label>
+              <input id="activity-name" class="text-input" value="Pedalada matinal" maxlength="80">
+              <span class="label">Tipo da atividade <span style="color:#c44636">· obrigatório</span></span>
+              <div class="type-grid" role="group" aria-label="Tipo da atividade">
+                <button class="type-option selected" data-type="Bike"><span class="type-icon">🚲</span><span>Bike</span></button>
+                <button class="type-option" data-type="eBike"><span class="type-icon">⚡</span><span>eBike</span></button>
+                <button class="type-option" data-type="Veículo"><span class="type-icon">🚗</span><span>Veículo</span></button>
+              </div>
+              <button class="type-more" id="more-toggle" aria-expanded="false">+ Ver outros tipos</button>
+              <div class="more-types" id="more-types">
+                <button class="small-chip" data-type="Mountain bike">Mountain bike</button>
+                <button class="small-chip" data-type="Gravel">Gravel</button>
+                <button class="small-chip" data-type="Corrida">Corrida</button>
+                <button class="small-chip" data-type="Caminhada">Caminhada</button>
+                <button class="small-chip" data-type="Trilha">Trilha</button>
+                <button class="small-chip" data-type="Bike indoor">Bike indoor</button>
+              </div>
+            </div>
+            <div class="save-actions">
+              <button class="primary-btn" id="complete-save">Salvar atividade</button>
+              <button class="secondary-btn" data-toast="Atividade descartada nesta simulação">Descartar</button>
+            </div>
+          </section>
+
+          <section class="screen screen-detail active" data-screen="detail">
+            <div class="native-bar"><button class="back" data-back aria-label="Voltar">‹</button><span class="bar-title">Detalhes da atividade</span><span class="bar-action">⋮</span></div>
+            <div class="screen-scroll">
+              <div class="route-preview">
+                <span class="map-label">ROTA · tocar para ampliar</span>
+                <svg viewBox="0 0 420 190" preserveAspectRatio="none" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;z-index:1">
+                  <path d="M-10 135 C40 102 38 58 88 70 S142 144 184 119 S221 46 269 63 S306 124 344 100 S388 43 440 57" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" opacity=".85"/>
+                  <path d="M-10 135 C40 102 38 58 88 70 S142 144 184 119 S221 46 269 63 S306 124 344 100 S388 43 440 57" fill="none" stroke="#009688" stroke-width="5" stroke-linecap="round"/>
+                </svg>
+                <span class="map-dot"></span>
+              </div>
+              <div class="detail-content">
+                <h2 class="activity-name" id="detail-name">Pedalada matinal</h2>
+                <div class="activity-date">Seg, 26 out 2026 · 07:18</div>
+                <div class="type-pill"><span id="detail-type-icon">🚲</span><span id="detail-type">Bike</span></div>
+                <div class="metric-strip">
+                  <div class="metric"><strong>18,4 km</strong><span>Distância</span></div>
+                  <div class="metric"><strong>52:18</strong><span>Em movimento</span></div>
+                  <div class="metric"><strong>21,1</strong><span>km/h média</span></div>
+                </div>
+                <h3 class="summary-title">Resumo da atividade</h3>
+                <div class="summary-row"><span>Duração total</span><strong>58:42</strong></div>
+                <div class="summary-row"><span>Velocidade máxima</span><strong>42,6 km/h</strong></div>
+                <div class="summary-row"><span>Ganho de elevação</span><strong>186 m</strong></div>
+                <div class="summary-row"><span>Frequência cardíaca média</span><strong>138 bpm</strong></div>
+              </div>
+            </div>
+            <div class="detail-actions">
+              <div class="local-only" id="local-only">Este tipo não tem correspondência no Strava. A atividade continua salva no aparelho e pode ser exportada como GPX.</div>
+              <button class="strava-btn" id="send-strava"><span class="strava-word">strava</span><span id="strava-action-label"> · Enviar esta atividade</span></button>
+              <div class="strava-sync-progress" id="strava-sync-progress" role="status" aria-live="polite" hidden>
+                <div class="strava-sync-label"><span class="strava-word">strava</span> Sincronizando com Strava…</div>
+                <div class="strava-sync-track" aria-hidden="true"><div class="strava-sync-fill"></div></div>
+              </div>
+              <div class="strava-upload-warning" id="strava-upload-warning" role="alert" hidden>
+                <div class="strava-warning-heading">
+                  <span class="strava-warning-icon" aria-hidden="true">!</span>
+                  <div><strong>Não foi possível confirmar</strong><p>O Strava pode ter recebido esta atividade, mas a resposta não chegou. Confira sua conta antes de tentar novamente.</p></div>
+                </div>
+                <div class="strava-warning-actions">
+                  <button class="primary-btn" id="mark-sent">Já aparece no Strava</button>
+                  <button class="secondary-btn" id="retry-send">Tentar novamente</button>
+                </div>
+                <p class="strava-warning-note">Tentar novamente pode criar uma duplicata se o primeiro envio tiver sido concluído.</p>
+              </div>
+              <button class="export-btn" data-toast="A exportação GPX continua disponível">Exportar GPX</button>
+            </div>
+          </section>
+
+          <section class="screen" data-screen="drawer">
+            <div class="drawer-stage">
+              <div class="drawer-main-toolbar"><button class="drawer-hamburger" aria-label="Menu">☰</button><strong>Minhas atividades</strong></div>
+              <div class="drawer-main-content">
+                <div class="drawer-month">Outubro 2026</div>
+                <article class="drawer-activity">
+                  <div class="drawer-map"><svg viewBox="0 0 320 100" preserveAspectRatio="none" aria-hidden="true"><path d="M-5 75 C42 15 68 85 105 53 S158 15 193 49 S234 93 276 43 S307 31 330 18" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M-5 75 C42 15 68 85 105 53 S158 15 193 49 S234 93 276 43 S307 31 330 18" fill="none" stroke="#009688" stroke-width="5" stroke-linecap="round"/></svg></div>
+                  <div class="drawer-activity-copy"><strong>Pedalada matinal</strong><p>18,4 km&nbsp; · &nbsp;52 min&nbsp; · &nbsp;21,1 km/h</p></div>
+                </article>
+                <article class="drawer-activity">
+                  <div class="drawer-map"><svg viewBox="0 0 320 100" preserveAspectRatio="none" aria-hidden="true"><path d="M-8 22 C26 64 58 78 91 47 S146 21 176 51 S218 89 250 55 S295 31 332 80" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M-8 22 C26 64 58 78 91 47 S146 21 176 51 S218 89 250 55 S295 31 332 80" fill="none" stroke="#009688" stroke-width="5" stroke-linecap="round"/></svg></div>
+                  <div class="drawer-activity-copy"><strong>Volta do parque</strong><p>12,7 km&nbsp; · &nbsp;38 min&nbsp; · &nbsp;20,0 km/h</p></div>
+                </article>
+              </div>
+              <div class="drawer-scrim"></div>
+              <aside class="drawer-panel" aria-label="Menu lateral aberto">
+                <header class="drawer-header">
+                  <div class="drawer-brand"><img class="drawer-logo" src="velocimetro-logo.png" alt="Logo Velocímetro Alerta"><div class="drawer-brand-copy"><strong>Velocímetro Alerta</strong><span id="drawer-brand-subtitle">helpdev.com.br</span></div></div>
+                  <button class="drawer-account-btn" id="drawer-account-action"><span class="drawer-account-icon" id="drawer-account-icon">G</span><span class="drawer-account-text"><strong id="drawer-account-title">Entrar com Google</strong><span id="drawer-account-subtitle">Sincronize preferências e conecte o Strava</span></span><span aria-hidden="true">›</span></button>
+                </header>
+                <div class="drawer-menu">
+                  <div class="drawer-menu-item active"><span class="drawer-menu-icon">▤</span>Minhas atividades</div>
+                  <div class="drawer-menu-item"><span class="drawer-menu-icon">⚙</span>Configurações</div>
+                  <div class="drawer-divider"></div>
+                  <div class="drawer-menu-item"><span class="drawer-menu-icon">↗</span>Compartilhar</div>
+                  <div class="drawer-menu-item"><span class="drawer-menu-icon">★</span>Avaliar</div>
+                  <div class="drawer-menu-item"><span class="drawer-menu-icon">▣</span>Política de privacidade</div>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          <section class="screen screen-google" data-screen="google">
+            <div class="native-bar"><button class="back" data-back aria-label="Voltar">‹</button><span class="bar-title">Conta Google</span></div>
+            <div class="screen-scroll">
+              <div class="illustration"><div class="account-icon">◎</div></div>
+              <h2 class="screen-title">Entre para conectar</h2>
+              <p class="screen-copy">Use sua conta Google para configurar o Strava e sincronizar suas preferências. Suas atividades continuam salvas neste aparelho.</p>
+              <button class="google-btn" id="google-sign-in"><span class="google-symbol">G</span>Continuar com Google</button>
+              <p class="privacy-hint">O login Google não envia atividades. O Strava recebe apenas atividades enviadas manualmente ou pela opção automática ativada por você.</p>
+            </div>
+            <div class="save-actions"><button class="secondary-btn" id="skip-google">Agora não</button></div>
+          </section>
+
+          <section class="screen screen-connect" data-screen="connect">
+            <div class="native-bar"><button class="back" data-back aria-label="Voltar">‹</button><span class="bar-title">Conectar ao Strava</span></div>
+            <div class="screen-scroll">
+              <div class="illustration" style="background:linear-gradient(145deg,#fff0e8,#fff9f5)"><div class="strava-badge" style="width:72px;height:72px;border-radius:22px;font-size:31px">↗</div></div>
+              <h2 class="screen-title">Conecte sua conta</h2>
+              <p class="screen-copy">Autorize o Velocímetro Alerta a enviar atividades que você escolher ou salvar com a sincronização automática ativada.</p>
+              <div class="brand-card"><div class="strava-badge">↗</div><div><strong>Strava</strong><span>Conexão segura com sua conta</span></div></div>
+              <div class="scope-box"><strong>O que será compartilhado</strong><p>Conectar não envia atividades. Depois, você pode enviar uma atividade pelos detalhes ou ativar o envio automático das próximas atividades salvas.</p></div>
+              <button class="strava-btn" id="authorize-strava"><span class="strava-word">strava</span> · Autorizar conexão</button>
+              <p class="privacy-hint">Permissão solicitada: enviar atividade. A opção automática fica em Conta e conexões e pode ser desligada quando quiser.</p>
+            </div>
+          </section>
+
+          <section class="screen screen-account" data-screen="account">
+            <div class="native-bar"><button class="back" data-back aria-label="Voltar">‹</button><span class="bar-title">Conta e conexões</span></div>
+            <div class="screen-scroll">
+              <h2 class="screen-title">Sua conta</h2>
+              <p class="screen-copy">Gerencie login, preferências e conexão com o Strava.</p>
+              <div class="account-item"><div><strong id="google-account-title">Conta Google</strong><span id="google-account-subtitle">Não conectada</span></div><button class="link-btn" id="account-google-action">Entrar</button></div>
+              <div class="account-item"><div><strong>Preferências</strong><span id="prefs-state">Salvas neste aparelho</span></div><span class="connected-pill" id="prefs-pill" style="display:none">Sincronizadas</span></div>
+              <div class="account-item"><div><strong>Strava</strong><span id="strava-account-subtitle">Não conectado</span></div><button class="link-btn" id="account-strava-action">Conectar</button></div>
+              <div class="account-sync-row" id="account-sync-row">
+                <div class="account-sync-setting">
+                  <div class="account-sync-copy"><strong>Sincronizar automático</strong><span id="auto-sync-summary">Enviar automaticamente as atividades novas ao salvá-las</span></div>
+                  <button class="switch-control" id="auto-sync-toggle" type="button" role="switch" aria-checked="false" aria-label="Sincronizar automático"></button>
+                </div>
+                <p class="account-sync-help" id="auto-sync-help">Atividades já salvas continuam disponíveis para envio manual.</p>
+              </div>
+              <button class="soft-btn" id="disconnect-strava" style="display:none">Desconectar do Strava</button>
+            </div>
+          </section>
+
+          <div class="toast" id="toast" role="status"></div>
+        </div>
+      </div>
+
+      <aside class="info-column right-column">
+        <article class="info-card right-card">
+          <span class="eyebrow">Fluxo da atividade</span>
+          <h2 id="flow-title">Detalhes salvos</h2>
+          <p id="flow-description">A tela existente ganha um segundo botão de ação, próximo ao “Exportar GPX”. O tipo aparece junto dos dados da atividade.</p>
+          <div class="flowline">
+            <div class="flow-row"><span class="flow-num">1</span><span>Escolhe tipo ao salvar</span></div>
+            <div class="flow-row current"><span class="flow-num">2</span><span>Abre detalhes e toca em enviar</span></div>
+            <div class="flow-row"><span class="flow-num">3</span><span>Login Google, se necessário</span></div>
+            <div class="flow-row"><span class="flow-num">4</span><span>Conecta o Strava, se necessário</span></div>
+            <div class="flow-row"><span class="flow-num">5</span><span>Acompanha o envio nos detalhes</span></div>
+          </div>
+        </article>
+        <article class="info-card right-card">
+          <span class="eyebrow">Menu lateral</span>
+          <h2>Acesso à conta junto da logo</h2>
+          <p>O banner mantém a logo e o gradiente atuais. Logo abaixo, um botão destaca <strong>Entrar com Google</strong>; depois do login, ele muda para <strong>Conta e conexões</strong>, onde ficam Strava e preferências.</p>
+          <p style="margin-top:11px">A lista de atividades continua visível por trás do menu, seguindo o layout real da tela.</p>
+        </article>
+        <article class="info-card right-card">
+          <span class="eyebrow">Detalhes da atividade</span>
+          <h2>Envio manual ou automático</h2>
+          <p>Veja <strong>Conta e conexões</strong> para o toggle logo abaixo da linha do Strava, desativado até conectar, ou <strong>Conta com Strava</strong> para a prévia conectada. Ativado, envia novas atividades elegíveis ao salvar; as antigas continuam manuais.</p>
+          <p class="subtle-warning">“Veículo” fica salvo localmente, mas não é enviado ao Strava porque não há modalidade equivalente.</p>
+        </article>
+      </aside>
+    </section>
+    <p class="footnote">Protótipo visual local · botões simulam a navegação, autenticação e envio não se conectam a serviços externos.</p>
+  </main>
+
+  <script>
+    const screens = [...document.querySelectorAll('[data-screen]')];
+    const steps = [...document.querySelectorAll('.step')];
+    const descriptions = {
+      drawer: ['Menu lateral · convidado', 'A gaveta lateral preserva a logo e o gradiente atuais. Como convidado, o subtítulo mostra helpdev.com.br e o botão oferece “Entrar com Google”.'],
+      drawerLogged: ['Menu lateral · conta conectada', 'Após o login, “Guilherme Biff Zarelli” aparece sob a logo e o botão “Conta e conexões” abre as preferências e a conexão Strava.'],
+      save: ['Salvar atividade', 'Novo campo obrigatório de modalidade na tela de finalização, mantendo nome e botões atuais.'],
+      detail: ['Detalhes salvos', 'A atividade ainda não foi enviada. O botão do Strava inicia o envio individual e fica ao lado de “Exportar GPX”.'],
+      detailSyncing: ['Detalhes · sincronização em andamento', 'A barra de progresso aparece no lugar do botão enquanto o envio manual ou automático é processado.'],
+      detailSynced: ['Detalhes · atividade sincronizada', 'Após a confirmação do Strava, o botão mostra “Atividade já sincronizada” e fica inativo para evitar um envio duplicado.'],
+      detailManuallyConfirmed: ['Detalhes · confirmação manual', 'Ao tocar em “Já aparece no Strava”, o botão muda para “Presença confirmada manualmente” nesta tela, sem sugerir confirmação pela API ou navegar para outra tela.'],
+      detailNeedsAction: ['Detalhes · falha sem confirmação', 'O aviso e as opções de confirmar ou tentar novamente aparecem nos detalhes, sem abrir outra tela. Use este atalho para pré-visualizar o estado.'],
+      google: ['Login Google obrigatório', 'Se a pessoa ainda não entrou, a ação pede login e volta ao envio que ela iniciou.'],
+      connect: ['Permissão Strava', 'Explica o dado enviado e deixa claro que conectar não faz upload de outras atividades.'],
+      account: ['Conta e conexões', 'O toggle fica logo abaixo da linha do Strava. Sem conexão, aparece desativado com a indicação para conectar; atividades antigas continuam com envio individual.'],
+      accountConnected: ['Conta e conexões · Strava conectado', 'Prévia direta do estado conectado: o toggle abaixo da linha do Strava pode ser ligado ou desligado. Atividades antigas continuam com envio individual.'],
+    };
+    const flowIndex = {drawer: 0, drawerLogged: 0, save: 1, detail: 2, detailSyncing: 2, detailSynced: 2, detailManuallyConfirmed: 2, detailNeedsAction: 2, google: 3, connect: 4, account: 3, accountConnected: 3};
+    let current = 'detail';
+    let selectedType = 'Bike';
+    let googleConnected = false;
+    let stravaConnected = false;
+    let autoSyncEnabled = false;
+    let pendingActivity = false;
+    let backScreen = 'detail';
+    let activityUploadStatus = 'not_uploaded';
+    const toast = document.getElementById('toast');
+    let toastTimer;
+
+    function show(name) {
+      if (!descriptions[name]) return;
+      if (name === 'drawerLogged') googleConnected = true;
+      if (name === 'accountConnected') { googleConnected = true; stravaConnected = true; }
+      if (name === 'detailSynced') { activityUploadStatus = 'synced'; googleConnected = true; stravaConnected = true; }
+      if (name === 'detailManuallyConfirmed') { activityUploadStatus = 'manually_confirmed'; googleConnected = true; stravaConnected = true; }
+      if (name === 'detailNeedsAction') { activityUploadStatus = 'needs_action'; googleConnected = true; stravaConnected = true; }
+      current = name;
+      const detailVariants = ['detailSyncing', 'detailSynced', 'detailManuallyConfirmed', 'detailNeedsAction'];
+      const screenName = name === 'drawerLogged' ? 'drawer' : name === 'accountConnected' ? 'account' : detailVariants.includes(name) ? 'detail' : name;
+      screens.forEach(screen => screen.classList.toggle('active', screen.dataset.screen === screenName));
+      const stepName = ['detailSyncing', 'detailManuallyConfirmed'].includes(name) ? 'detail' : name;
+      steps.forEach(step => step.classList.toggle('active', step.dataset.go === stepName));
+      document.getElementById('flow-title').textContent = descriptions[name][0];
+      document.getElementById('flow-description').textContent = descriptions[name][1];
+      const currentStep = flowIndex[name] || 0;
+      document.querySelectorAll('.flow-row').forEach((row, index) => row.classList.toggle('current', index + 1 === currentStep));
+      updateAccount();
+      updateTypeState();
+    }
+    function notify(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2100);
+    }
+    function updateTypeState() {
+      const localOnly = selectedType === 'Veículo';
+      document.getElementById('local-only').style.display = localOnly ? 'block' : 'none';
+      const sendButton = document.getElementById('send-strava');
+      const isSynced = activityUploadStatus === 'synced';
+      const isManuallyConfirmed = activityUploadStatus === 'manually_confirmed';
+      const isUploading = activityUploadStatus === 'uploading' || activityUploadStatus === 'processing';
+      const needsAction = activityUploadStatus === 'needs_action';
+      sendButton.disabled = localOnly || isSynced || isManuallyConfirmed || isUploading || needsAction;
+      sendButton.hidden = isUploading || needsAction;
+      document.getElementById('strava-sync-progress').hidden = !isUploading;
+      document.getElementById('strava-upload-warning').hidden = !needsAction;
+      sendButton.classList.toggle('is-synced', isSynced);
+      sendButton.classList.toggle('is-manual-confirmed', isManuallyConfirmed);
+      document.getElementById('strava-action-label').textContent = isSynced
+        ? ' · Atividade já sincronizada'
+        : isManuallyConfirmed ? ' · Presença confirmada manualmente' : ' · Enviar esta atividade';
+      sendButton.setAttribute('aria-label', isSynced
+        ? 'Strava · Atividade já sincronizada'
+        : isManuallyConfirmed ? 'Strava · Presença confirmada manualmente' : 'Enviar esta atividade ao Strava');
+      sendButton.style.opacity = localOnly ? '.55' : '1';
+      sendButton.style.cursor = sendButton.disabled ? 'not-allowed' : 'pointer';
+      document.getElementById('detail-type').textContent = selectedType;
+      const icons = {Bike:'🚲', eBike:'⚡', Veículo:'🚗', 'Mountain bike':'🚵', Gravel:'🚲', Corrida:'🏃', Caminhada:'🚶', Trilha:'🥾', 'Bike indoor':'🚴'};
+      document.getElementById('detail-type-icon').textContent = icons[selectedType] || '🚲';
+    }
+    function updateAccount() {
+      document.getElementById('google-account-title').textContent = googleConnected ? 'Google conectado' : 'Conta Google';
+      document.getElementById('google-account-subtitle').textContent = googleConnected ? 'Guilherme Biff Zarelli' : 'Não conectada';
+      document.getElementById('account-google-action').textContent = googleConnected ? 'Conta' : 'Entrar';
+      document.getElementById('drawer-brand-subtitle').textContent = googleConnected ? 'Guilherme Biff Zarelli' : 'helpdev.com.br';
+      document.getElementById('drawer-account-title').textContent = googleConnected ? 'Conta e conexões' : 'Entrar com Google';
+      document.getElementById('drawer-account-subtitle').textContent = googleConnected ? 'Strava e preferências da conta' : 'Sincronize preferências e conecte o Strava';
+      document.getElementById('drawer-account-icon').textContent = googleConnected ? 'GB' : 'G';
+      document.getElementById('prefs-state').textContent = googleConnected ? 'Atualizadas nesta conta' : 'Salvas neste aparelho';
+      document.getElementById('prefs-pill').style.display = googleConnected ? 'inline-flex' : 'none';
+      document.getElementById('strava-account-subtitle').textContent = stravaConnected ? 'Conectado à sua conta' : 'Não conectado';
+      document.getElementById('account-strava-action').textContent = stravaConnected ? 'Conectado' : 'Conectar';
+      document.getElementById('disconnect-strava').style.display = stravaConnected ? 'block' : 'none';
+      const autoSyncToggle = document.getElementById('auto-sync-toggle');
+      autoSyncToggle.disabled = !stravaConnected;
+      autoSyncToggle.setAttribute('aria-checked', String(autoSyncEnabled));
+      document.getElementById('auto-sync-summary').textContent = !stravaConnected
+        ? 'Conecte o Strava para ativar'
+        : autoSyncEnabled ? 'Ativado · enviar automaticamente as atividades novas ao salvá-las'
+        : 'Enviar automaticamente as atividades novas ao salvá-las';
+      document.getElementById('auto-sync-help').textContent = !stravaConnected
+        ? 'A opção fica disponível depois de conectar sua conta Strava.'
+        : autoSyncEnabled
+          ? 'Atividades novas elegíveis serão enviadas após o salvamento. As já salvas continuam manuais.'
+          : 'Atividades já salvas continuam disponíveis para envio manual.';
+    }
+    function beginSend() {
+      if (selectedType === 'Veículo' || activityUploadStatus !== 'not_uploaded') return;
+      pendingActivity = true;
+      if (!googleConnected) { backScreen = 'detail'; show('google'); return; }
+      if (!stravaConnected) { backScreen = 'detail'; show('connect'); return; }
+      startActivityUpload();
+    }
+    function startActivityUpload() {
+      activityUploadStatus = 'uploading';
+      pendingActivity = true;
+      show('detailSyncing');
+    }
+
+    steps.forEach(step => step.addEventListener('click', () => show(step.dataset.go)));
+    document.querySelectorAll('[data-back]').forEach(button => button.addEventListener('click', () => show(backScreen || 'detail')));
+    document.querySelectorAll('[data-type]').forEach(option => option.addEventListener('click', () => {
+      selectedType = option.dataset.type;
+      document.querySelectorAll('.type-option').forEach(item => item.classList.toggle('selected', item === option));
+      document.querySelectorAll('.small-chip').forEach(item => item.classList.toggle('selected', item === option));
+      updateTypeState();
+      notify(`Tipo selecionado: ${selectedType}`);
+    }));
+    document.getElementById('more-toggle').addEventListener('click', event => {
+      const list = document.getElementById('more-types');
+      const open = list.classList.toggle('open');
+      event.currentTarget.textContent = open ? '− Ocultar tipos' : '+ Ver outros tipos';
+      event.currentTarget.setAttribute('aria-expanded', String(open));
+    });
+    document.getElementById('complete-save').addEventListener('click', () => {
+      const name = document.getElementById('activity-name').value.trim() || 'Minha atividade';
+      document.getElementById('detail-name').textContent = name;
+      activityUploadStatus = 'not_uploaded';
+      const willAutoSync = autoSyncEnabled && googleConnected && stravaConnected && selectedType !== 'Veículo';
+      if (willAutoSync) {
+        startActivityUpload();
+        notify('Atividade salva · envio automático iniciado');
+      } else {
+        show('detail');
+        notify('Atividade salva no aparelho');
+      }
+    });
+    document.getElementById('send-strava').addEventListener('click', beginSend);
+    document.getElementById('google-sign-in').addEventListener('click', () => {
+      googleConnected = true;
+      notify('Login Google concluído');
+      if (pendingActivity && !stravaConnected) show('connect');
+      else if (pendingActivity && stravaConnected) startActivityUpload();
+      else show('account');
+    });
+    document.getElementById('skip-google').addEventListener('click', () => show(backScreen || 'detail'));
+    document.getElementById('drawer-account-action').addEventListener('click', () => {
+      pendingActivity = false;
+      backScreen = googleConnected ? 'drawerLogged' : 'drawer';
+      if (googleConnected) show('account'); else show('google');
+    });
+    document.getElementById('authorize-strava').addEventListener('click', () => {
+      stravaConnected = true;
+      if (pendingActivity) startActivityUpload(); else show('account');
+    });
+    document.getElementById('mark-sent').addEventListener('click', () => {
+      pendingActivity = false;
+      activityUploadStatus = 'manually_confirmed';
+      show('detailManuallyConfirmed');
+      notify('Presença confirmada manualmente');
+    });
+    document.getElementById('retry-send').addEventListener('click', startActivityUpload);
+    document.getElementById('account-google-action').addEventListener('click', () => {
+      if (googleConnected) { notify('Sessão Google ativa'); return; }
+      pendingActivity = false;
+      backScreen = 'account';
+      show('google');
+    });
+    document.getElementById('account-strava-action').addEventListener('click', () => {
+      if (stravaConnected) { notify('Strava já conectado'); return; }
+      pendingActivity = false;
+      if (!googleConnected) { backScreen = 'account'; show('google'); }
+      else { backScreen = 'account'; show('connect'); }
+    });
+    document.getElementById('disconnect-strava').addEventListener('click', () => {
+      stravaConnected = false;
+      updateAccount();
+      notify('Strava desconectado nesta simulação');
+    });
+    document.getElementById('auto-sync-toggle').addEventListener('click', () => {
+      if (!stravaConnected) return;
+      autoSyncEnabled = !autoSyncEnabled;
+      updateAccount();
+      notify(autoSyncEnabled ? 'Sincronização automática ativada' : 'Sincronização automática desativada');
+    });
+    document.querySelectorAll('[data-toast]').forEach(button => button.addEventListener('click', () => notify(button.dataset.toast)));
+    show('detail');
+  </script>
+</body>
+</html>

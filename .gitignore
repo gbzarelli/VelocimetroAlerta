@@ -15,3 +15,12 @@ release-signing.properties
 secrets.properties
 tools/gpx/*.gpx
 tools/gpx/**/*.gpx
+mobile/google-services.json
+mobile/src/debug/google-services.json
+.firebaserc
+.firebase/
+functions/node_modules/
+functions/lib/
+functions/.env.*
+!functions/.env.example
+functions/.secret.local

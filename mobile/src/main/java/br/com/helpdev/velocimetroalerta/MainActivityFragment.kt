@@ -55,7 +55,10 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
             ActivitySaveActivity.ACTION_CONFIRM -> {
                 val draft = pendingActivityDraft ?: return@registerForActivityResult
                 val name = result.data?.getStringExtra(ActivitySaveActivity.EXTRA_NAME).orEmpty()
-                saveActivity(draft, name)
+                val type = br.com.helpdev.velocimetroalerta.activities.ActivityType
+                    .fromStableKey(result.data?.getStringExtra(ActivitySaveActivity.EXTRA_ACTIVITY_TYPE))
+                    ?: br.com.helpdev.velocimetroalerta.activities.ActivityType.BIKE
+                saveActivity(draft, name, type)
             }
             ActivitySaveActivity.ACTION_DISCARD -> {
                 pendingActivityDraft = null
@@ -149,7 +152,11 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         builder.create().show()
     }
 
-    private fun saveActivity(draft: ActivityDraft, name: String) {
+    private fun saveActivity(
+        draft: ActivityDraft,
+        name: String,
+        type: br.com.helpdev.velocimetroalerta.activities.ActivityType = br.com.helpdev.velocimetroalerta.activities.ActivityType.BIKE
+    ) {
         val host = activity ?: return
         val appContext = host.applicationContext
         progressDialog = ProgressDialog(host).apply {
@@ -159,12 +166,13 @@ class MainActivityFragment : Fragment(), View.OnClickListener, SpeedometerServic
         }
 
         saveExecutor.execute {
-            val result = runCatching { ActivityRepository(appContext.filesDir).save(draft, name) }
+            val result = runCatching { ActivityRepository(appContext.filesDir).save(draft, name, type) }
             activity?.runOnUiThread {
                 progressDialog?.dismiss()
                 progressDialog = null
                 val currentActivity = activity ?: return@runOnUiThread
                 result.onSuccess { summary ->
+                    br.com.helpdev.velocimetroalerta.strava.StravaSyncCoordinator.enqueueAutoIfEligible(currentActivity, summary)
                     pendingActivityDraft = null
                     clear()
                     startActivity(ActivityDetailActivity.newIntent(currentActivity, summary.id))
